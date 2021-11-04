@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net5.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<Copyright>© 2021, Albert Akhmetov</Copyright>
+		<Authors>Albert Akhmetov</Authors>
+		<Product>flowOSD</Product>
+		<Version>0.4.0-experimental</Version>
+		<Platforms>x64</Platforms>
+		<PackageIcon></PackageIcon>
+    	<PackageIconUrl />
+		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
+	    <Description>Utility that provides the ability to show system-like OSD for ASUS notebooks events (like keyboard backlight changing, touchpad state and so on).</Description>
+	    <PackageReleaseNotes>This is an experimental release.</PackageReleaseNotes>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Reactive" Version="5.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Remove="Resources\*.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\*.*" />
+	</ItemGroup>
+
+</Project>
