@@ -48,9 +48,8 @@ namespace flowOSD.Services
 
         private static string GetWindowClassName(IntPtr hWnd)
         {
-            int nRet;
-            StringBuilder className = new(256);
-            nRet = GetClassName(hWnd, className, className.Capacity);
+            var className = new StringBuilder(256);
+            int nRet = GetClassName(hWnd, className, className.Capacity);
             if (nRet != 0)
             {
                 return className.ToString();
@@ -69,8 +68,6 @@ namespace flowOSD.Services
             return Process.GetProcessesByName("explorer").FirstOrDefault(p => p.Id == pid)?.Id ?? 0;
         }
 
-        [DllImport("user32.dll")]
-        private static extern int GetDpiForWindow(IntPtr hwnd);
 
         [DllImport("user32.dll", SetLastError = false)]
         private static extern IntPtr GetShellWindow();

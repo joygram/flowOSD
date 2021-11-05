@@ -27,6 +27,7 @@ namespace flowOSD
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Forms;
@@ -54,7 +55,6 @@ namespace flowOSD
 
         private const int SM_CONVERTIBLESLATEMODE = 0x2003;
 
-
         private CompositeDisposable disposable = new CompositeDisposable();
 
         private Osd osd;
@@ -64,13 +64,14 @@ namespace flowOSD
 
         private Images images;
         private BehaviorSubject<bool> isTabletModeSubject;
-        private BehaviorSubject<bool> themeChangedSubject;
-
+        private BehaviorSubject<bool> themeSubject;
+        private Subject<int> dpiChangedSubject;
 
         private App()
         {
-            themeChangedSubject = new System.Reactive.Subjects.BehaviorSubject<bool>(ShouldSystemUseDarkMode());
+            themeSubject = new System.Reactive.Subjects.BehaviorSubject<bool>(ShouldSystemUseDarkMode());
             isTabletModeSubject = new BehaviorSubject<bool>(GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
+            dpiChangedSubject = new Subject<int>();
 
             osd = new Osd().DisposeWith(disposable);
             keyboard = new Keyboard();
@@ -78,7 +79,6 @@ namespace flowOSD
             atk = new Atk().AsMessageFilter();
 
             images = new Images().DisposeWith(disposable);
-            images.Load();
 
             InitUI();
 
@@ -90,7 +90,7 @@ namespace flowOSD
             atk.KeyPressed
                 .Where(x => x == Atk.Key.BacklightDown || x == Atk.Key.BacklightUp)
                 .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => osd.Show(new Osd.Data(images.Keyboard, keyboard.GetBacklight())))
+                .Subscribe(x => osd.Show(new Osd.Data(images.GetImage(Images.Keyboard, 144), keyboard.GetBacklight())))
                 .DisposeWith(disposable);
 
             atk.IsTouchPadEnabled
@@ -103,11 +103,11 @@ namespace flowOSD
                 .CombineLatest(atk.IsTouchPadEnabled, (_, isEnabled) => isEnabled)
                 .Throttle(TimeSpan.FromMilliseconds(50))
                 .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => osd.Show(new Osd.Data(images.Keyboard, x ? "TouchPad on" : "TouchPad off")))
+                .Subscribe(x => osd.Show(new Osd.Data(images.GetImage(Images.Keyboard, 144), x ? "TouchPad on" : "TouchPad off")))
                 .DisposeWith(disposable);
 
             isTabletModeSubject
-                .CombineLatest(themeChangedSubject, (isTabletMode, isDarkMode) => new { isTabletMode, isDarkMode })
+                .CombineLatest(themeSubject, (isTabletMode, isDarkMode) => new { isTabletMode, isDarkMode })
                 .Throttle(TimeSpan.FromMilliseconds(50))
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode))
@@ -115,7 +115,14 @@ namespace flowOSD
 
             isTabletModeSubject
                 .Throttle(TimeSpan.FromMilliseconds(50))
-                .Subscribe(async x => UpdateTouchPadState(x))
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x => UpdateTouchPadState(x))
+                .DisposeWith(disposable);
+
+            dpiChangedSubject
+                .Throttle(TimeSpan.FromMilliseconds(1000))
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x => UpdateDpi(x))
                 .DisposeWith(disposable);
         }
 
@@ -127,7 +134,7 @@ namespace flowOSD
 
         private void ShowAbout()
         {
-            AppAbout.ShowForm();
+AppAbout.Show();
         }
 
         private void UpdateTouchPadState(bool isTabletMode)

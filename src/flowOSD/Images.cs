@@ -19,60 +19,91 @@
 namespace flowOSD
 {
     using System;
+    using System.Collections.Generic;
     using System.Drawing;
     using System.IO;
     using System.Reactive.Disposables;
+    using static Native;
 
     sealed class Images : IDisposable
     {
-        private CompositeDisposable disposable;
+        public const string Tablet = "tablet";
+        public const string TabletWhite = "tablet-white";
+        public const string Notebook = "notebook";
+        public const string NotebookWhite = "notebook-white";
+        public const string Keyboard = "keyboard";
+
+        private CompositeDisposable disposable = new CompositeDisposable();
+        private Dictionary<string, Image> images;
+        private Dictionary<string, Icon> icons;
+
+        public Images()
+        {
+            images = new Dictionary<string, Image>();
+            icons = new Dictionary<string, Icon>();
+        }
 
         void IDisposable.Dispose()
         {
             disposable?.Dispose();
         }
 
-        public Image Keyboard { get; private set; }
-
-        public Icon Notebook { get; private set; }
-
-        public Icon NotebookWhite { get; private set; }
-
-        public Icon Tablet { get; private set; }
-
-        public Icon TabletWhite { get; private set; }
-
-
-        public void Load()
+        public Image GetImage(string name, int? dpi)
         {
-            disposable?.Dispose();
-            disposable = new CompositeDisposable();
-
-            var assembly = typeof(Images).Assembly;
-
-            using (Stream stream = assembly.GetManifestResourceStream("flowOSD.Resources.Keyboard24.png"))
+            var key = dpi == null ? name : $"{name}-{dpi}";
+            if (!images.ContainsKey(key))
             {
-                Keyboard = Image.FromStream(stream).DisposeWith(disposable);
+                var assembly = typeof(Images).Assembly;
+
+                using (Stream stream = assembly.GetManifestResourceStream($"flowOSD.Resources.{key}.png"))
+                {
+                    images[key] = Image.FromStream(stream).DisposeWith(disposable);
+                }
             }
 
-            using (Stream stream = assembly.GetManifestResourceStream("flowOSD.Resources.notebook.ico"))
+            return images[key];
+        }
+
+        public Icon GetIcon(string name, int? dpi)
+        {
+            var key = dpi == null ? name : $"{name}-{dpi}";
+            if (!icons.ContainsKey(key))
             {
-                Notebook = new Icon(stream).DisposeWith(disposable);
+                var assembly = typeof(Images).Assembly;
+
+                using (Stream stream = assembly.GetManifestResourceStream($"flowOSD.Resources.{name}.ico"))
+                {
+                    if (dpi == null)
+                    {
+                        icons[key] = new Icon(stream).DisposeWith(disposable);
+                    }
+                    else
+                    {
+                        var width = GetIconWidth(dpi.Value);
+                        icons[key] = new Icon(stream, width, width).DisposeWith(disposable);
+                    }
+                }
             }
 
-            using (Stream stream = assembly.GetManifestResourceStream("flowOSD.Resources.notebook-white.ico"))
-            {
-                NotebookWhite = new Icon(stream, 24, 24).DisposeWith(disposable);
-            }
+            return icons[key];
+        }
 
-            using (Stream stream = assembly.GetManifestResourceStream("flowOSD.Resources.tablet.ico"))
+        private static int GetIconWidth(int dpi)
+        {
+            switch (dpi)
             {
-                Tablet = new Icon(stream).DisposeWith(disposable);
-            }
-
-            using (Stream stream = assembly.GetManifestResourceStream("flowOSD.Resources.tablet-white.ico"))
-            {
-                TabletWhite = new Icon(stream, 24, 24).DisposeWith(disposable);
+                case 96:
+                    return 16;
+                case 120:
+                    return 20;
+                case 144:
+                    return 24;
+                case 168:
+                    return 28;
+                case 192:
+                    return 32;
+                default:
+                    return 64;
             }
         }
     }

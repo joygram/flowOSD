@@ -31,7 +31,7 @@ namespace flowOSD
 
     partial class App
     {
-        private ToolStripMenuItem touchPadMenuItem, boostMenuItem;
+        private ToolStripMenuItem touchPadMenuItem, boostMenuItem, aboutMenuItem;
         private NotifyIcon notifyIcon;
         private UI ui;
 
@@ -44,54 +44,69 @@ namespace flowOSD
                 methodInfo.Invoke(notifyIcon, null);
             };
 
-            // x.Visible = true;
             notifyIcon.Text = AppAbout.Title;
 
-            notifyIcon.ContextMenuStrip = Create<ContextMenuStrip>(/*menu => x.Renderer = new ToolStripRenderer()*/)
-                .Add(Create<ToolStripMenuItem>(x =>
+            notifyIcon.ContextMenuStrip = Create<ContextMenuStrip>(x => x.RenderMode = ToolStripRenderMode.System).Add(
+                Create<ToolStripMenuItem>(x =>
                     {
                         x.Padding = new Padding(0, 2, 0, 2);
                         x.Margin = new Padding(0, 8, 0, 8);
                         x.Click += (sender, e) => ToggleTouchPad();
-                    }).DisposeWith(disposable).LinkAs(ref touchPadMenuItem))
-                .Add(Create<ToolStripMenuItem>(x =>
+                    }).DisposeWith(disposable).LinkAs(ref touchPadMenuItem),
+                Create<ToolStripMenuItem>(x =>
                     {
                         x.Padding = new Padding(0, 2, 0, 2);
                         x.Margin = new Padding(0, 8, 0, 8);
                         x.Click += (sender, e) => ToggleBoost();
-                    }).DisposeWith(disposable).LinkAs(ref boostMenuItem))
-                .Add(Create<ToolStripSeparator>().DisposeWith(disposable))
-                .Add(Create<ToolStripMenuItem>(x =>
+                    }).DisposeWith(disposable).LinkAs(ref boostMenuItem),
+                Create<ToolStripSeparator>().DisposeWith(disposable),
+                Create<ToolStripMenuItem>(x =>
                     {
                         x.Text = "About";
                         x.Padding = new Padding(0, 2, 0, 2);
                         x.Margin = new Padding(0, 8, 0, 8);
                         x.Click += (sender, e) => ShowAbout();
-                    }).DisposeWith(disposable))
-                .Add(Create<ToolStripSeparator>().DisposeWith(disposable))
-                .Add(Create<ToolStripMenuItem>(x =>
+                    }).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
+                Create<ToolStripSeparator>().DisposeWith(disposable),
+                Create<ToolStripMenuItem>(x =>
                     {
                         x.Text = "Exit";
                         x.Padding = new Padding(0, 2, 0, 2);
                         x.Margin = new Padding(0, 8, 0, 8);
                         x.Click += (sender, e) => Application.Exit();
-                    }).DisposeWith(disposable));
+                    }).DisposeWith(disposable)
+                );
 
             ui = new UI(this).DisposeWith(disposable);
 
             notifyIcon.Visible = true;
+            UpdateDpi(GetDpiForWindow(ui.Handle));
         }
 
         private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode)
         {
+            var dpi = GetDpiForWindow(ui.Handle);
+
             if (isDarkMode)
             {
-                notifyIcon.Icon = isTabletMode ? images.TabletWhite : images.NotebookWhite;
+                notifyIcon.Icon = isTabletMode
+                    ? images.GetIcon(Images.TabletWhite, dpi)
+                    : images.GetIcon(Images.NotebookWhite, dpi);
             }
             else
             {
-                notifyIcon.Icon = isTabletMode ? images.Tablet : images.Notebook;
+                notifyIcon.Icon = isTabletMode
+                    ? images.GetIcon(Images.Tablet, dpi)
+                    : images.GetIcon(Images.Notebook, dpi);
             }
+        }
+
+        private void UpdateDpi(int dpi)
+        {
+            notifyIcon.ContextMenuStrip.Font?.Dispose();
+            notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI", 12 * (dpi / 96f), GraphicsUnit.Pixel);
+
+            UpdateNotifyIcon(this.isTabletModeSubject.Value, this.themeSubject.Value);
         }
 
         private sealed class UI : NativeWindow, IDisposable
@@ -101,7 +116,6 @@ namespace flowOSD
             public UI(App owner)
             {
                 this.owner = owner;
-
                 AssignHandle(owner.notifyIcon.ContextMenuStrip.Handle);
             }
 
@@ -124,15 +138,21 @@ namespace flowOSD
             protected override void WndProc(ref Message message)
             {
                 const int WM_WININICHANGE = 0x001A;
+                const int WM_DPICHANGED = 0x02E0;
 
                 if (message.Msg == WM_WININICHANGE && Marshal.PtrToStringUni(message.LParam) == "ImmersiveColorSet")
                 {
-                    owner.themeChangedSubject.OnNext(ShouldSystemUseDarkMode());
+                    owner.themeSubject.OnNext(ShouldSystemUseDarkMode());
                 }
 
                 if (message.Msg == WM_WININICHANGE && Marshal.PtrToStringUni(message.LParam) == "ConvertibleSlateMode")
                 {
                     owner.isTabletModeSubject.OnNext(GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
+                }
+
+                if (message.Msg == WM_DPICHANGED)
+                {
+                    owner.dpiChangedSubject.OnNext((int)HiWord(message.WParam));
                 }
 
                 base.WndProc(ref message);

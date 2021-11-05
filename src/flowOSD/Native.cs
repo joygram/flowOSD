@@ -28,7 +28,7 @@ namespace flowOSD
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern UInt32 RegisterWindowMessage(string lpString);
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        [DllImport("user32.dll")]
         public static extern int GetSystemMetrics(int nIndex);
 
         [DllImport("kernel32.dll")]
@@ -39,5 +39,20 @@ namespace flowOSD
 
         [DllImport("uxtheme.dll", EntryPoint = "#138")]
         public static extern bool ShouldSystemUseDarkMode();
+
+        [DllImport("user32.dll")]
+        public static extern int GetDpiForSystem();
+
+        [DllImport("user32.dll")]
+        public static extern int GetDpiForWindow(IntPtr hwnd);
+
+        public static uint HiWord(IntPtr ptr)
+        {
+            var val = (uint)(int)ptr;
+            if ((val & 0x80000000) == 0x80000000)
+                return (val >> 16);
+            else
+                return (val >> 16) & 0xffff;
+        }
     }
 }

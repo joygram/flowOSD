@@ -29,6 +29,7 @@ namespace flowOSD.Services
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Windows.Forms;
+    using static Native;
 
     sealed partial class Osd : IDisposable
     {

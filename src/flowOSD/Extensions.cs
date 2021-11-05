@@ -53,7 +53,8 @@ namespace flowOSD
             return obj;
         }
 
-        public static T AsMessageFilter<T>(this T messageFilter) where T: IMessageFilter {
+        public static T AsMessageFilter<T>(this T messageFilter) where T : IMessageFilter
+        {
             Application.AddMessageFilter(messageFilter);
 
             return messageFilter;
@@ -72,7 +73,25 @@ namespace flowOSD
 
             return toolStrip;
         }
-                
+
+        public static T Add<T, TC>(this T panel, int column, int row, Action<TC> initializator)
+            where T : TableLayoutPanel
+            where TC : Control, new()
+        {
+            var obj = Activator.CreateInstance<TC>();
+            initializator(obj);
+            return Add<T>(panel, column, row, obj);
+        }
+
+        public static T Add<T, TC>(this T panel, int column, int row, int columnSpan, int rowSpan, Action<TC> initializator)
+            where T : TableLayoutPanel
+            where TC : Control, new()
+        {
+            var obj = Activator.CreateInstance<TC>();
+            initializator(obj);
+            return Add<T>(panel, column, row, columnSpan, rowSpan, obj);
+        }
+
         public static T Add<T>(this T panel, int column, int row, Control control) where T : TableLayoutPanel
         {
             panel.Controls.Add(control, column, row);
