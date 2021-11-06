@@ -90,7 +90,7 @@ namespace flowOSD
             atk.KeyPressed
                 .Where(x => x == Atk.Key.BacklightDown || x == Atk.Key.BacklightUp)
                 .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => osd.Show(new Osd.Data(images.GetImage(Images.Keyboard, 144), keyboard.GetBacklight())))
+                .Subscribe(x => osd.Show(new Osd.Data(images.GetImage(Images.Keyboard, GetDpiForWindow(ui.Handle)), keyboard.GetBacklight())))
                 .DisposeWith(disposable);
 
             atk.IsTouchPadEnabled

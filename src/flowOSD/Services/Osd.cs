@@ -71,7 +71,7 @@ namespace flowOSD.Services
                 Value = null;
             }
 
-            public Data(Image image, double value)
+            public Data(Image image, float value)
             {
                 Image = image;
                 Text = null;
@@ -82,7 +82,7 @@ namespace flowOSD.Services
 
             public string Text { get; }
 
-            public double? Value { get; }
+            public float? Value { get; }
 
             public bool IsIndicator => Value != null;
         }
@@ -92,7 +92,7 @@ namespace flowOSD.Services
             private IDisposable hideTimer;
             private Data data;
 
-            private SolidBrush accentBrush;
+            private SolidBrush accentBrush, grayBrush;
 
             public OsdForm()
             {
@@ -101,6 +101,8 @@ namespace flowOSD.Services
                 ShowInTaskbar = false;
 
                 Font = new Font("Segoe UI Light", 20, FontStyle.Bold);
+
+                grayBrush = new SolidBrush(Color.FromArgb(106, 106, 106));
             }
 
             public void Show(Data data)
@@ -112,7 +114,7 @@ namespace flowOSD.Services
 
                 UpdatePositionAndSize();
 
-                Opacity = .95;
+                Opacity = .96;
                 Invalidate();
                 Visible = true;
 
@@ -163,20 +165,18 @@ namespace flowOSD.Services
                     accentBrush = new SolidBrush(GetAccentColor());
                 }
 
-                var scale = GetDpiScale();
-
                 var thumbHeight = DpiScaleValue(11);
 
-                var iRect = new Rectangle(
+                var iRect = new RectangleF(
                     DpiScaleValue(27),
                     DpiScaleValue(20),
                     DpiScaleValue(11),
                     DpiScaleValue(79)
                 );
 
-                var fillHeight = (int)(iRect.Height * data.Value);
+                var fillHeight = iRect.Height * (data.Value ?? 0);
 
-                g.FillRectangle(Brushes.Gray, iRect);
+                g.FillRectangle(grayBrush, iRect);
                 g.FillRectangle(
                     accentBrush,
                     iRect.Left,
@@ -233,6 +233,9 @@ namespace flowOSD.Services
                 accentBrush?.Dispose();
                 accentBrush = null;
 
+                grayBrush?.Dispose();
+                grayBrush = null;
+
                 base.OnClosed(e);
             }
 
@@ -270,7 +273,7 @@ namespace flowOSD.Services
                     return;
                 }
 
-                Location = new Point(DpiScaleValue(50), DpiScaleValue(60));
+                Location = new Point(DpiScaleValue(49.9f), DpiScaleValue(60));
                 if (data.IsIndicator)
                 {
                     Size = new Size(DpiScaleValue(65), DpiScaleValue(140));
@@ -288,14 +291,14 @@ namespace flowOSD.Services
                 }
             }
 
-            private double GetDpiScale()
+            private float GetDpiScale()
             {
-                return GetDpiForWindow(Handle) / 96d;
+                return GetDpiForWindow(Handle) / 96f;
             }
 
-            private int DpiScaleValue(int value)
+            private int DpiScaleValue(float value)
             {
-                return (int)Math.Ceiling(value * GetDpiScale());
+                return (int)Math.Round(value * GetDpiScale(), 0, MidpointRounding.AwayFromZero);
             }
         }
 

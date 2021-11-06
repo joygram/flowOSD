@@ -59,14 +59,14 @@ namespace flowOSD.Services
             });
         }
 
-        public double GetBacklight()
+        public float GetBacklight()
         {
             using (var key = Registry.LocalMachine.OpenSubKey(BACKLIGHT_KEY, false))
             {
                 var value = default(int);
                 if (key != null && int.TryParse(key.GetValue(BACKLIGHT_VALUE)?.ToString(), out value))
                 {
-                    return (value == 1 ? -1 : value - 128) / 3.0;
+                    return (value == 1 ? -1 : value - 128) / 3f;
                 }
                 else
                 {
