@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net5.0-windows</TargetFramework>
+		<TargetFramework>net6.0-windows</TargetFramework>
 		<UseWindowsForms>true</UseWindowsForms>
 		<Copyright>© 2021, Albert Akhmetov</Copyright>
 		<Authors>Albert Akhmetov</Authors>
 		<Product>flowOSD</Product>
-		<Version>0.4.1-experimental</Version>
+		<Version>0.5.2-experimental</Version>
 		<Platforms>x64</Platforms>
 		<PackageIcon></PackageIcon>
     	<PackageIconUrl />
@@ -17,6 +17,13 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
 		<PlatformTarget>x64</PlatformTarget>
+		<Optimize>False</Optimize>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+		<PlatformTarget>x64</PlatformTarget>
+		<Optimize>True</Optimize>
+	    <DebugType>none</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -30,5 +37,4 @@
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\*.*" />
 	</ItemGroup>
-
 </Project>

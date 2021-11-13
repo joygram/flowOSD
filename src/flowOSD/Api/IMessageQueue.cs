@@ -16,9 +16,15 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Services
+namespace flowOSD.Api
 {
-    class Config {
+    using System;
+    using System.Windows.Forms;
 
+    public interface IMessageQueue
+    {
+        IDisposable Subscribe(int messageId, Action<int, IntPtr, IntPtr> proc);
+
+        void Push(ref Message message);
     }
 }

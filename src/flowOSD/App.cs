@@ -19,110 +19,104 @@
 namespace flowOSD
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Reactive;
+    using System.Drawing;
+    using System.IO;
     using System.Reactive.Disposables;
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
     using System.Reflection;
-    using System.Text;
     using System.Threading;
-    using System.Threading.Tasks;
     using System.Windows.Forms;
-    using flowOSD.Services;
-    using static flowOSD.Extensions;
+    using flowOSD.Api;
+    using static Extensions;
     using static Native;
+    using flowOSD.UI;
+    using flowOSD.Services;
+    using System.Runtime.InteropServices;
 
-    partial class App : IDisposable
+    public class App : IDisposable
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main()
-        {
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
-            using (var program = new App())
-            {
-                Application.Run();
-            }
-        }
-
-        private const int SM_CONVERTIBLESLATEMODE = 0x2003;
-
         private CompositeDisposable disposable = new CompositeDisposable();
 
-        private Osd osd;
-        private Keyboard keyboard;
-        private PowerManagement powerManagement;
-        private Atk atk;
+        private IMessageQueue messageQueue;
+        private ISystemEvents systemEvents;
+        private IImageSource imageSource;
+        private IPowerManagement powerManagement;
+        private IAtk atk;
+        private ITouchPad touchPad;
+        private IKeyboard keyboard;
+        private IOsd osd;
 
-        private Images images;
-        private BehaviorSubject<bool> isTabletModeSubject;
-        private BehaviorSubject<bool> themeSubject;
-        private Subject<int> dpiChangedSubject;
+        private AboutUI aboutUI;
 
-        private App()
+        private ToolStripMenuItem touchPadMenuItem, boostMenuItem, aboutMenuItem;
+        private NotifyIcon notifyIcon;
+        private NativeUI nativeUI;
+
+        public App()
         {
-            themeSubject = new System.Reactive.Subjects.BehaviorSubject<bool>(ShouldSystemUseDarkMode());
-            isTabletModeSubject = new BehaviorSubject<bool>(GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
-            dpiChangedSubject = new Subject<int>();
+            ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
-            osd = new Osd().DisposeWith(disposable);
+            aboutUI = new AboutUI().DisposeWith(disposable);
+            Init();
+
+            messageQueue = new MessageQueue().DisposeWith(disposable);
+            imageSource = new ImageSource().DisposeWith(disposable);
             keyboard = new Keyboard();
             powerManagement = new PowerManagement().DisposeWith(disposable);
-            atk = new Atk().AsMessageFilter();
 
-            images = new Images().DisposeWith(disposable);
+            systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);
+            atk = new Atk(messageQueue).DisposeWith(disposable);
+            touchPad = new TouchPad(keyboard, messageQueue).DisposeWith(disposable);
+            osd = new Osd(systemEvents, imageSource).DisposeWith(disposable);
 
-            InitUI();
+            nativeUI = new NativeUI(notifyIcon.ContextMenuStrip.Handle, messageQueue).DisposeWith(disposable);
 
-            powerManagement.IsBoostEnabled
+            powerManagement.IsBoost
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(x => boostMenuItem.Text = x ? "Disable Boost" : "Enable Boost")
                 .DisposeWith(disposable);
 
-            atk.KeyPressed
-                .Where(x => x == Atk.Key.BacklightDown || x == Atk.Key.BacklightUp)
-                .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => osd.Show(new Osd.Data(images.GetImage(Images.Keyboard, GetDpiForWindow(ui.Handle)), keyboard.GetBacklight())))
-                .DisposeWith(disposable);
-
-            atk.IsTouchPadEnabled
+            touchPad.IsEnabled
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(x => touchPadMenuItem.Text = x ? "Disable TouchPad" : "Enable TouchPad")
                 .DisposeWith(disposable);
 
             atk.KeyPressed
-                .Where(x => x == Atk.Key.TouchPad)
-                .CombineLatest(atk.IsTouchPadEnabled, (_, isEnabled) => isEnabled)
+                .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
                 .Throttle(TimeSpan.FromMilliseconds(50))
                 .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => osd.Show(new Osd.Data(images.GetImage(Images.Keyboard, 144), x ? "TouchPad on" : "TouchPad off")))
+                .Subscribe(x => osd.Show(new OsdData(Images.Keyboard, keyboard.GetBacklight())))
                 .DisposeWith(disposable);
 
-            isTabletModeSubject
-                .CombineLatest(themeSubject, (isTabletMode, isDarkMode) => new { isTabletMode, isDarkMode })
+            atk.KeyPressed
+                .Where(x => x == AtkKey.TouchPad)
+                .CombineLatest(touchPad.IsEnabled, (_, isEnabled) => isEnabled)
                 .Throttle(TimeSpan.FromMilliseconds(50))
                 .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode))
+                .Subscribe(x => osd.Show(new OsdData(Images.Keyboard, x ? "TouchPad on" : "TouchPad off")))
                 .DisposeWith(disposable);
 
-            isTabletModeSubject
-                .Throttle(TimeSpan.FromMilliseconds(50))
+            systemEvents.TabletMode
+                .CombineLatest(systemEvents.SystemDarkMode, nativeUI.Dpi, (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
+                .Throttle(TimeSpan.FromSeconds(2))
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
+                .DisposeWith(disposable);
+
+            systemEvents.TabletMode
+                .Throttle(TimeSpan.FromSeconds(2))
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(x => UpdateTouchPadState(x))
                 .DisposeWith(disposable);
 
-            dpiChangedSubject
-                .Throttle(TimeSpan.FromMilliseconds(1000))
-                .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => UpdateDpi(x))
+            systemEvents.AppException
+                .Subscribe(ex => TraceException(ex, "Unhandled application exception."))
+                .DisposeWith(disposable);
+
+            nativeUI.Dpi
+                .Subscribe(dpi => UpdateDpi(dpi))
                 .DisposeWith(disposable);
         }
 
@@ -132,49 +126,75 @@ namespace flowOSD
             disposable = null;
         }
 
-        private void ShowAbout()
+        public ApplicationContext ApplicationContext { get; }
+
+        private void Init()
         {
-AppAbout.Show();
+            notifyIcon = Create<NotifyIcon>().DisposeWith(disposable);
+            notifyIcon.Click += (sender, e) =>
+            {
+                var methodInfo = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
+                methodInfo.Invoke(notifyIcon, null);
+            };
+
+            notifyIcon.Text = aboutUI.AppTitle;
+
+            notifyIcon.ContextMenuStrip = Create<ContextMenuStrip>(x => x.RenderMode = ToolStripRenderMode.System).Add(
+                Create<ToolStripMenuItem>(x =>
+                    {
+                        x.Padding = new Padding(0, 2, 0, 2);
+                        x.Margin = new Padding(0, 8, 0, 8);
+                        x.Click += (sender, e) => ToggleTouchPad();
+                    }).DisposeWith(disposable).LinkAs(ref touchPadMenuItem),
+                Create<ToolStripMenuItem>(x =>
+                    {
+                        x.Padding = new Padding(0, 2, 0, 2);
+                        x.Margin = new Padding(0, 8, 0, 8);
+                        x.Click += (sender, e) => ToggleBoost();
+                    }).DisposeWith(disposable).LinkAs(ref boostMenuItem),
+                Create<ToolStripSeparator>().DisposeWith(disposable),
+                Create<ToolStripMenuItem>(x =>
+                    {
+                        x.Text = "About";
+                        x.Padding = new Padding(0, 2, 0, 2);
+                        x.Margin = new Padding(0, 8, 0, 8);
+                        x.Click += (sender, e) => ShowAbout();
+                    }).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
+                Create<ToolStripSeparator>().DisposeWith(disposable),
+                Create<ToolStripMenuItem>(x =>
+                    {
+                        x.Text = "Exit";
+                        x.Padding = new Padding(0, 2, 0, 2);
+                        x.Margin = new Padding(0, 8, 0, 8);
+                        x.Click += (sender, e) => Application.Exit();
+                    }).DisposeWith(disposable)
+                );
+
+            notifyIcon.Visible = true;
         }
 
-        private void UpdateTouchPadState(bool isTabletMode)
+        private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode, int dpi)
         {
-            if (isTabletMode)
+            notifyIcon.Icon = null;
+
+            if (isDarkMode)
             {
-                DisableTouchPad();
+                notifyIcon.Icon = isTabletMode
+                    ? imageSource.GetIcon(Images.TabletWhite, dpi)
+                    : imageSource.GetIcon(Images.NotebookWhite, dpi);
             }
             else
             {
-                EnableTouchPad();
+                notifyIcon.Icon = isTabletMode
+                    ? imageSource.GetIcon(Images.Tablet, dpi)
+                    : imageSource.GetIcon(Images.Notebook, dpi);
             }
         }
 
-        private async void EnableTouchPad()
+        private void UpdateDpi(int dpi)
         {
-            if (!await atk.IsTouchPadEnabled.FirstAsync())
-            {
-                ToggleTouchPad();
-            }
-        }
-
-        private async void DisableTouchPad()
-        {
-            if (await atk.IsTouchPadEnabled.FirstAsync())
-            {
-                ToggleTouchPad();
-            }
-        }
-
-        private void ToggleTouchPad()
-        {
-            try
-            {
-                keyboard.SendKeys(Keys.F24, Keys.ControlKey, Keys.LWin);
-            }
-            catch (Exception ex)
-            {
-                // Program.LogException(ex);
-            }
+            notifyIcon.ContextMenuStrip.Font?.Dispose();
+            notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI", 12 * (dpi / 96f), GraphicsUnit.Pixel);
         }
 
         private void ToggleBoost()
@@ -185,7 +205,48 @@ AppAbout.Show();
             }
             catch (Exception ex)
             {
-                // Program.LogException(ex);
+                TraceException(ex, "Error is occurred while toggling CPU boost mode (UI).");
+            }
+        }
+
+        private void ToggleTouchPad()
+        {
+            try
+            {
+                touchPad.Toggle();
+            }
+            catch (Exception ex)
+            {
+                TraceException(ex, "Error is occurred while toggling TouchPad state (UI).");
+            }
+        }
+
+        private void ShowAbout()
+        {
+            aboutUI.Show();
+        }
+
+        private void Exit()
+        {
+            Application.Exit();
+        }
+
+        private void UpdateTouchPadState(bool isTabletMode)
+        {
+            try
+            {
+                if (isTabletMode)
+                {
+                    touchPad.Disable();
+                }
+                else
+                {
+                    touchPad.Enable();
+                }
+            }
+            catch (Exception ex)
+            {
+                TraceException(ex, "Error is occurred while toggling TouchPad state (Auto).");
             }
         }
     }

@@ -24,13 +24,15 @@ namespace flowOSD.Services
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Windows.Forms;
+    using flowOSD.Api;
     using Microsoft.Win32;
     using static Native;
 
-    sealed partial class Keyboard
+    sealed partial class Keyboard : IKeyboard
     {
         private const string BACKLIGHT_KEY = @"SOFTWARE\ASUS\ASUS System Control Interface\AsusOptimization\ASUS Keyboard Hotkeys";
         private const string BACKLIGHT_VALUE = "HidKeybdLightLevel";
+
         private readonly HashSet<Keys> extendedKeys;
 
         public Keyboard()
@@ -59,18 +61,23 @@ namespace flowOSD.Services
             });
         }
 
-        public float GetBacklight()
+        public double GetBacklight()
         {
             using (var key = Registry.LocalMachine.OpenSubKey(BACKLIGHT_KEY, false))
             {
+                if (key == null)
+                {
+                    throw new ApplicationException("Registry Key for ASUS Optimization was not found.");
+                }
+
                 var value = default(int);
                 if (key != null && int.TryParse(key.GetValue(BACKLIGHT_VALUE)?.ToString(), out value))
                 {
-                    return (value == 1 ? -1 : value - 128) / 3f;
+                    return (value == 1 ? -1 : value - 128) / 3.0;
                 }
                 else
                 {
-                    throw new ApplicationException();
+                    throw new ApplicationException("Can't read the keyboard backlight value from Registry.");
                 }
             }
         }

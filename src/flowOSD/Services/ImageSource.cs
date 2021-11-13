@@ -16,28 +16,24 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD
+namespace flowOSD.Services
 {
     using System;
     using System.Collections.Generic;
     using System.Drawing;
     using System.IO;
     using System.Reactive.Disposables;
+    using flowOSD.Api;
     using static Native;
 
-    sealed class Images : IDisposable
+    sealed class ImageSource : IImageSource, IDisposable
     {
-        public const string Tablet = "tablet";
-        public const string TabletWhite = "tablet-white";
-        public const string Notebook = "notebook";
-        public const string NotebookWhite = "notebook-white";
-        public const string Keyboard = "keyboard";
-
         private CompositeDisposable disposable = new CompositeDisposable();
+
         private Dictionary<string, Image> images;
         private Dictionary<string, Icon> icons;
 
-        public Images()
+        public ImageSource()
         {
             images = new Dictionary<string, Image>();
             icons = new Dictionary<string, Icon>();
@@ -55,8 +51,14 @@ namespace flowOSD
             {
                 var assembly = typeof(Images).Assembly;
 
-                using (Stream stream = assembly.GetManifestResourceStream($"flowOSD.Resources.{key}.png"))
+                var resourceName = $"flowOSD.Resources.{key}.png";
+                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
                 {
+                    if (stream == null)
+                    {
+                        throw new ApplicationException($"Image was not found: {resourceName}.");
+                    }
+
                     images[key] = Image.FromStream(stream).DisposeWith(disposable);
                 }
             }
@@ -71,8 +73,14 @@ namespace flowOSD
             {
                 var assembly = typeof(Images).Assembly;
 
-                using (Stream stream = assembly.GetManifestResourceStream($"flowOSD.Resources.{name}.ico"))
+                var resourceName = $"flowOSD.Resources.{name}.ico";
+                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
                 {
+                    if (stream == null)
+                    {
+                        throw new ApplicationException($"Icon was not found: {resourceName}.");
+                    }
+
                     if (dpi == null)
                     {
                         icons[key] = new Icon(stream).DisposeWith(disposable);
@@ -90,21 +98,9 @@ namespace flowOSD
 
         private static int GetIconWidth(int dpi)
         {
-            switch (dpi)
-            {
-                case 96:
-                    return 16;
-                case 120:
-                    return 20;
-                case 144:
-                    return 24;
-                case 168:
-                    return 28;
-                case 192:
-                    return 32;
-                default:
-                    return 64;
-            }
+            return dpi <= 192
+                ? 16 * (dpi * 100 / 96) / 100
+                : 64;
         }
     }
 }

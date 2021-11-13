@@ -106,34 +106,6 @@ namespace flowOSD.Services
             uint dwEventThread,
             uint dwmsEventTime);
 
-        [DllImport("uxtheme.dll", EntryPoint = "#95")]
-        private static extern uint GetImmersiveColorFromColorSetEx(
-            uint dwImmersiveColorSet,
-            uint dwImmersiveColorType,
-            bool bIgnoreHighContrast,
-            uint dwHighContrastCacheMode);
 
-        [DllImport("uxtheme.dll", EntryPoint = "#96")]
-        private static extern uint GetImmersiveColorTypeFromName(IntPtr pName);
-
-        [DllImport("uxtheme.dll", EntryPoint = "#98")]
-        private static extern uint GetImmersiveUserColorSetPreference(
-            bool bForceCheckRegistry,
-            bool bSkipCheckOnFail);
-
-        public static Color GetAccentColor()
-        {
-            var colorSetEx = GetImmersiveColorFromColorSetEx(
-              GetImmersiveUserColorSetPreference(false, false),
-              GetImmersiveColorTypeFromName(Marshal.StringToHGlobalUni("ImmersiveStartSelectionBackground")),
-              false, 0);
-
-            //            var a = 0xFFFFFF & colorSetEx >> 24;
-
-            return Color.FromArgb(
-                (byte)(0xFFFFFF & colorSetEx),
-                (byte)((0xFFFFFF & colorSetEx) >> 8),
-                (byte)((0xFFFFFF & colorSetEx) >> 16));
-        }
     }
 }

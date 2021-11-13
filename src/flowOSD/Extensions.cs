@@ -19,6 +19,7 @@
 namespace flowOSD
 {
     using System;
+    using System.Diagnostics;
     using System.Reactive.Disposables;
     using System.Windows.Forms;
 
@@ -53,11 +54,13 @@ namespace flowOSD
             return obj;
         }
 
-        public static T AsMessageFilter<T>(this T messageFilter) where T : IMessageFilter
+        public static void TraceException(Exception ex, string message)
         {
-            Application.AddMessageFilter(messageFilter);
-
-            return messageFilter;
+            Trace.WriteLine($"{DateTime.Now} EXCEPTION: {message}");
+            Trace.Indent();
+            Trace.WriteLine(ex);
+            Trace.Unindent();
+            Trace.Flush();
         }
 
         public static T Add<T>(this T control, params Control[] controls) where T : Control

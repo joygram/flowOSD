@@ -29,17 +29,18 @@ namespace flowOSD.Services
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Windows.Forms;
+    using flowOSD.Api;
     using static Native;
 
-    sealed partial class Osd : IDisposable
+    sealed partial class Osd : IOsd, IDisposable
     {
         private CompositeDisposable disposable = new CompositeDisposable();
         private OsdForm form;
         private SystemOsd systemOsd;
 
-        public Osd()
+        public Osd(ISystemEvents systemEvents, IImageSource imageSource)
         {
-            form = new OsdForm().DisposeWith(disposable);
+            form = new OsdForm(systemEvents, imageSource).DisposeWith(disposable);
 
             systemOsd = new SystemOsd().DisposeWith(disposable);
             systemOsd.IsVisible
@@ -55,57 +56,41 @@ namespace flowOSD.Services
             disposable = null;
         }
 
-        public void Show(Data data)
+        public void Show(OsdData data)
         {
             systemOsd.Hide();
 
             form.Show(data);
         }
 
-        public sealed class Data
-        {
-            public Data(Image image, string text)
-            {
-                Image = image;
-                Text = text;
-                Value = null;
-            }
-
-            public Data(Image image, float value)
-            {
-                Image = image;
-                Text = null;
-                Value = value;
-            }
-
-            public Image Image { get; }
-
-            public string Text { get; }
-
-            public float? Value { get; }
-
-            public bool IsIndicator => Value != null;
-        }
-
         private sealed class OsdForm : Form
         {
+            private CompositeDisposable disposable = new CompositeDisposable();
             private IDisposable hideTimer;
-            private Data data;
+            private OsdData data;
+
+            private IImageSource imageSource;
 
             private SolidBrush accentBrush, grayBrush;
 
-            public OsdForm()
+            public OsdForm(ISystemEvents systemEvents, IImageSource imageSource)
             {
+                this.imageSource = imageSource;
+
                 FormBorderStyle = FormBorderStyle.None;
                 BackColor = Color.FromArgb(18, 18, 18);
                 ShowInTaskbar = false;
 
                 Font = new Font("Segoe UI Light", 20, FontStyle.Bold);
 
-                grayBrush = new SolidBrush(Color.FromArgb(106, 106, 106));
+                grayBrush = new SolidBrush(Color.FromArgb(106, 106, 106)).DisposeWith(disposable);
+
+                systemEvents.AccentColor
+                    .Subscribe(color => InvalidateAccentColor(color))
+                    .DisposeWith(disposable);
             }
 
-            public void Show(Data data)
+            public void Show(OsdData data)
             {
                 this.data = data;
 
@@ -160,11 +145,6 @@ namespace flowOSD.Services
 
             private void DrawIndicator(Graphics g)
             {
-                if (accentBrush == null)
-                {
-                    accentBrush = new SolidBrush(GetAccentColor());
-                }
-
                 var thumbHeight = DpiScaleValue(11);
 
                 var iRect = new RectangleF(
@@ -174,7 +154,7 @@ namespace flowOSD.Services
                     DpiScaleValue(79)
                 );
 
-                var fillHeight = iRect.Height * (data.Value ?? 0);
+                var fillHeight = iRect.Height * (float)(data.Value ?? 0);
 
                 g.FillRectangle(grayBrush, iRect);
                 g.FillRectangle(
@@ -191,12 +171,15 @@ namespace flowOSD.Services
                     iRect.Width,
                     thumbHeight
                 );
+
+                var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle));
+
                 g.DrawImage(
-                    data.Image,
-                    (Width - data.Image.Width) / 2,
-                    Height - data.Image.Height - DpiScaleValue(16),
-                    data.Image.Width,
-                    data.Image.Height);
+                    image,
+                    (Width - image.Width) / 2,
+                    Height - image.Height - DpiScaleValue(16),
+                    image.Width,
+                    image.Height);
             }
 
             protected override void OnVisibleChanged(EventArgs e)
@@ -233,36 +216,30 @@ namespace flowOSD.Services
                 accentBrush?.Dispose();
                 accentBrush = null;
 
-                grayBrush?.Dispose();
-                grayBrush = null;
+                disposable?.Dispose();
+                disposable = null;
 
                 base.OnClosed(e);
             }
 
-            protected override void WndProc(ref System.Windows.Forms.Message message)
+            protected override void OnDpiChanged(DpiChangedEventArgs e)
             {
-                const int WM_DPICHANGED = 0x02E0;
-                const int WM_WININICHANGE = 0x001A;
+                UpdatePositionAndSize();
 
-                if (message.Msg == WM_DPICHANGED)
-                {
-                    UpdatePositionAndSize();
-                }
-
-                if (message.Msg == WM_WININICHANGE && Marshal.PtrToStringUni(message.LParam) == "ImmersiveColorSet")
-                {
-                    InvalidateAccentColor();
-                }
-
-                base.WndProc(ref message);
+                base.OnDpiChanged(e);
             }
 
-            private void InvalidateAccentColor()
+            private void InvalidateAccentColor(Color accentColor)
             {
-                if (accentBrush != null && accentBrush.Color != GetAccentColor())
+                if (accentBrush != null && accentBrush.Color != accentColor)
                 {
-                    accentBrush?.Dispose();
+                    accentBrush.Dispose();
                     accentBrush = null;
+                }
+
+                if (accentBrush == null)
+                {
+                    accentBrush = new SolidBrush(accentColor);
                 }
             }
 
@@ -291,14 +268,9 @@ namespace flowOSD.Services
                 }
             }
 
-            private float GetDpiScale()
-            {
-                return GetDpiForWindow(Handle) / 96f;
-            }
-
             private int DpiScaleValue(float value)
             {
-                return (int)Math.Round(value * GetDpiScale(), 0, MidpointRounding.AwayFromZero);
+                return (int)Math.Round(value * GetDpiForWindow(Handle) / 96.0, 0, MidpointRounding.AwayFromZero);
             }
         }
 

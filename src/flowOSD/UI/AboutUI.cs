@@ -16,53 +16,70 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD
+namespace flowOSD.UI
 {
     using System;
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Drawing;
     using System.Reactive.Disposables;
+    using System.Reactive.Linq;
     using System.Reflection;
+    using System.Runtime.Versioning;
     using System.Text;
+    using System.Threading;
     using System.Windows.Forms;
+    using flowOSD.Api;
     using static Extensions;
     using static Native;
 
-    static class AppAbout
+    public class AboutUI : IDisposable
     {
-        public static void Show()
+        private CompositeDisposable disposable = new CompositeDisposable();
+
+        private FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(typeof(AboutUI).Assembly.Location);
+        private Window instance;
+
+        void IDisposable.Dispose()
         {
-            if (instance.Visible)
+            disposable?.Dispose();
+            disposable = null;
+        }
+
+        public void Show()
+        {
+            if (instance != null)
             {
                 instance.Activate();
             }
             else
             {
-                instance.Visible = true;
+                instance = new Window(this).DisposeWith(disposable);
+                instance.Show();
             }
         }
 
-        public static string Title => $"{fileVersionInfo.ProductName} ({fileVersionInfo.ProductVersion})";
-
-        private readonly static FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(Assembly.GetCallingAssembly().Location);
-        private readonly static Window instance = new Window();
+        public string AppTitle => $"{fileVersionInfo.ProductName} ({fileVersionInfo.ProductVersion})";
 
         private sealed class Window : Form
         {
             private CompositeDisposable disposable = new CompositeDisposable();
+            private AboutUI owner;
 
-            public Window()
+            public Window(AboutUI owner)
             {
+                this.owner = owner;
+
                 this.Text = "About";
                 this.MaximizeBox = false;
                 this.MinimizeBox = false;
                 this.ShowIcon = false;
                 this.ShowInTaskbar = false;
                 this.FormBorderStyle = FormBorderStyle.FixedSingle;
-                this.AutoScaleMode = AutoScaleMode.Dpi;
+                // this.AutoScaleMode = AutoScaleMode.Dpi;
 
-                UpdateMinSize(GetDpiForWindow(Handle));
+                var scale = GetDpiForWindow(Handle) / 96f;
+                this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
 
                 this.Add(Create<TableLayoutPanel>(x =>
                 {
@@ -85,7 +102,7 @@ namespace flowOSD
                     }).DisposeWith(disposable)
                     .Add<TableLayoutPanel, Label>(1, 0, x =>
                     {
-                        x.Text = $"{fileVersionInfo.ProductName}";
+                        x.Text = $"{owner.fileVersionInfo.ProductName}";
                         x.Font = new Font(Font.FontFamily, 20);
                         x.AutoSize = true;
                         x.Margin = new Padding(0, 3, 0, 3);
@@ -93,10 +110,12 @@ namespace flowOSD
                     .Add<TableLayoutPanel, Label>(1, 1, x =>
                     {
                         var sb = new StringBuilder();
-                        sb.AppendLine($"Version: {fileVersionInfo.ProductVersion}");
-                        sb.AppendLine($"{fileVersionInfo.LegalCopyright}");
+                        sb.AppendLine($"Version: {owner.fileVersionInfo.ProductVersion}");
+                        sb.AppendLine($"{owner.fileVersionInfo.LegalCopyright}");
                         sb.AppendLine();
-                        sb.Append($"{fileVersionInfo.Comments}");
+                        sb.AppendLine($"{owner.fileVersionInfo.Comments}");
+                        sb.AppendLine();
+                        sb.AppendLine($"Runtime: {Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName}");
 
                         x.Text = sb.ToString();
                         x.AutoSize = true;
@@ -114,23 +133,30 @@ namespace flowOSD
                 );
             }
 
-            private void UpdateMinSize(int dpi)
+            private void UpdateSize(int dpi)
             {
-                var x = dpi / 96f;
-                this.MinimumSize = new Size((int)(450 * x), (int)(400 * x));
+                var scale = dpi / 96f;
+                this.Size = new Size((int)(400 * scale), (int)(300 * scale));
+            }
+
+            protected override void OnShown(EventArgs e)
+            {
+                UpdateSize(GetDpiForWindow(Handle));
+
+                base.OnShown(e);
             }
 
             protected override void OnDpiChanged(DpiChangedEventArgs e)
             {
-                UpdateMinSize(e.DeviceDpiNew);
+                UpdateSize(e.DeviceDpiNew);
 
                 base.OnDpiChanged(e);
             }
 
             protected override void OnClosing(CancelEventArgs e)
             {
-                e.Cancel = true;
-                Hide();
+                owner.disposable.Remove(owner.instance);
+                owner.instance = null;
 
                 base.OnClosing(e);
             }

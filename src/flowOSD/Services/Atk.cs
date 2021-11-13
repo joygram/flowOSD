@@ -26,16 +26,13 @@ namespace flowOSD.Services
     using System.Reactive.Subjects;
     using System.Runtime.InteropServices;
     using System.Windows.Forms;
+    using flowOSD.Api;
     using Microsoft.Win32;
     using static Native;
 
-    class Atk : IMessageFilter, IDisposable
+    class Atk : IAtk, IDisposable
     {
-        private static UInt32 WM_ACPI = RegisterWindowMessage("ACPI Notification through ATKHotkey from BIOS");
-        private static UInt32 WM_TOUCHPAD = RegisterWindowMessage("Touchpad status reported from ATKHotkey");
-
-        private const string TOUCHPAD_STATE_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad\Status";
-        private const string TOUCHPAD_STATE_VALUE = "Enabled";
+        public readonly static int WM_ACPI = (int)RegisterWindowMessage("ACPI Notification through ATKHotkey from BIOS");
 
         private const int AK_BACKLIGHT_DOWN = 0xC5;
         private const int AK_BACKLIGHT_UP = 0xC4;
@@ -46,36 +43,27 @@ namespace flowOSD.Services
         private const int AK_MUTE_MIC = 0x7C;
         private const int AK_TABLET_STATE = 0xBD;
 
-        private readonly Dictionary<int, Key> codeToKey;
-        private readonly Subject<Key> keyPressedSubject;
-        private readonly Subject<int> codeSubject;
-        private readonly BehaviorSubject<bool> isTouchPadEnabledSubject;
-        private readonly BehaviorSubject<bool> isTabletModeSubject;
+        private readonly Dictionary<int, AtkKey> codeToKey;
+        private readonly Subject<AtkKey> keyPressedSubject;
 
         private CompositeDisposable disposable = new CompositeDisposable();
 
-        public Atk()
+        public Atk(IMessageQueue messageQueue)
         {
-            codeToKey = new Dictionary<int, Key>();
-            codeToKey[AK_BACKLIGHT_DOWN] = Key.BacklightDown;
-            codeToKey[AK_BACKLIGHT_UP] = Key.BacklightUp;
-            codeToKey[AK_AURA] = Key.Aura;
-            codeToKey[AK_FAN] = Key.Fan;
-            codeToKey[AK_TOUCHPAD] = Key.TouchPad;
-            codeToKey[AK_ROG] = Key.Rog;
-            codeToKey[AK_MUTE_MIC] = Key.MuteMic;
+            codeToKey = new Dictionary<int, AtkKey>();
+            codeToKey[AK_BACKLIGHT_DOWN] = AtkKey.BacklightDown;
+            codeToKey[AK_BACKLIGHT_UP] = AtkKey.BacklightUp;
+            codeToKey[AK_AURA] = AtkKey.Aura;
+            codeToKey[AK_FAN] = AtkKey.Fan;
+            codeToKey[AK_TOUCHPAD] = AtkKey.TouchPad;
+            codeToKey[AK_ROG] = AtkKey.Rog;
+            codeToKey[AK_MUTE_MIC] = AtkKey.MuteMic;
 
-            keyPressedSubject = new Subject<Key>();
-            codeSubject = new Subject<int>();
-
-            using (var key = Registry.CurrentUser.OpenSubKey(TOUCHPAD_STATE_KEY, false))
-            {
-                var isEnabled = key.GetValue(TOUCHPAD_STATE_VALUE)?.ToString() == "1";
-                isTouchPadEnabledSubject = new BehaviorSubject<bool>(isEnabled);
-            }
+            keyPressedSubject = new Subject<AtkKey>();
 
             KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
-            IsTouchPadEnabled = isTouchPadEnabledSubject.DistinctUntilChanged().AsObservable();
+
+            messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
         }
 
         void IDisposable.Dispose()
@@ -84,56 +72,22 @@ namespace flowOSD.Services
             disposable = null;
         }
 
-        bool IMessageFilter.PreFilterMessage(ref Message m)
-        {         
-            if (m.Msg == WM_ACPI)
+        private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
+        {
+            if (messageId == WM_ACPI)
             {
-                var code = (int)m.WParam;
-                codeSubject.OnNext(code);
+                var code = (int)wParam;
 
                 if (codeToKey.ContainsKey(code))
                 {
                     keyPressedSubject.OnNext(codeToKey[code]);
                 }
-
-                return true;
-            }
-            else if (m.Msg == WM_TOUCHPAD)
-            {
-                isTouchPadEnabledSubject.OnNext((int)m.LParam == 1);
-
-                return true;
-            }
-            else
-            {
-                return false;
             }
         }
 
-        public IObservable<Key> KeyPressed
+        public IObservable<AtkKey> KeyPressed
         {
             get;
-        }
-
-        public IObservable<bool> IsTabletMode
-        {
-            get;
-        }
-
-        public IObservable<bool> IsTouchPadEnabled
-        {
-            get;
-        }
-
-        public enum Key
-        {
-            BacklightDown,
-            BacklightUp,
-            Aura,
-            Fan,
-            Rog,
-            TouchPad,
-            MuteMic,
         }
     }
 }

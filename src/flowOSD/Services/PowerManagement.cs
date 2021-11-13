@@ -24,9 +24,10 @@ namespace flowOSD.Services
     using System.Reactive.Linq;
     using System.Reactive.Subjects;
     using System.Runtime.InteropServices;
+    using flowOSD.Api;
     using static Native;
 
-    sealed partial class PowerManagement : IDisposable
+    sealed partial class PowerManagement : IPowerManagement, IDisposable
     {
         private static Guid GUID_ACDC_POWER_SOURCE = new Guid("5D3E9A59-E9D5-4B00-A6BD-FF34FF516548");
 
@@ -35,7 +36,7 @@ namespace flowOSD.Services
 
         private CompositeDisposable disposable = new CompositeDisposable();
 
-        private BehaviorSubject<bool> isBoostEnabledSubject;
+        private BehaviorSubject<bool> isBoostSubject;
         private BehaviorSubject<bool> isACSubject;
 
         private Guid activeScheme;
@@ -46,16 +47,16 @@ namespace flowOSD.Services
 
             if (!GetSystemPowerStatus(out SYSTEM_POWER_STATUS status))
             {
-                throw new Win32Exception();
+                throw new Win32Exception((int)GetLastError());
             }
 
             var isAC = status.ACLineStatus == 1;
             isACSubject = new BehaviorSubject<bool>(isAC);
 
             var isBoostEnabled = ReadValueIndex(ref PROCESSOR_SUBGROUP, ref BOOST_SETTING) != 0;
-            isBoostEnabledSubject = new BehaviorSubject<bool>(isBoostEnabled);
+            isBoostSubject = new BehaviorSubject<bool>(isBoostEnabled);
 
-            IsBoostEnabled = isBoostEnabledSubject.AsObservable();
+            IsBoost = isBoostSubject.AsObservable();
             IsAC = isACSubject.AsObservable();
 
             new PowerSettingSubscription(BOOST_SETTING, HandlerCallback).DisposeWith(disposable);
@@ -68,13 +69,13 @@ namespace flowOSD.Services
             disposable = null;
         }
 
-        public IObservable<bool> IsBoostEnabled { get; }
+        public IObservable<bool> IsBoost { get; }
 
         public IObservable<bool> IsAC { get; }
 
         public void ToggleBoost()
         {
-            if (isBoostEnabledSubject.Value)
+            if (isBoostSubject.Value)
             {
                 DisableBoost();
             }
@@ -86,25 +87,23 @@ namespace flowOSD.Services
 
         public void EnableBoost()
         {
-            if (isBoostEnabledSubject.Value)
+            if (isBoostSubject.Value)
             {
                 return;
             }
 
             WriteValueIndex(ref PROCESSOR_SUBGROUP, ref BOOST_SETTING, 2);
-
             PowerSetActiveScheme(IntPtr.Zero, ref activeScheme);
         }
 
         public void DisableBoost()
         {
-            if (!isBoostEnabledSubject.Value)
+            if (!isBoostSubject.Value)
             {
                 return;
             }
 
             WriteValueIndex(ref PROCESSOR_SUBGROUP, ref BOOST_SETTING, 0);
-
             PowerSetActiveScheme(IntPtr.Zero, ref activeScheme);
         }
 
@@ -165,7 +164,7 @@ namespace flowOSD.Services
             {
                 if (pbs.PowerSetting == BOOST_SETTING)
                 {
-                    isBoostEnabledSubject.OnNext(pbs.Data != 0);
+                    isBoostSubject.OnNext(pbs.Data != 0);
                 }
 
                 if (pbs.PowerSetting == GUID_ACDC_POWER_SOURCE)
