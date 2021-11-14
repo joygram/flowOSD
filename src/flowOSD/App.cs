@@ -99,8 +99,8 @@ namespace flowOSD
                 .DisposeWith(disposable);
 
             systemEvents.TabletMode
-                .CombineLatest(systemEvents.SystemDarkMode, nativeUI.Dpi, (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
-                .Throttle(TimeSpan.FromSeconds(2))
+                .CombineLatest(systemEvents.SystemDarkMode, nativeUI.Dpi.Throttle(TimeSpan.FromSeconds(2)), (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
+                .Throttle(TimeSpan.FromMilliseconds(100))
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
                 .DisposeWith(disposable);
