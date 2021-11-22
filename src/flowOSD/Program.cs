@@ -16,50 +16,51 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD
+namespace flowOSD;
+
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
+using System.Windows.Forms;
+using flowOSD.Api;
+using flowOSD.Services;
+using flowOSD.UI;
+using static Extensions;
+
+public static class Program
 {
-    using System;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Threading;
-    using System.Windows.Forms;
-    using flowOSD.Api;
-    using flowOSD.Services;
-    using flowOSD.UI;
-    using static Extensions;
-
-    public static class Program
+    [STAThread]
+    static void Main()
     {
-        [STAThread]
-        static void Main()
+#if !DEBUG
+        var logFileName = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "log.txt");
+        var listener = new TextWriterTraceListener(logFileName);
+        Trace.Listeners.Add(listener);
+#endif
+        try
         {
-            var logFileName = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "log.txt");
-            var fileListener = new TextWriterTraceListener(logFileName);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
 
-            try
+            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+
+            using (var app = new App())
             {
-                Trace.Listeners.Add(fileListener);
-
-                Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
-
-                SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-
-                using (var app = new App())
-                {
-                    Application.Run(app.ApplicationContext);
-                }
-            }
-            catch (Exception ex)
-            {
-                TraceException(ex, "General Failure");
-            }
-            finally
-            {
-                fileListener.Flush();
-                fileListener.Dispose();
+                Application.Run(app.ApplicationContext);
             }
         }
+        catch (Exception ex)
+        {
+            TraceException(ex, "General Failure");
+        }
+#if !DEBUG
+        finally
+        {
+            listener.Flush();
+            listener.Dispose();
+        }
+#endif
     }
 }
