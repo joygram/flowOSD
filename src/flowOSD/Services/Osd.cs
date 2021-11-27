@@ -80,6 +80,7 @@ namespace flowOSD.Services
                 FormBorderStyle = FormBorderStyle.None;
                 BackColor = Color.FromArgb(18, 18, 18);
                 ShowInTaskbar = false;
+                DoubleBuffered = true;
 
                 Font = new Font("Segoe UI Light", 20, FontStyle.Bold);
 
