@@ -6,7 +6,7 @@
 		<Copyright>© 2021, Albert Akhmetov</Copyright>
 		<Authors>Albert Akhmetov</Authors>
 		<Product>flowOSD</Product>
-		<Version>0.5.4-experimental</Version>
+		<Version>0.6.1-experimental</Version>
 		<Platforms>x64</Platforms>
 		<PackageIcon></PackageIcon>
     	<PackageIconUrl />
@@ -18,6 +18,7 @@
 	<PropertyGroup>
 		<OutputPath>.\bin\$(Configuration)\</OutputPath>
 	  	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<LangVersion>10</LangVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -37,9 +38,6 @@
 
 	<ItemGroup>
 		<None Remove="Resources\*.*" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<EmbeddedResource Include="Resources\*.*" />
 	</ItemGroup>
 </Project>

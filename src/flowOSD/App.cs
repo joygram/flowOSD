@@ -43,6 +43,7 @@ namespace flowOSD
         private ISystemEvents systemEvents;
         private IImageSource imageSource;
         private IPowerManagement powerManagement;
+        private Display display;
         private IAtk atk;
         private ITouchPad touchPad;
         private IKeyboard keyboard;
@@ -50,7 +51,7 @@ namespace flowOSD
 
         private AboutUI aboutUI;
 
-        private ToolStripMenuItem touchPadMenuItem, boostMenuItem, aboutMenuItem;
+        private ToolStripMenuItem highRefreshRateMenuItem, touchPadMenuItem, boostMenuItem, aboutMenuItem;
         private NotifyIcon notifyIcon;
         private NativeUI nativeUI;
 
@@ -70,6 +71,8 @@ namespace flowOSD
             atk = new Atk(messageQueue).DisposeWith(disposable);
             touchPad = new TouchPad(keyboard, messageQueue).DisposeWith(disposable);
             osd = new Osd(systemEvents, imageSource).DisposeWith(disposable);
+
+            display = new Display(messageQueue).DisposeWith(disposable);
 
             nativeUI = new NativeUI(notifyIcon.ContextMenuStrip.Handle, messageQueue).DisposeWith(disposable);
 
@@ -118,6 +121,25 @@ namespace flowOSD
             nativeUI.Dpi
                 .Subscribe(dpi => UpdateDpi(dpi))
                 .DisposeWith(disposable);
+
+            display.IsHighRefreshRateSupported
+                    .Throttle(TimeSpan.FromMilliseconds(200))
+                    .ObserveOn(SynchronizationContext.Current)
+                    .Subscribe(x =>
+                    {
+                        highRefreshRateMenuItem.Visible = x;
+                        if (highRefreshRateMenuItem.Tag is ToolStripItem separator)
+                        {
+                            separator.Visible = x;
+                        }
+                    })
+                    .DisposeWith(disposable);
+
+            display.IsHighRefreshRate
+                    .Throttle(TimeSpan.FromMilliseconds(200))
+                        .ObserveOn(SynchronizationContext.Current)
+                        .Subscribe(x => highRefreshRateMenuItem.Text = x ? "Disable High Refresh Rate" : "Enable High Refresh Rate")
+                        .DisposeWith(disposable);
         }
 
         void IDisposable.Dispose()
@@ -140,6 +162,13 @@ namespace flowOSD
             notifyIcon.Text = aboutUI.AppTitle;
 
             notifyIcon.ContextMenuStrip = Create<ContextMenuStrip>(x => x.RenderMode = ToolStripRenderMode.System).Add(
+                Create<ToolStripMenuItem>(x =>
+                    {
+                        x.Padding = new Padding(0, 2, 0, 2);
+                        x.Margin = new Padding(0, 8, 0, 8);
+                        x.Click += (sender, e) => ToggleRefreshRate();
+                    }).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
+                Create<ToolStripSeparator>(x => highRefreshRateMenuItem.Tag = x).DisposeWith(disposable),
                 Create<ToolStripMenuItem>(x =>
                     {
                         x.Padding = new Padding(0, 2, 0, 2);
@@ -195,6 +224,19 @@ namespace flowOSD
         {
             notifyIcon.ContextMenuStrip.Font?.Dispose();
             notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI", 12 * (dpi / 96f), GraphicsUnit.Pixel);
+        }
+
+        private void ToggleRefreshRate()
+        {
+            try
+            {
+                display.ToggleRefreshRate();
+            }
+            catch (Exception ex)
+            {
+                TraceException(ex, "Error is occurred while toggling display refresh rate (UI).");
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void ToggleBoost()
