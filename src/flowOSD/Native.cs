@@ -16,43 +16,59 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD
+namespace flowOSD;
+
+using System.Runtime.InteropServices;
+
+static class Native
 {
-    using System;
-    using System.Runtime.InteropServices;
+    public const int ERROR_SUCCESS = 0x0;
 
-    static class Native
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern UInt32 RegisterWindowMessage(string lpString);
+
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetLastError();
+
+    [DllImport("uxtheme.dll", EntryPoint = "#132")]
+    public static extern bool ShouldAppsUseDarkMode();
+
+    [DllImport("uxtheme.dll", EntryPoint = "#138")]
+    public static extern bool ShouldSystemUseDarkMode();
+
+    [DllImport("user32.dll")]
+    public static extern int GetDpiForSystem();
+
+    [DllImport("user32.dll")]
+    public static extern int GetDpiForWindow(IntPtr hwnd);
+
+    public static uint HiWord(IntPtr ptr)
     {
-        public const int ERROR_SUCCESS = 0x0;
+        var val = (uint)(int)ptr;
+        if ((val & 0x80000000) == 0x80000000)
+            return (val >> 16);
+        else
+            return (val >> 16) & 0xffff;
+    }
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern UInt32 RegisterWindowMessage(string lpString);
+    public static Point GetCursorPos()
+    {
+        var p = default(POINT);
+        GetCursorPos(out p);
 
-        [DllImport("user32.dll")]
-        public static extern int GetSystemMetrics(int nIndex);
+        return new Point(p.x, p.y);
+    }
 
-        [DllImport("kernel32.dll")]
-        public static extern uint GetLastError();
+    [DllImport("user32.dll", SetLastError = true)]
+    static extern bool GetCursorPos(out POINT lpPoint);
 
-        [DllImport("uxtheme.dll", EntryPoint = "#132")]
-        public static extern bool ShouldAppsUseDarkMode();
-
-        [DllImport("uxtheme.dll", EntryPoint = "#138")]
-        public static extern bool ShouldSystemUseDarkMode();
-
-        [DllImport("user32.dll")]
-        public static extern int GetDpiForSystem();
-
-        [DllImport("user32.dll")]
-        public static extern int GetDpiForWindow(IntPtr hwnd);
-
-        public static uint HiWord(IntPtr ptr)
-        {
-            var val = (uint)(int)ptr;
-            if ((val & 0x80000000) == 0x80000000)
-                return (val >> 16);
-            else
-                return (val >> 16) & 0xffff;
-        }
+    [StructLayout(LayoutKind.Sequential)]
+    struct POINT
+    {
+        public int x;
+        public int y;
     }
 }

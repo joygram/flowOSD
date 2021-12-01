@@ -18,14 +18,16 @@
  */
 namespace flowOSD.Api;
 
-using System;
+using System.Diagnostics;
+using System.IO;
 
-public interface IDisplay
+public interface IConfig
 {
-    IObservable<bool> IsHighRefreshRate { get; }
-    IObservable<bool> IsHighRefreshRateSupported { get; }
+    UserConfig UserConfig { get; }
 
-    void DisableHighRefreshRate();
-    void EnableHighRefreshRate();
-    void ToggleRefreshRate();
+    FileInfo AppFile { get; }
+
+    FileVersionInfo AppFileInfo { get; }
+
+    DirectoryInfo DataDirectory { get; }
 }

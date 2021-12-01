@@ -16,33 +16,38 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public class OsdData
 {
-    using System;
-    using System.Drawing;
-
-    public class OsdData
+    public OsdData(string text)
     {
-        public OsdData(string imageName, string text)
-        {
-            ImageName = imageName;
-            Text = text;
-            Value = null;
-        }
-
-        public OsdData(string imageName, double value)
-        {
-            ImageName = imageName;
-            Text = null;
-            Value = value;
-        }
-
-        public string ImageName { get; }
-
-        public string Text { get; }
-
-        public double? Value { get; }
-
-        public bool IsIndicator => Value != null;
+        ImageName = null;
+        Text = text;
+        Value = null;
     }
+
+    public OsdData(string imageName, string text)
+    {
+        ImageName = imageName;
+        Text = text;
+        Value = null;
+    }
+
+    public OsdData(string imageName, double value)
+    {
+        ImageName = imageName;
+        Text = null;
+        Value = value;
+    }
+
+    public string ImageName { get; }
+
+    public string Text { get; }
+
+    public double? Value { get; }
+
+    public bool HasImage => !string.IsNullOrEmpty(ImageName);
+
+    public bool IsIndicator => Value != null;
 }

@@ -2,17 +2,21 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net6.0-windows</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWindowsForms>true</UseWindowsForms>
+	</PropertyGroup>
+	
+	<PropertyGroup>
 		<Copyright>© 2021, Albert Akhmetov</Copyright>
 		<Authors>Albert Akhmetov</Authors>
 		<Product>flowOSD</Product>
-		<Version>0.6.1-experimental</Version>
+		<Version>0.6.2-experimental</Version>
 		<Platforms>x64</Platforms>
 		<PackageIcon></PackageIcon>
-    	<PackageIconUrl />
+		<PackageIconUrl />
 		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
-	    <Description>Utility that provides the ability to show system-like OSD for ASUS notebooks events (like keyboard backlight changing, touchpad state and so on).</Description>
-	    <PackageReleaseNotes>This is an experimental release.</PackageReleaseNotes>
+		<Description>Utility that provides the ability to show system-like OSD for ASUS notebooks events (like keyboard backlight changing, touchpad state and so on).</Description>
+		<PackageReleaseNotes>This is an experimental release.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<PropertyGroup>
