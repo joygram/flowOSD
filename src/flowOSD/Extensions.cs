@@ -77,32 +77,30 @@ namespace flowOSD
             return toolStrip;
         }
 
-        public static T Add<T, TC>(this T panel, int column, int row, Action<TC> initializator)
-            where T : TableLayoutPanel
-            where TC : Control, new()
+        public static TableLayoutPanel Add<T>(this TableLayoutPanel panel, int column, int row, Action<T> initializator)
+            where T : Control, new()
         {
-            var obj = Activator.CreateInstance<TC>();
+            var obj = Activator.CreateInstance<T>();
             initializator(obj);
-            return Add<T>(panel, column, row, obj);
+            return Add(panel, column, row, obj);
         }
 
-        public static T Add<T, TC>(this T panel, int column, int row, int columnSpan, int rowSpan, Action<TC> initializator)
-            where T : TableLayoutPanel
-            where TC : Control, new()
+        public static TableLayoutPanel Add<T>(this TableLayoutPanel panel, int column, int row, int columnSpan, int rowSpan, Action<T> initializator)
+            where T : Control, new()
         {
-            var obj = Activator.CreateInstance<TC>();
+            var obj = Activator.CreateInstance<T>();
             initializator(obj);
-            return Add<T>(panel, column, row, columnSpan, rowSpan, obj);
+            return Add(panel, column, row, columnSpan, rowSpan, obj);
         }
 
-        public static T Add<T>(this T panel, int column, int row, Control control) where T : TableLayoutPanel
+        public static TableLayoutPanel Add(this TableLayoutPanel panel, int column, int row, Control control)
         {
             panel.Controls.Add(control, column, row);
 
             return panel;
         }
 
-        public static T Add<T>(this T panel, int column, int row, int columnSpan, int rowSpan, Control control) where T : TableLayoutPanel
+        public static TableLayoutPanel Add(this TableLayoutPanel panel, int column, int row, int columnSpan, int rowSpan, Control control)
         {
             panel.Controls.Add(control, column, row);
             panel.SetColumnSpan(control, columnSpan);

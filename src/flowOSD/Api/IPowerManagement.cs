@@ -24,7 +24,7 @@ namespace flowOSD.Api
     {
         IObservable<bool> IsBoost {get;}
 
-        IObservable<bool> IsAC {get;}
+        IObservable<bool> IsBattery {get;}
 
         void EnableBoost();
 

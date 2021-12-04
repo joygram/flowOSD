@@ -73,6 +73,7 @@ public class AboutUI : IDisposable
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            StartPosition = FormStartPosition.CenterScreen;
 
             var scale = GetDpiForWindow(Handle) / 96f;
             this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
@@ -87,23 +88,26 @@ public class AboutUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             }).DisposeWith(disposable)
-                .Add<TableLayoutPanel, PictureBox>(0, 0, 1, 3, x =>
+                .Add<PictureBox>(0, 0, 1, 3, x =>
                 {
                     x.Image = Icon
                         .ExtractAssociatedIcon(Assembly.GetCallingAssembly().Location)
                         .ToBitmap().DisposeWith(disposable);
+
                     x.Size = new Size(64, 64);
                     x.Margin = new Padding(20);
                     x.SizeMode = PictureBoxSizeMode.Zoom;
-                }).DisposeWith(disposable)
-                .Add<TableLayoutPanel, Label>(1, 0, x =>
+                    x.DisposeWith(disposable);
+                })
+                .Add<Label>(1, 0, x =>
                 {
                     x.Text = $"{config.AppFileInfo.ProductName}";
                     x.Font = new Font(Font.FontFamily, 20);
                     x.AutoSize = true;
                     x.Margin = new Padding(0, 3, 0, 3);
-                }).DisposeWith(disposable)
-                .Add<TableLayoutPanel, Label>(1, 1, x =>
+                    x.DisposeWith(disposable);
+                })
+                .Add<Label>(1, 1, x =>
                 {
                     var sb = new StringBuilder();
                     sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion}");
@@ -116,38 +120,19 @@ public class AboutUI : IDisposable
                     x.Text = sb.ToString();
                     x.AutoSize = true;
                     x.Margin = new Padding(5, 15, 20, 3);
-                }).DisposeWith(disposable)
-                .Add<TableLayoutPanel, TableLayoutPanel>(0, 2, 2, 1, x =>
+                    x.DisposeWith(disposable);
+                })
+                .Add<Button>(1, 2, x =>
                 {
-                    x.Dock = DockStyle.Fill;
-                    x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-                    x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                    x.Text = "OK";
+                    x.AutoSize = true;
+                    x.Padding = new Padding(15, 3, 15, 3);
+                    x.Margin = new Padding(0, 0, 20, 20);
+                    x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
+                    x.Click += (sender, e) => Close();
 
-                    x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-                    x.Add<TableLayoutPanel, CheckBox>(0, 0, y =>
-                    {
-                        y.AutoSize = true;
-                        y.Margin = new Padding(20, 3, 0, 20);
-                        y.Text = "Run at startup";
-                        y.Anchor = AnchorStyles.Left | AnchorStyles.Bottom;
-                        y.DataBindings.Add(
-                            "Checked",
-                            config.UserConfig,
-                            nameof(UserConfig.RunAtStartup),
-                            false,
-                            DataSourceUpdateMode.OnPropertyChanged);
-                    }).DisposeWith(disposable)
-                    .Add<TableLayoutPanel, Button>(1, 0, y =>
-                    {
-                        y.Text = "OK";
-                        y.AutoSize = true;
-                        y.Padding = new Padding(15, 3, 15, 3);
-                        y.Margin = new Padding(0, 0, 20, 20);
-                        y.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
-                        y.Click += (sender, e) => Close();
-                    }).DisposeWith(disposable);
-                }).DisposeWith(disposable)
+                    x.DisposeWith(disposable);
+                })
             );
         }
 

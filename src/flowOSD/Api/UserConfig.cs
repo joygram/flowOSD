@@ -32,14 +32,25 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private Subject<string> propertyChangedSubject;
     private bool runAtStartup;
     private bool disableTouchPadInTabletMode;
-    private bool disableHighRefreshRateOnAC;
+    private bool disableHighRefreshRateOnBattery;
+
+    private bool showPowerSourceNotification;
+    private bool showBoostNotification;
+    private bool showTouchPadNotification;
+    private bool showDisplayRefreshRateNotification;
 
     public UserConfig()
     {
         // Default values
 
-        disableHighRefreshRateOnAC = false;
+        disableHighRefreshRateOnBattery = false;
         disableTouchPadInTabletMode = true;
+
+        showPowerSourceNotification = true;
+        showBoostNotification = true;
+        showTouchPadNotification = true;
+        showDisplayRefreshRateNotification = true;
+
 
         events = new Dictionary<PropertyChangedEventHandler, IDisposable>();
         propertyChangedSubject = new Subject<string>();
@@ -95,10 +106,34 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         set => SetProperty(value, ref disableTouchPadInTabletMode);
     }
 
-    public bool DisableHighRefreshRateOnAC
+    public bool DisableHighRefreshRateOnBattery
     {
-        get => disableHighRefreshRateOnAC;
-        set => SetProperty(value, ref disableHighRefreshRateOnAC);
+        get => disableHighRefreshRateOnBattery;
+        set => SetProperty(value, ref disableHighRefreshRateOnBattery);
+    }
+
+    public bool ShowPowerSourceNotification
+    {
+        get => showPowerSourceNotification;
+        set => SetProperty(value, ref showPowerSourceNotification);
+    }
+
+    public bool ShowBoostNotification
+    {
+        get => showBoostNotification;
+        set => SetProperty(value, ref showBoostNotification);
+    }
+
+    public bool ShowTouchPadNotification
+    {
+        get => showTouchPadNotification;
+        set => SetProperty(value, ref showTouchPadNotification);
+    }
+
+    public bool ShowDisplayRateNotification
+    {
+        get => showDisplayRefreshRateNotification;
+        set => SetProperty(value, ref showDisplayRefreshRateNotification);
     }
 
     private void SetProperty<T>(T value, ref T property, [CallerMemberName] string propertyName = null)

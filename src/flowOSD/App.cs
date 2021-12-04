@@ -42,6 +42,7 @@ public class App : IDisposable
     private IKeyboard keyboard;
     private IOsd osd;
 
+    private ConfigUI configUI;
     private AboutUI aboutUI;
 
     private ToolStripMenuItem highRefreshRateMenuItem, touchPadMenuItem, boostMenuItem, aboutMenuItem;
@@ -54,6 +55,7 @@ public class App : IDisposable
 
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
+        configUI = new ConfigUI(config);
         aboutUI = new AboutUI(config).DisposeWith(disposable);
         Init();
 
@@ -147,12 +149,20 @@ public class App : IDisposable
 
         // Notifications
 
+        powerManagement.IsBattery
+            .Skip(1)
+            .DistinctUntilChanged()
+            .Throttle(TimeSpan.FromSeconds(5))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => ShowPowerSourceNotification(x))
+            .DisposeWith(disposable);
+
         touchPad.IsEnabled
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => osd.Show(new OsdData(x ? "TouchPad on" : "TouchPad off")))
+            .Subscribe(x => ShowTouchPadNotification(x))
             .DisposeWith(disposable);
 
         powerManagement.IsBoost
@@ -160,7 +170,7 @@ public class App : IDisposable
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => osd.Show(new OsdData(x ? "Boost Mode on" : "Boost Mode off")))
+            .Subscribe(x => ShowBoostNotification(x))
             .DisposeWith(disposable);
 
         display.IsHighRefreshRate
@@ -168,7 +178,7 @@ public class App : IDisposable
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => osd.Show(new OsdData(x ? "High Refresh Rate on" : "High Refresh Rate off")))
+            .Subscribe(x => ShowDisplayRefreshRateNotification(x))
             .DisposeWith(disposable);
 
         // Auto switching
@@ -179,11 +189,51 @@ public class App : IDisposable
             .Subscribe(x => ToggleTouchPadOnTabletMode(x))
             .DisposeWith(disposable);
 
-        powerManagement.IsAC
+        powerManagement.IsBattery
             .Throttle(TimeSpan.FromSeconds(2))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => ToggleHighRefreshRateOnAC(x))
             .DisposeWith(disposable);
+    }
+
+    private void ShowPowerSourceNotification(bool isBattery)
+    {
+        if (!config.UserConfig.ShowPowerSourceNotification)
+        {
+            return;
+        }
+
+        osd.Show(new OsdData(isBattery ? "On Battery" : "Plugged In"));
+    }
+
+    private void ShowDisplayRefreshRateNotification(bool isEnabled)
+    {
+        if (!config.UserConfig.ShowDisplayRateNotification)
+        {
+            return;
+        }
+
+        osd.Show(new OsdData(isEnabled ? "High Refresh Rate on" : "High Refresh Rate off"));
+    }
+
+    private void ShowBoostNotification(bool isEnabled)
+    {
+        if (!config.UserConfig.ShowBoostNotification)
+        {
+            return;
+        }
+
+        osd.Show(new OsdData(isEnabled ? "Boost Mode on" : "Boost Mode off"));
+    }
+
+    private void ShowTouchPadNotification(bool isEnabled)
+    {
+        if (!config.UserConfig.ShowTouchPadNotification)
+        {
+            return;
+        }
+
+        osd.Show(new OsdData(isEnabled ? "TouchPad on" : "TouchPad off"));
     }
 
     void IDisposable.Dispose()
@@ -232,6 +282,13 @@ public class App : IDisposable
                 x.Click += (sender, e) => ToggleBoost();
             }).DisposeWith(disposable).LinkAs(ref boostMenuItem),
             Create<ToolStripSeparator>().DisposeWith(disposable),
+            Create<ToolStripMenuItem>(x =>
+            {
+                x.Text = "Settings...";
+                x.Padding = new Padding(0, 2, 0, 2);
+                x.Margin = new Padding(0, 8, 0, 8);
+                x.Click += (sender, e) => ShowConfig();
+            }).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
             Create<ToolStripMenuItem>(x =>
             {
                 x.Text = "About";
@@ -311,6 +368,11 @@ public class App : IDisposable
         }
     }
 
+    private void ShowConfig()
+    {
+        configUI.Show();
+    }
+
     private void ShowAbout()
     {
         aboutUI.Show();
@@ -345,22 +407,22 @@ public class App : IDisposable
         }
     }
 
-    private void ToggleHighRefreshRateOnAC(bool isAC)
+    private void ToggleHighRefreshRateOnAC(bool isBattery)
     {
-        if (!config.UserConfig.DisableHighRefreshRateOnAC)
+        if (!config.UserConfig.DisableHighRefreshRateOnBattery)
         {
             return;
         }
 
         try
         {
-            if (isAC)
+            if (isBattery)
             {
-                display.EnableHighRefreshRate();
+                display.DisableHighRefreshRate();
             }
             else
             {
-                display.DisableHighRefreshRate();
+                display.EnableHighRefreshRate();
             }
         }
         catch (Exception ex)
