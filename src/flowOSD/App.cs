@@ -149,6 +149,7 @@ public class App : IDisposable
 
         touchPad.IsEnabled
             .Skip(1)
+            .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => osd.Show(new OsdData(x ? "TouchPad on" : "TouchPad off")))
@@ -156,13 +157,15 @@ public class App : IDisposable
 
         powerManagement.IsBoost
             .Skip(1)
+            .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => osd.Show(new OsdData(x ? "Boost Mode off" : "Boost Mode off")))
+            .Subscribe(x => osd.Show(new OsdData(x ? "Boost Mode on" : "Boost Mode off")))
             .DisposeWith(disposable);
 
         display.IsHighRefreshRate
             .Skip(1)
+            .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => osd.Show(new OsdData(x ? "High Refresh Rate on" : "High Refresh Rate off")))
