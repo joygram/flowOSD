@@ -38,8 +38,32 @@ namespace flowOSD.Services
         private OsdForm form;
         private SystemOsd systemOsd;
 
+        private Subject<OsdData> dataSubject;
+
         public Osd(ISystemEvents systemEvents, IImageSource imageSource)
         {
+            dataSubject = new Subject<OsdData>();
+            dataSubject
+                .Where(x => !x.IsIndicator)
+                .Throttle(TimeSpan.FromMilliseconds(500))
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x =>
+                {
+                    systemOsd.Hide();
+                    form.Show(x);
+                })
+                .DisposeWith(disposable);
+
+            dataSubject
+                .Where(x => x.IsIndicator)
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x =>
+                {
+                    systemOsd.Hide();
+                    form.Show(x);
+                })
+                .DisposeWith(disposable);
+
             form = new OsdForm(systemEvents, imageSource).DisposeWith(disposable);
 
             systemOsd = new SystemOsd().DisposeWith(disposable);
@@ -58,9 +82,7 @@ namespace flowOSD.Services
 
         public void Show(OsdData data)
         {
-            systemOsd.Hide();
-
-            form.Show(data);
+            this.dataSubject.OnNext(data);
         }
 
         private sealed class OsdForm : Form

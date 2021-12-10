@@ -37,7 +37,7 @@ namespace flowOSD.Services
         private CompositeDisposable disposable = new CompositeDisposable();
 
         private BehaviorSubject<bool> isBoostSubject;
-        private BehaviorSubject<bool> isBatterySubject;
+        private BehaviorSubject<bool> isDCSubject;
 
         private Guid activeScheme;
 
@@ -50,14 +50,14 @@ namespace flowOSD.Services
                 throw new Win32Exception((int)GetLastError());
             }
 
-            var isBattery = status.ACLineStatus == 0;
-            isBatterySubject = new BehaviorSubject<bool>(isBattery);
+            var isDC = status.ACLineStatus == 0;
+            isDCSubject = new BehaviorSubject<bool>(isDC);
 
             var isBoostEnabled = ReadValueIndex(ref PROCESSOR_SUBGROUP, ref BOOST_SETTING) != 0;
             isBoostSubject = new BehaviorSubject<bool>(isBoostEnabled);
 
             IsBoost = isBoostSubject.AsObservable();
-            IsBattery = isBatterySubject.AsObservable();
+            IsDC = isDCSubject.AsObservable();
 
             new PowerSettingSubscription(BOOST_SETTING, HandlerCallback).DisposeWith(disposable);
             new PowerSettingSubscription(GUID_ACDC_POWER_SOURCE, HandlerCallback).DisposeWith(disposable);
@@ -71,7 +71,7 @@ namespace flowOSD.Services
 
         public IObservable<bool> IsBoost { get; }
 
-        public IObservable<bool> IsBattery { get; }
+        public IObservable<bool> IsDC { get; }
 
         public void ToggleBoost()
         {
@@ -127,7 +127,7 @@ namespace flowOSD.Services
         private uint ReadValueIndex(ref Guid subgroup, ref Guid setting)
         {
             var value = default(uint);
-            var errorCode = isBatterySubject.Value
+            var errorCode = isDCSubject.Value
                 ? PowerReadDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, ref value)
                 : PowerReadACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, ref value);
 
@@ -141,7 +141,7 @@ namespace flowOSD.Services
 
         private void WriteValueIndex(ref Guid subgroup, ref Guid setting, uint value)
         {
-            var errorCode = isBatterySubject.Value
+            var errorCode = isDCSubject.Value
                 ? PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, value)
                 : PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, value);
 
@@ -169,7 +169,7 @@ namespace flowOSD.Services
 
                 if (pbs.PowerSetting == GUID_ACDC_POWER_SOURCE)
                 {
-                    isBatterySubject.OnNext(pbs.Data == 1);
+                    isDCSubject.OnNext(pbs.Data == 1);
                 }
             }
 

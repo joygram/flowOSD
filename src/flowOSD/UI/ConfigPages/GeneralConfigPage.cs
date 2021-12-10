@@ -62,7 +62,7 @@ internal class GeneralConfigPage : TableLayoutPanel
         {
             y.AutoSize = true;
             y.Margin = labelMargin;
-            y.Text = "Indicates whether app is starting when an user is logged on.";
+            y.Text = "Indicates whether the app starts when a user is logged on.";
             y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             y.ForeColor = SystemColors.ControlDarkDark;
 
@@ -89,7 +89,7 @@ internal class GeneralConfigPage : TableLayoutPanel
         {
             y.AutoSize = true;
             y.Margin = new Padding(15, 5, 0, 15);
-            y.Text = "Indicates whether TouchPad is disabled when notebook goes in the tablet mode.";
+            y.Text = "Indicates whether TouchPad is disabled when the notebook goes into the tablet mode.";
             y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             y.ForeColor = SystemColors.ControlDarkDark;
 
@@ -100,12 +100,12 @@ internal class GeneralConfigPage : TableLayoutPanel
         {
             y.AutoSize = true;
             y.Margin = new Padding(20, 5, 0, 5);
-            y.Text = "Disable display high refresh rate on battery power";
+            y.Text = "Control display refresh rate";
             y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             y.DataBindings.Add(
                 "Checked",
                 config.UserConfig,
-                nameof(UserConfig.DisableHighRefreshRateOnBattery),
+                nameof(UserConfig.ControlDisplayRefreshRate),
                 false,
                 DataSourceUpdateMode.OnPropertyChanged);
 
@@ -116,7 +116,7 @@ internal class GeneralConfigPage : TableLayoutPanel
         {
             y.AutoSize = true;
             y.Margin = new Padding(15, 5, 0, 15);
-            y.Text = "Indicates whether display refresh rate is decreasing  when notebook runs at the battery. This option can increase the time of work.";
+            y.Text = "Indicates whether display refresh rate is dependent on the power source.";
             y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             y.ForeColor = SystemColors.ControlDarkDark;
 

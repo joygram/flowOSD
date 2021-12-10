@@ -69,7 +69,7 @@ public class App : IDisposable
         touchPad = new TouchPad(keyboard, messageQueue).DisposeWith(disposable);
         osd = new Osd(systemEvents, imageSource).DisposeWith(disposable);
 
-        display = new Display(messageQueue).DisposeWith(disposable);
+        display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
 
         nativeUI = new NativeUI(notifyIcon.ContextMenuStrip.Handle, messageQueue).DisposeWith(disposable);
 
@@ -149,17 +149,16 @@ public class App : IDisposable
 
         // Notifications
 
-        powerManagement.IsBattery
+        powerManagement.IsDC
             .Skip(1)
             .DistinctUntilChanged()
-            .Throttle(TimeSpan.FromSeconds(5))
+            .Throttle(TimeSpan.FromSeconds(2))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => ShowPowerSourceNotification(x))
             .DisposeWith(disposable);
 
         touchPad.IsEnabled
             .Skip(1)
-            .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => ShowTouchPadNotification(x))
@@ -187,12 +186,6 @@ public class App : IDisposable
             .Throttle(TimeSpan.FromSeconds(2))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => ToggleTouchPadOnTabletMode(x))
-            .DisposeWith(disposable);
-
-        powerManagement.IsBattery
-            .Throttle(TimeSpan.FromSeconds(2))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ToggleHighRefreshRateOnAC(x))
             .DisposeWith(disposable);
     }
 
@@ -261,12 +254,16 @@ public class App : IDisposable
 
     private ContextMenuStrip InitContextMenu()
     {
-        return Create<ContextMenuStrip>(x => x.RenderMode = ToolStripRenderMode.System).Add(
+        return Create<ContextMenuStrip>(x =>
+        {
+            x.RenderMode = ToolStripRenderMode.System;
+        }).Add(
             Create<ToolStripMenuItem>(x =>
             {
                 x.Padding = new Padding(0, 2, 0, 2);
                 x.Margin = new Padding(0, 8, 0, 8);
                 x.Click += (sender, e) => ToggleRefreshRate();
+                x.ShortcutKeyDisplayString = "FN + F4";
             }).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
             Create<ToolStripSeparator>(x => highRefreshRateMenuItem.Tag = x).DisposeWith(disposable),
             Create<ToolStripMenuItem>(x =>
@@ -274,12 +271,14 @@ public class App : IDisposable
                 x.Padding = new Padding(0, 2, 0, 2);
                 x.Margin = new Padding(0, 8, 0, 8);
                 x.Click += (sender, e) => ToggleTouchPad();
+                x.ShortcutKeyDisplayString = "FN + F10";
             }).DisposeWith(disposable).LinkAs(ref touchPadMenuItem),
             Create<ToolStripMenuItem>(x =>
             {
                 x.Padding = new Padding(0, 2, 0, 2);
                 x.Margin = new Padding(0, 8, 0, 8);
                 x.Click += (sender, e) => ToggleBoost();
+                x.ShortcutKeyDisplayString = "FN + F5";
             }).DisposeWith(disposable).LinkAs(ref boostMenuItem),
             Create<ToolStripSeparator>().DisposeWith(disposable),
             Create<ToolStripMenuItem>(x =>
@@ -409,7 +408,7 @@ public class App : IDisposable
 
     private void ToggleHighRefreshRateOnAC(bool isBattery)
     {
-        if (!config.UserConfig.DisableHighRefreshRateOnBattery)
+        if (!config.UserConfig.ControlDisplayRefreshRate)
         {
             return;
         }

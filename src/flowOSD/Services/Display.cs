@@ -36,12 +36,18 @@ partial class Display : IDisposable, IDisplay
 
     private CompositeDisposable disposable = new CompositeDisposable();
 
+    private IPowerManagement powerManagement;
+    private IConfig config;
+
     private RefreshRates refreshRates;
     private BehaviorSubject<bool> isHighRefreshRateSupportedSubject;
     private BehaviorSubject<bool> isHighRefreshRateSubject;
 
-    public Display(IMessageQueue messageQueue)
+    public Display(IMessageQueue messageQueue, IPowerManagement powerManagement, IConfig config)
     {
+        this.powerManagement = powerManagement;
+        this.config = config;
+
         refreshRates = GetSupportedRefreshRates();
 
         isHighRefreshRateSupportedSubject = new BehaviorSubject<bool>(refreshRates?.IsHighSupported == true);
@@ -51,6 +57,13 @@ partial class Display : IDisposable, IDisplay
         IsHighRefreshRate = isHighRefreshRateSubject.AsObservable();
 
         messageQueue.Subscribe(WM_DISPLAY_CHANGE, ProcessMessage).DisposeWith(disposable);
+        isHighRefreshRateSubject.Subscribe(x => OnHighRefreshRateChanged(x)).DisposeWith(disposable);
+
+        this.powerManagement.IsDC
+            .Throttle(TimeSpan.FromSeconds(2))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => OnPowerSourceChanged(x))
+            .DisposeWith(disposable);
     }
 
     void IDisposable.Dispose()
@@ -91,6 +104,39 @@ partial class Display : IDisposable, IDisplay
         }
     }
 
+    private void OnPowerSourceChanged(bool isDC)
+    {
+        if (!config.UserConfig.ControlDisplayRefreshRate)
+        {
+            return;
+        }
+
+        var isHighRefreshRate = isDC
+            ? config.UserConfig.HighDisplayRefreshRateDC
+            : config.UserConfig.HighDisplayRefreshRateAC;
+
+        if (isHighRefreshRate)
+        {
+            EnableHighRefreshRate();
+        }
+        else
+        {
+            DisableHighRefreshRate();
+        }
+    }
+
+    private async void OnHighRefreshRateChanged(bool isHighRefreshRate)
+    {
+        if (await powerManagement.IsDC.FirstAsync())
+        {
+            config.UserConfig.HighDisplayRefreshRateDC = isHighRefreshRate;
+        }
+        else
+        {
+            config.UserConfig.HighDisplayRefreshRateAC = isHighRefreshRate;
+        }
+    }
+
     private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
     {
         if (messageId == WM_DISPLAY_CHANGE)
@@ -98,7 +144,9 @@ partial class Display : IDisposable, IDisplay
             refreshRates = GetSupportedRefreshRates();
 
             isHighRefreshRateSupportedSubject.OnNext(refreshRates?.IsHighSupported == true);
-            isHighRefreshRateSubject.OnNext(refreshRates != null && GetRefreshRate() == refreshRates.High);
+
+            var isHighRefreshRate = refreshRates != null && GetRefreshRate() == refreshRates.High;
+            isHighRefreshRateSubject.OnNext(isHighRefreshRate);
         }
     }
 

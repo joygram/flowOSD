@@ -32,7 +32,8 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private Subject<string> propertyChangedSubject;
     private bool runAtStartup;
     private bool disableTouchPadInTabletMode;
-    private bool disableHighRefreshRateOnBattery;
+    private bool controlDisplayRefreshRate;
+    private bool highDisplayRefreshRateAC, highDisplayRefreshRateDC;
 
     private bool showPowerSourceNotification;
     private bool showBoostNotification;
@@ -43,7 +44,9 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         // Default values
 
-        disableHighRefreshRateOnBattery = false;
+        controlDisplayRefreshRate = true;
+        highDisplayRefreshRateAC = true;
+        highDisplayRefreshRateDC = false;
         disableTouchPadInTabletMode = true;
 
         showPowerSourceNotification = true;
@@ -106,10 +109,22 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         set => SetProperty(value, ref disableTouchPadInTabletMode);
     }
 
-    public bool DisableHighRefreshRateOnBattery
+    public bool ControlDisplayRefreshRate
     {
-        get => disableHighRefreshRateOnBattery;
-        set => SetProperty(value, ref disableHighRefreshRateOnBattery);
+        get => controlDisplayRefreshRate;
+        set => SetProperty(value, ref controlDisplayRefreshRate);
+    }
+
+    public bool HighDisplayRefreshRateAC
+    {
+        get => highDisplayRefreshRateAC;
+        set => SetProperty(value, ref highDisplayRefreshRateAC);
+    }
+
+    public bool HighDisplayRefreshRateDC
+    {
+        get => highDisplayRefreshRateDC;
+        set => SetProperty(value, ref highDisplayRefreshRateDC);
     }
 
     public bool ShowPowerSourceNotification
