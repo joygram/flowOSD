@@ -196,7 +196,7 @@ public class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(isBattery ? "On Battery" : "Plugged In"));
+        osd.Show(new OsdData(isBattery ? Images.DC : Images.AC, isBattery ? "On Battery" : "Plugged In"));
     }
 
     private void ShowDisplayRefreshRateNotification(bool isEnabled)
@@ -206,7 +206,7 @@ public class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(isEnabled ? "High Refresh Rate on" : "High Refresh Rate off"));
+        osd.Show(new OsdData(Images.RefreshRate, isEnabled ? "High Refresh Rate is on" : "High Refresh Rate is off"));
     }
 
     private void ShowBoostNotification(bool isEnabled)
@@ -216,7 +216,7 @@ public class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(isEnabled ? "Boost Mode on" : "Boost Mode off"));
+        osd.Show(new OsdData(Images.Boost, isEnabled ? "Boost Mode is on" : "Boost Mode is off"));
     }
 
     private void ShowTouchPadNotification(bool isEnabled)
@@ -226,7 +226,7 @@ public class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(isEnabled ? "TouchPad on" : "TouchPad off"));
+        osd.Show(new OsdData(Images.TouchPad, isEnabled ? "TouchPad is on" : "TouchPad is off"));
     }
 
     void IDisposable.Dispose()

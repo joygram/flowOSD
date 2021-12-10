@@ -25,5 +25,10 @@ namespace flowOSD.Api
         public const string Notebook = "notebook";
         public const string NotebookWhite = "notebook-white";
         public const string Keyboard = "keyboard";
+        public const string AC = "ac";
+        public const string DC = "dc";
+        public const string Boost = "boost";
+        public const string RefreshRate = "refresh-rate";
+        public const string TouchPad = "touchpad";
     }
 }

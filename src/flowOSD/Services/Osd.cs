@@ -156,12 +156,26 @@ namespace flowOSD.Services
 
             private void DrawText(Graphics g)
             {
+                if (data.HasImage)
+                {
+                    var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle));
+
+                    g.DrawImage(
+                        image,
+                        (Height - image.Height),
+                        (Height - image.Height) / 2,
+                        image.Width,
+                        image.Height);
+                }
+
+
+                var x = data.HasImage ? DpiScaleValue(80) : DpiScaleValue(25);
                 var txtSize = g.MeasureString(data.Text, Font);
                 g.DrawString(
                     data.Text,
                     Font,
                     Brushes.White,
-                    DpiScaleValue(25),
+                    x,
                     (Size.Height - txtSize.Height) / 2
                 );
             }
@@ -280,12 +294,14 @@ namespace flowOSD.Services
                 }
                 else
                 {
+                    var x = data.HasImage ? DpiScaleValue(80) : DpiScaleValue(25);
+
                     using (var g = Graphics.FromHwnd(Handle))
                     {
                         var txtSize = g.MeasureString(data.Text, Font);
                         Size = new Size(
-                            DpiScaleValue(25) * 2 + (int)txtSize.Width,
-                            DpiScaleValue(62)
+                            x + DpiScaleValue(25) + (int)txtSize.Width,
+                            DpiScaleValue(65)
                         );
                     }
                 }
