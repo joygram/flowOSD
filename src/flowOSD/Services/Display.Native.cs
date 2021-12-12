@@ -18,7 +18,6 @@
  */
 namespace flowOSD.Services;
 
-using System;
 using System.Runtime.InteropServices;
 
 partial class Display

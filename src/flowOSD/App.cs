@@ -26,7 +26,7 @@ using flowOSD.Services;
 using flowOSD.UI;
 using static Extensions;
 
-public class App : IDisposable
+sealed class App : IDisposable
 {
     private CompositeDisposable disposable = new CompositeDisposable();
 

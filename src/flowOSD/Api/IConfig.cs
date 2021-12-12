@@ -19,7 +19,6 @@
 namespace flowOSD.Api;
 
 using System.Diagnostics;
-using System.IO;
 
 public interface IConfig
 {

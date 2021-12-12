@@ -18,19 +18,15 @@
  */
 namespace flowOSD.Services;
 
-using flowOSD.Api;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
+using flowOSD.Api;
 using static Native;
 
-partial class Display : IDisposable, IDisplay
+sealed partial class Display : IDisposable, IDisplay
 {
     public readonly static int WM_DISPLAY_CHANGE = (int)RegisterWindowMessage("UxdDisplayChangeMessage");
 

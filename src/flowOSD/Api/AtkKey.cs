@@ -16,16 +16,15 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public enum AtkKey
 {
-    public enum AtkKey
-    {
-        BacklightDown,
-        BacklightUp,
-        Aura,
-        Fan,
-        Rog,
-        TouchPad,
-        MuteMic,
-    }
+    BacklightDown,
+    BacklightUp,
+    Aura,
+    Fan,
+    Rog,
+    TouchPad,
+    MuteMic,
 }

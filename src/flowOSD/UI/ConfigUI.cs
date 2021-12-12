@@ -26,7 +26,7 @@ using System.Reactive.Disposables;
 using static Extensions;
 using static Native;
 
-internal class ConfigUI : IDisposable
+sealed class ConfigUI : IDisposable
 {
     private Window instance;
     private IConfig config;

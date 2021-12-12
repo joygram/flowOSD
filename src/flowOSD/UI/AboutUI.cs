@@ -26,7 +26,7 @@ using flowOSD.Api;
 using static Extensions;
 using static Native;
 
-public class AboutUI : IDisposable
+sealed class AboutUI : IDisposable
 {
     private Window instance;
     private IConfig config;

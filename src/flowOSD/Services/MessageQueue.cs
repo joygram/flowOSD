@@ -16,98 +16,92 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Services
+namespace flowOSD.Services;
+
+using flowOSD.Api;
+
+sealed class MessageQueue : IMessageQueue, IDisposable
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Reactive.Linq;
-    using System.Reactive.Subjects;
-    using System.Windows.Forms;
-    using flowOSD.Api;
+    private Dictionary<int, ICollection<Action<int, IntPtr, IntPtr>>> subscriptions;
+    private Filter filter;
 
-    public class MessageQueue : IMessageQueue, IDisposable
+    public MessageQueue()
     {
-        private Dictionary<int, ICollection<Action<int, IntPtr, IntPtr>>> subscriptions;
-        private Filter filter;
+        subscriptions = new Dictionary<int, ICollection<Action<int, IntPtr, IntPtr>>>();
 
-        public MessageQueue()
+        filter = new Filter(this);
+        Application.AddMessageFilter(filter);
+    }
+
+    void IDisposable.Dispose()
+    {
+        Application.RemoveMessageFilter(filter);
+    }
+
+    public void Push(ref Message message)
+    {
+        if (subscriptions.ContainsKey(message.Msg))
         {
-            subscriptions = new Dictionary<int, ICollection<Action<int, IntPtr, IntPtr>>>();
+            foreach (var proc in subscriptions[message.Msg])
+            {
+                proc(message.Msg, message.WParam, message.LParam);
+            }
+        }
+    }
 
-            filter = new Filter(this);
-            Application.AddMessageFilter(filter);
+    public IDisposable Subscribe(int messageId, Action<int, IntPtr, IntPtr> proc)
+    {
+        if (!subscriptions.ContainsKey(messageId))
+        {
+            subscriptions[messageId] = new List<Action<int, IntPtr, IntPtr>>();
+        }
+
+        subscriptions[messageId].Add(proc);
+
+        return new Subscription(this, messageId, proc);
+    }
+
+    private void Remove(int messageId, Action<int, IntPtr, IntPtr> proc)
+    {
+        if (subscriptions.ContainsKey(messageId))
+        {
+            subscriptions[messageId].Remove(proc);
+        }
+    }
+
+    private sealed class Subscription : IDisposable
+    {
+        private MessageQueue owner;
+        private int messageId;
+        private Action<int, IntPtr, IntPtr> proc;
+
+        public Subscription(MessageQueue owner, int messageId, Action<int, IntPtr, IntPtr> proc)
+        {
+            this.owner = owner;
+            this.messageId = messageId;
+            this.proc = proc;
         }
 
         void IDisposable.Dispose()
         {
-            Application.RemoveMessageFilter(filter);
+            owner.Remove(messageId, proc);
+        }
+    }
+
+    private sealed class Filter : IMessageFilter
+    {
+        private MessageQueue queue;
+
+        public Filter(MessageQueue queue)
+        {
+            this.queue = queue;
         }
 
-        public void Push(ref Message message)
+        public bool PreFilterMessage(ref Message m)
         {
-            if (subscriptions.ContainsKey(message.Msg))
-            {
-                foreach (var proc in subscriptions[message.Msg])
-                {
-                    proc(message.Msg, message.WParam, message.LParam);
-                }
-            }
-        }
+            queue.Push(ref m);
 
-        public IDisposable Subscribe(int messageId, Action<int, IntPtr, IntPtr> proc)
-        {
-            if (!subscriptions.ContainsKey(messageId))
-            {
-                subscriptions[messageId] = new List<Action<int, IntPtr, IntPtr>>();
-            }
-
-            subscriptions[messageId].Add(proc);
-
-            return new Subscription(this, messageId, proc);
-        }
-
-        private void Remove(int messageId, Action<int, IntPtr, IntPtr> proc)
-        {
-            if (subscriptions.ContainsKey(messageId))
-            {
-                subscriptions[messageId].Remove(proc);
-            }
-        }
-
-        private sealed class Subscription : IDisposable
-        {
-            private MessageQueue owner;
-            private int messageId;
-            private Action<int, IntPtr, IntPtr> proc;
-
-            public Subscription(MessageQueue owner, int messageId, Action<int, IntPtr, IntPtr> proc)
-            {
-                this.owner = owner;
-                this.messageId = messageId;
-                this.proc = proc;
-            }
-
-            void IDisposable.Dispose()
-            {
-                owner.Remove(messageId, proc);
-            }
-        }
-
-        private sealed class Filter : IMessageFilter
-        {
-            private MessageQueue queue;
-
-            public Filter(MessageQueue queue)
-            {
-                this.queue = queue;
-            }
-
-            public bool PreFilterMessage(ref Message m)
-            {
-                queue.Push(ref m);
-
-                return false;
-            }
+            return false;
         }
     }
 }

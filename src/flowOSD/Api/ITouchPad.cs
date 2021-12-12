@@ -16,18 +16,15 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public interface ITouchPad
 {
-    using System;
+    IObservable<bool> IsEnabled { get; }
 
-    public interface ITouchPad
-    {
-        IObservable<bool> IsEnabled { get; }
+    void Enable();
 
-        void Enable();
+    void Disable();
 
-        void Disable();
-
-        void Toggle();
-    }
+    void Toggle();
 }

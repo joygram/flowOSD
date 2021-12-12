@@ -16,19 +16,18 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public static class Images
 {
-    public static class Images
-    {
-        public const string Tablet = "tablet";
-        public const string TabletWhite = "tablet-white";
-        public const string Notebook = "notebook";
-        public const string NotebookWhite = "notebook-white";
-        public const string Keyboard = "keyboard";
-        public const string AC = "ac";
-        public const string DC = "dc";
-        public const string Boost = "boost";
-        public const string RefreshRate = "refresh-rate";
-        public const string TouchPad = "touchpad";
-    }
+    public const string Tablet = "tablet";
+    public const string TabletWhite = "tablet-white";
+    public const string Notebook = "notebook";
+    public const string NotebookWhite = "notebook-white";
+    public const string Keyboard = "keyboard";
+    public const string AC = "ac";
+    public const string DC = "dc";
+    public const string Boost = "boost";
+    public const string RefreshRate = "refresh-rate";
+    public const string TouchPad = "touchpad";
 }

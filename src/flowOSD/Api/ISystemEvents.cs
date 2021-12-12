@@ -16,26 +16,21 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public interface ISystemEvents
 {
-    using System;
-    using System.Drawing;
-    using System.Windows.Forms;
+    IObservable<bool> SystemDarkMode { get; }
 
-    public interface ISystemEvents
-    {
-        IObservable<bool> SystemDarkMode { get; }
+    IObservable<bool> AppsDarkMode { get; }
 
-        IObservable<bool> AppsDarkMode { get; }
+    IObservable<Color> AccentColor { get; }
 
-        IObservable<Color> AccentColor { get; }
+    IObservable<bool> TabletMode { get; }
 
-        IObservable<bool> TabletMode { get; }
+    IObservable<Screen> PrimaryScreen { get; }
 
-        IObservable<Screen> PrimaryScreen { get; }
+    IObservable<bool> AppShutdown { get; }
 
-        IObservable<bool> AppShutdown { get; }
-
-        IObservable<Exception> AppException { get; }
-    }
+    IObservable<Exception> AppException { get; }
 }

@@ -18,8 +18,6 @@
  */
 namespace flowOSD.Api;
 
-using System;
-
 public interface IDisplay
 {
     IObservable<bool> IsHighRefreshRate { get; }

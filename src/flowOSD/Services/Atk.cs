@@ -16,78 +16,71 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Services
+namespace flowOSD.Services;
+
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using flowOSD.Api;
+using static Native;
+
+sealed class Atk : IAtk, IDisposable
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Reactive.Disposables;
-    using System.Reactive.Linq;
-    using System.Reactive.Subjects;
-    using System.Runtime.InteropServices;
-    using System.Windows.Forms;
-    using flowOSD.Api;
-    using Microsoft.Win32;
-    using static Native;
+    public readonly static int WM_ACPI = (int)RegisterWindowMessage("ACPI Notification through ATKHotkey from BIOS");
 
-    class Atk : IAtk, IDisposable
+    private const int AK_BACKLIGHT_DOWN = 0xC5;
+    private const int AK_BACKLIGHT_UP = 0xC4;
+    private const int AK_AURA = 0xB3;
+    private const int AK_FAN = 0xAE;
+    private const int AK_TOUCHPAD = 0x6B;
+    private const int AK_ROG = 0x38;
+    private const int AK_MUTE_MIC = 0x7C;
+    private const int AK_TABLET_STATE = 0xBD;
+
+    private readonly Dictionary<int, AtkKey> codeToKey;
+    private readonly Subject<AtkKey> keyPressedSubject;
+
+    private CompositeDisposable disposable = new CompositeDisposable();
+
+    public Atk(IMessageQueue messageQueue)
     {
-        public readonly static int WM_ACPI = (int)RegisterWindowMessage("ACPI Notification through ATKHotkey from BIOS");
+        codeToKey = new Dictionary<int, AtkKey>();
+        codeToKey[AK_BACKLIGHT_DOWN] = AtkKey.BacklightDown;
+        codeToKey[AK_BACKLIGHT_UP] = AtkKey.BacklightUp;
+        codeToKey[AK_AURA] = AtkKey.Aura;
+        codeToKey[AK_FAN] = AtkKey.Fan;
+        codeToKey[AK_TOUCHPAD] = AtkKey.TouchPad;
+        codeToKey[AK_ROG] = AtkKey.Rog;
+        codeToKey[AK_MUTE_MIC] = AtkKey.MuteMic;
 
-        private const int AK_BACKLIGHT_DOWN = 0xC5;
-        private const int AK_BACKLIGHT_UP = 0xC4;
-        private const int AK_AURA = 0xB3;
-        private const int AK_FAN = 0xAE;
-        private const int AK_TOUCHPAD = 0x6B;
-        private const int AK_ROG = 0x38;
-        private const int AK_MUTE_MIC = 0x7C;
-        private const int AK_TABLET_STATE = 0xBD;
+        keyPressedSubject = new Subject<AtkKey>();
 
-        private readonly Dictionary<int, AtkKey> codeToKey;
-        private readonly Subject<AtkKey> keyPressedSubject;
+        KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
 
-        private CompositeDisposable disposable = new CompositeDisposable();
+        messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
+    }
 
-        public Atk(IMessageQueue messageQueue)
+    void IDisposable.Dispose()
+    {
+        disposable?.Dispose();
+        disposable = null;
+    }
+
+    private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
+    {
+        if (messageId == WM_ACPI)
         {
-            codeToKey = new Dictionary<int, AtkKey>();
-            codeToKey[AK_BACKLIGHT_DOWN] = AtkKey.BacklightDown;
-            codeToKey[AK_BACKLIGHT_UP] = AtkKey.BacklightUp;
-            codeToKey[AK_AURA] = AtkKey.Aura;
-            codeToKey[AK_FAN] = AtkKey.Fan;
-            codeToKey[AK_TOUCHPAD] = AtkKey.TouchPad;
-            codeToKey[AK_ROG] = AtkKey.Rog;
-            codeToKey[AK_MUTE_MIC] = AtkKey.MuteMic;
+            var code = (int)wParam;
 
-            keyPressedSubject = new Subject<AtkKey>();
-
-            KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
-
-            messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
-        }
-
-        void IDisposable.Dispose()
-        {
-            disposable?.Dispose();
-            disposable = null;
-        }
-
-        private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
-        {
-            if (messageId == WM_ACPI)
+            if (codeToKey.ContainsKey(code))
             {
-                var code = (int)wParam;
-
-                if (codeToKey.ContainsKey(code))
-                {
-                    keyPressedSubject.OnNext(codeToKey[code]);
-                }
+                keyPressedSubject.OnNext(codeToKey[code]);
             }
         }
+    }
 
-        public IObservable<AtkKey> KeyPressed
-        {
-            get;
-        }
+    public IObservable<AtkKey> KeyPressed
+    {
+        get;
     }
 }

@@ -16,10 +16,9 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public interface IOsd
 {
-    public interface IOsd
-    {
-         void Show(OsdData data);
-    }
+    void Show(OsdData data);
 }

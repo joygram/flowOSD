@@ -16,91 +16,85 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Services
+namespace flowOSD.Services;
+
+using System.Reactive.Disposables;
+using flowOSD.Api;
+
+sealed class ImageSource : IImageSource, IDisposable
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Drawing;
-    using System.IO;
-    using System.Reactive.Disposables;
-    using flowOSD.Api;
-    using static Native;
+    private CompositeDisposable disposable = new CompositeDisposable();
 
-    sealed class ImageSource : IImageSource, IDisposable
+    private Dictionary<string, Image> images;
+    private Dictionary<string, Icon> icons;
+
+    public ImageSource()
     {
-        private CompositeDisposable disposable = new CompositeDisposable();
+        images = new Dictionary<string, Image>();
+        icons = new Dictionary<string, Icon>();
+    }
 
-        private Dictionary<string, Image> images;
-        private Dictionary<string, Icon> icons;
+    void IDisposable.Dispose()
+    {
+        disposable?.Dispose();
+    }
 
-        public ImageSource()
+    public Image GetImage(string name, int? dpi)
+    {
+        var key = dpi == null ? name : $"{name}-{dpi}";
+        if (!images.ContainsKey(key))
         {
-            images = new Dictionary<string, Image>();
-            icons = new Dictionary<string, Icon>();
-        }
+            var assembly = typeof(Images).Assembly;
 
-        void IDisposable.Dispose()
-        {
-            disposable?.Dispose();
-        }
-
-        public Image GetImage(string name, int? dpi)
-        {
-            var key = dpi == null ? name : $"{name}-{dpi}";
-            if (!images.ContainsKey(key))
+            var resourceName = $"flowOSD.Resources.{key}.png";
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
             {
-                var assembly = typeof(Images).Assembly;
-
-                var resourceName = $"flowOSD.Resources.{key}.png";
-                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+                if (stream == null)
                 {
-                    if (stream == null)
-                    {
-                        throw new ApplicationException($"Image was not found: {resourceName}.");
-                    }
+                    throw new ApplicationException($"Image was not found: {resourceName}.");
+                }
 
-                    images[key] = Image.FromStream(stream).DisposeWith(disposable);
+                images[key] = Image.FromStream(stream).DisposeWith(disposable);
+            }
+        }
+
+        return images[key];
+    }
+
+    public Icon GetIcon(string name, int? dpi)
+    {
+        var key = dpi == null ? name : $"{name}-{dpi}";
+        if (!icons.ContainsKey(key))
+        {
+            var assembly = typeof(Images).Assembly;
+
+            var resourceName = $"flowOSD.Resources.{name}.ico";
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                {
+                    throw new ApplicationException($"Icon was not found: {resourceName}.");
+                }
+
+                if (dpi == null)
+                {
+                    icons[key] = new Icon(stream).DisposeWith(disposable);
+                }
+                else
+                {
+                    var width = GetIconWidth(dpi.Value);
+                    icons[key] = new Icon(stream, width, width).DisposeWith(disposable);
                 }
             }
-
-            return images[key];
         }
 
-        public Icon GetIcon(string name, int? dpi)
-        {
-            var key = dpi == null ? name : $"{name}-{dpi}";
-            if (!icons.ContainsKey(key))
-            {
-                var assembly = typeof(Images).Assembly;
+        return icons[key];
+    }
 
-                var resourceName = $"flowOSD.Resources.{name}.ico";
-                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-                {
-                    if (stream == null)
-                    {
-                        throw new ApplicationException($"Icon was not found: {resourceName}.");
-                    }
-
-                    if (dpi == null)
-                    {
-                        icons[key] = new Icon(stream).DisposeWith(disposable);
-                    }
-                    else
-                    {
-                        var width = GetIconWidth(dpi.Value);
-                        icons[key] = new Icon(stream, width, width).DisposeWith(disposable);
-                    }
-                }
-            }
-
-            return icons[key];
-        }
-
-        private static int GetIconWidth(int dpi)
-        {
-            return dpi <= 192
-                ? 16 * (dpi * 100 / 96) / 100
-                : 64;
-        }
+    private static int GetIconWidth(int dpi)
+    {
+        return dpi <= 192
+            ? 16 * (dpi * 100 / 96) / 100
+            : 64;
     }
 }

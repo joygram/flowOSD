@@ -18,16 +18,14 @@
  */
 namespace flowOSD.Services;
 
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text.Json;
 using flowOSD.Api;
 using Microsoft.Win32;
 
-partial class Config : IConfig, IDisposable
+sealed class Config : IConfig, IDisposable
 {
     private const string RUN_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
 

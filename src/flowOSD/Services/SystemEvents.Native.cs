@@ -16,42 +16,37 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Services
+namespace flowOSD.Services;
+
+using System.Runtime.InteropServices;
+
+partial class SystemEvents
 {
-    using System;
-    using System.Drawing;
-    using System.Runtime.InteropServices;
+    [DllImport("uxtheme.dll", EntryPoint = "#95")]
+    private static extern uint GetImmersiveColorFromColorSetEx(
+        uint dwImmersiveColorSet,
+        uint dwImmersiveColorType,
+        bool bIgnoreHighContrast,
+        uint dwHighContrastCacheMode);
 
-    partial class SystemEvents
+    [DllImport("uxtheme.dll", EntryPoint = "#96")]
+    private static extern uint GetImmersiveColorTypeFromName(IntPtr pName);
+
+    [DllImport("uxtheme.dll", EntryPoint = "#98")]
+    private static extern uint GetImmersiveUserColorSetPreference(
+        bool bForceCheckRegistry,
+        bool bSkipCheckOnFail);
+
+    public static Color GetAccentColor()
     {
-        [DllImport("uxtheme.dll", EntryPoint = "#95")]
-        private static extern uint GetImmersiveColorFromColorSetEx(
-            uint dwImmersiveColorSet,
-            uint dwImmersiveColorType,
-            bool bIgnoreHighContrast,
-            uint dwHighContrastCacheMode);
+        var colorSetEx = GetImmersiveColorFromColorSetEx(
+          GetImmersiveUserColorSetPreference(false, false),
+          GetImmersiveColorTypeFromName(Marshal.StringToHGlobalUni("ImmersiveStartSelectionBackground")),
+          false, 0);
 
-        [DllImport("uxtheme.dll", EntryPoint = "#96")]
-        private static extern uint GetImmersiveColorTypeFromName(IntPtr pName);
-
-        [DllImport("uxtheme.dll", EntryPoint = "#98")]
-        private static extern uint GetImmersiveUserColorSetPreference(
-            bool bForceCheckRegistry,
-            bool bSkipCheckOnFail);
-
-        public static Color GetAccentColor()
-        {
-            var colorSetEx = GetImmersiveColorFromColorSetEx(
-              GetImmersiveUserColorSetPreference(false, false),
-              GetImmersiveColorTypeFromName(Marshal.StringToHGlobalUni("ImmersiveStartSelectionBackground")),
-              false, 0);
-
-            //            var a = 0xFFFFFF & colorSetEx >> 24;
-
-            return Color.FromArgb(
-                (byte)(0xFFFFFF & colorSetEx),
-                (byte)((0xFFFFFF & colorSetEx) >> 8),
-                (byte)((0xFFFFFF & colorSetEx) >> 16));
-        }
+        return Color.FromArgb(
+            (byte)(0xFFFFFF & colorSetEx),
+            (byte)((0xFFFFFF & colorSetEx) >> 8),
+            (byte)((0xFFFFFF & colorSetEx) >> 16));
     }
 }

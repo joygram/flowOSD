@@ -18,14 +18,7 @@
  */
 namespace flowOSD;
 
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Windows.Forms;
-using flowOSD.Api;
-using flowOSD.Services;
-using flowOSD.UI;
 using static Extensions;
 
 public static class Program

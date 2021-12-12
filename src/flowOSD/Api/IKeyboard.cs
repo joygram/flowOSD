@@ -16,15 +16,11 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public interface IKeyboard
 {
-    using System;
-    using System.Windows.Forms;
+    double GetBacklight();
 
-    public interface IKeyboard
-    {
-        double GetBacklight();
-
-        void SendKeys(Keys key, params Keys[] modifierKeys);
-    }
+    void SendKeys(Keys key, params Keys[] modifierKeys);
 }

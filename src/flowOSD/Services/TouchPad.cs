@@ -16,81 +16,78 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Services
+namespace flowOSD.Services;
+
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using flowOSD.Api;
+using Microsoft.Win32;
+using static Native;
+
+sealed class TouchPad : ITouchPad, IDisposable
 {
-    using System;
-    using System.Reactive.Disposables;
-    using System.Reactive.Linq;
-    using System.Reactive.Subjects;
-    using Microsoft.Win32;
-    using flowOSD.Api;
-    using static Native;
-    using System.Windows.Forms;
+    private static int WM_TOUCHPAD = (int)RegisterWindowMessage("Touchpad status reported from ATKHotkey");
 
-    public class TouchPad : ITouchPad, IDisposable
+    private const string TOUCHPAD_STATE_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad\Status";
+    private const string TOUCHPAD_STATE_VALUE = "Enabled";
+
+    private readonly BehaviorSubject<bool> isEnabledSubject;
+    private CompositeDisposable disposable = new CompositeDisposable();
+    private IKeyboard keyboard;
+
+    public TouchPad(IKeyboard keyboard, IMessageQueue messageQueue)
     {
-        private static int WM_TOUCHPAD = (int)RegisterWindowMessage("Touchpad status reported from ATKHotkey");
+        this.keyboard = keyboard;
 
-        private const string TOUCHPAD_STATE_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad\Status";
-        private const string TOUCHPAD_STATE_VALUE = "Enabled";
-
-        private readonly BehaviorSubject<bool> isEnabledSubject;
-        private CompositeDisposable disposable = new CompositeDisposable();
-        private IKeyboard keyboard;
-
-        public TouchPad(IKeyboard keyboard, IMessageQueue messageQueue)
+        using (var key = Registry.CurrentUser.OpenSubKey(TOUCHPAD_STATE_KEY, false))
         {
-            this.keyboard = keyboard;
-
-            using (var key = Registry.CurrentUser.OpenSubKey(TOUCHPAD_STATE_KEY, false))
-            {
-                var isEnabled = key.GetValue(TOUCHPAD_STATE_VALUE)?.ToString() == "1";
-                isEnabledSubject = new BehaviorSubject<bool>(isEnabled);
-            }
-
-            IsEnabled = isEnabledSubject.DistinctUntilChanged().AsObservable();
-
-            messageQueue.Subscribe(WM_TOUCHPAD, ProcessMessage).DisposeWith(disposable);
+            var isEnabled = key.GetValue(TOUCHPAD_STATE_VALUE)?.ToString() == "1";
+            isEnabledSubject = new BehaviorSubject<bool>(isEnabled);
         }
 
-        void IDisposable.Dispose()
-        {
-            disposable?.Dispose();
-            disposable = null;
-        }
+        IsEnabled = isEnabledSubject.DistinctUntilChanged().AsObservable();
 
-        public IObservable<bool> IsEnabled
-        {
-            get;
-        }
+        messageQueue.Subscribe(WM_TOUCHPAD, ProcessMessage).DisposeWith(disposable);
+    }
 
-        public void Disable()
-        {
-            if (isEnabledSubject.Value)
-            {
-                Toggle();
-            }
-        }
+    void IDisposable.Dispose()
+    {
+        disposable?.Dispose();
+        disposable = null;
+    }
 
-        public void Enable()
-        {
-            if (!isEnabledSubject.Value)
-            {
-                Toggle();
-            }
-        }
+    public IObservable<bool> IsEnabled
+    {
+        get;
+    }
 
-        public void Toggle()
+    public void Disable()
+    {
+        if (isEnabledSubject.Value)
         {
-            keyboard.SendKeys(Keys.F24, Keys.ControlKey, Keys.LWin);
+            Toggle();
         }
+    }
 
-        private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
+    public void Enable()
+    {
+        if (!isEnabledSubject.Value)
         {
-            if (messageId == WM_TOUCHPAD)
-            {
-                isEnabledSubject.OnNext((int)lParam == 1);
-            }
+            Toggle();
+        }
+    }
+
+    public void Toggle()
+    {
+        keyboard.SendKeys(Keys.F24, Keys.ControlKey, Keys.LWin);
+    }
+
+    private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
+    {
+        if (messageId == WM_TOUCHPAD)
+        {
+            isEnabledSubject.OnNext((int)lParam == 1);
         }
     }
 }

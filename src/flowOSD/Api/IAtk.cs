@@ -16,12 +16,9 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
-{
-    using System;
+namespace flowOSD.Api;
 
-    public interface IAtk
-    {
-        IObservable<AtkKey> KeyPressed { get; }
-    }
+public interface IAtk
+{
+    IObservable<AtkKey> KeyPressed { get; }
 }

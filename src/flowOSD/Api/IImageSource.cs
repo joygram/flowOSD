@@ -16,15 +16,11 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public interface IImageSource
 {
-    using System;
-    using System.Drawing;
+    Image GetImage(string name, int? dpi);
 
-    public interface IImageSource
-    {
-        Image GetImage(string name, int? dpi);
-
-        Icon GetIcon(string name, int? dpi);
-    }
+    Icon GetIcon(string name, int? dpi);
 }

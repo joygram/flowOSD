@@ -16,20 +16,17 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api
+namespace flowOSD.Api;
+
+public interface IPowerManagement
 {
-    using System;
+    IObservable<bool> IsBoost { get; }
 
-    public interface IPowerManagement
-    {
-        IObservable<bool> IsBoost {get;}
+    IObservable<bool> IsDC { get; }
 
-        IObservable<bool> IsDC {get;}
+    void EnableBoost();
 
-        void EnableBoost();
+    void DisableBoost();
 
-        void DisableBoost();
-
-        void ToggleBoost();     
-    }
+    void ToggleBoost();
 }

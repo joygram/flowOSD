@@ -16,61 +16,58 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.UI
+namespace flowOSD.UI;
+
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using flowOSD.Api;
+using static Native;
+
+sealed class NativeUI : NativeWindow, IDisposable
 {
-    using System;
-    using System.Reactive.Linq;
-    using System.Reactive.Subjects;
-    using System.Windows.Forms;
-    using flowOSD.Api;
-    using static Native;
+    private BehaviorSubject<int> dpiSubject;
+    private IMessageQueue messageQueue;
 
-    sealed class NativeUI : NativeWindow, IDisposable
+    public NativeUI(IntPtr handle, IMessageQueue messageQueue)
     {
-        private BehaviorSubject<int> dpiSubject;
-        private IMessageQueue messageQueue;
+        this.messageQueue = messageQueue;
 
-        public NativeUI(IntPtr handle, IMessageQueue messageQueue)
+        dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(handle));
+
+        Dpi = dpiSubject.AsObservable();
+
+        AssignHandle(handle);
+    }
+
+    ~NativeUI()
+    {
+        Dispose(false);
+    }
+
+    void IDisposable.Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        ReleaseHandle();
+    }
+
+    public IObservable<int> Dpi { get; }
+
+    protected override void WndProc(ref Message message)
+    {
+        const int WM_DPICHANGED = 0x02E0;
+
+        messageQueue.Push(ref message);
+
+        if (message.Msg == WM_DPICHANGED)
         {
-            this.messageQueue = messageQueue;
-
-            dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(handle));
-
-            Dpi = dpiSubject.AsObservable();
-
-            AssignHandle(handle);
+            dpiSubject.OnNext((int)HiWord(message.WParam));
         }
 
-        ~NativeUI()
-        {
-            Dispose(false);
-        }
-
-        void IDisposable.Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            ReleaseHandle();
-        }
-
-        public IObservable<int> Dpi { get; }
-
-        protected override void WndProc(ref Message message)
-        {
-            const int WM_DPICHANGED = 0x02E0;
-
-            messageQueue.Push(ref message);
-
-            if (message.Msg == WM_DPICHANGED)
-            {
-                dpiSubject.OnNext((int)HiWord(message.WParam));
-            }
-
-            base.WndProc(ref message);
-        }
+        base.WndProc(ref message);
     }
 }
