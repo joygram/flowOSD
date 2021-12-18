@@ -18,11 +18,9 @@
  */
 namespace flowOSD.UI;
 
-using flowOSD.Api;
-using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Reactive.Disposables;
+using flowOSD.Api;
 using static Extensions;
 using static Native;
 
@@ -232,6 +230,7 @@ sealed class ConfigUI : IDisposable
 
             var scale = GetDpiForWindow(Handle) / 96f;
             this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
+            UpdateSize(GetDpiForWindow(Handle));
 
             StartPosition = FormStartPosition.CenterScreen;
         }

@@ -32,6 +32,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool disableTouchPadInTabletMode;
     private bool controlDisplayRefreshRate;
     private bool highDisplayRefreshRateAC, highDisplayRefreshRateDC;
+    private bool useRogKey;
 
     private bool showPowerSourceNotification;
     private bool showBoostNotification;
@@ -52,6 +53,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         showTouchPadNotification = true;
         showDisplayRefreshRateNotification = true;
 
+        useRogKey = true;
 
         events = new Dictionary<PropertyChangedEventHandler, IDisposable>();
         propertyChangedSubject = new Subject<string>();
@@ -123,6 +125,12 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => highDisplayRefreshRateDC;
         set => SetProperty(value, ref highDisplayRefreshRateDC);
+    }
+
+    public bool UseRogKey
+    {
+        get => useRogKey;
+        set => SetProperty(value, ref useRogKey);
     }
 
     public bool ShowPowerSourceNotification

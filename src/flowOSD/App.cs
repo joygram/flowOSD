@@ -49,9 +49,9 @@ sealed class App : IDisposable
     private NotifyIcon notifyIcon;
     private NativeUI nativeUI;
 
-    public App()
+    public App(IConfig config)
     {
-        config = new Config().DisposeWith(disposable);
+        this.config = config;
 
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
@@ -91,7 +91,11 @@ sealed class App : IDisposable
             .DisposeWith(disposable);
 
         systemEvents.AppException
-            .Subscribe(ex => TraceException(ex, "Unhandled application exception."))
+            .Subscribe(ex =>
+            {
+                TraceException(ex, "Unhandled application exception");
+                MessageBox.Show(ex.Message, "Unhandled application exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            })
             .DisposeWith(disposable);
 
         nativeUI.Dpi
@@ -144,7 +148,13 @@ sealed class App : IDisposable
             .Where(x => x == AtkKey.Rog)
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ => keyboard.SendKeys(Keys.PrintScreen))
+            .Subscribe(_ =>
+            {
+                if (config.UserConfig.UseRogKey)
+                {
+                    keyboard.SendKeys(Keys.PrintScreen);
+                }
+            })
             .DisposeWith(disposable);
 
         // Notifications
@@ -403,30 +413,6 @@ sealed class App : IDisposable
         catch (Exception ex)
         {
             TraceException(ex, "Error is occurred while toggling TouchPad state (Auto).");
-        }
-    }
-
-    private void ToggleHighRefreshRateOnAC(bool isBattery)
-    {
-        if (!config.UserConfig.ControlDisplayRefreshRate)
-        {
-            return;
-        }
-
-        try
-        {
-            if (isBattery)
-            {
-                display.DisableHighRefreshRate();
-            }
-            else
-            {
-                display.EnableHighRefreshRate();
-            }
-        }
-        catch (Exception ex)
-        {
-            TraceException(ex, "Error is occurred while toggling display refresh rate (Auto).");
         }
     }
 }

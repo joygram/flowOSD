@@ -25,6 +25,7 @@ using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using flowOSD.Api;
 using static Native;
+using static Extensions;
 
 sealed partial class Display : IDisposable, IDisplay
 {
@@ -102,22 +103,29 @@ sealed partial class Display : IDisposable, IDisplay
 
     private void OnPowerSourceChanged(bool isDC)
     {
-        if (!config.UserConfig.ControlDisplayRefreshRate)
+        if (!config.UserConfig.ControlDisplayRefreshRate || !isHighRefreshRateSupportedSubject.Value)
         {
             return;
         }
 
-        var isHighRefreshRate = isDC
-            ? config.UserConfig.HighDisplayRefreshRateDC
-            : config.UserConfig.HighDisplayRefreshRateAC;
+        try
+        {
+            var isHighRefreshRate = isDC
+                ? config.UserConfig.HighDisplayRefreshRateDC
+                : config.UserConfig.HighDisplayRefreshRateAC;
 
-        if (isHighRefreshRate)
-        {
-            EnableHighRefreshRate();
+            if (isHighRefreshRate)
+            {
+                EnableHighRefreshRate();
+            }
+            else
+            {
+                DisableHighRefreshRate();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            DisableHighRefreshRate();
+            TraceException(ex, "Error is occurred while toggling display refresh rate (Auto).");
         }
     }
 

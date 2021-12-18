@@ -31,30 +31,43 @@ sealed class Config : IConfig, IDisposable
 
     private CompositeDisposable disposable = new CompositeDisposable();
     private FileInfo configFile;
+    private Lazy<UserConfig> userConfig;
 
     public Config()
     {
         AppFile = new FileInfo(typeof(Config).Assembly.Location);
         AppFileInfo = FileVersionInfo.GetVersionInfo(AppFile.FullName);
-        DataDirectory = AppFile.Directory;
+        DataDirectory = new DirectoryInfo(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            AppFileInfo.ProductName));
+
+        if (!DataDirectory.Exists)
+        {
+            DataDirectory.Create();
+        }
 
         configFile = new FileInfo(Path.Combine(DataDirectory.FullName, "config.json"));
 
-        UserConfig = configFile.Exists
-            ? Load()
-            : new UserConfig();
-        UserConfig.RunAtStartup = GetStartupOption();
+        userConfig = new Lazy<UserConfig>(() =>
+        {
+            var config = configFile.Exists
+                ? Load()
+                : new UserConfig();
+            config.RunAtStartup = GetStartupOption();
 
-        UserConfig.PropertyChanged
-            .Where(x => x == nameof(UserConfig.RunAtStartup))
-            .Throttle(TimeSpan.FromMilliseconds(500))
-            .Subscribe(_ => UpdateStartupOption(UserConfig.RunAtStartup))
-            .DisposeWith(disposable);
+            config.PropertyChanged
+                .Where(x => x == nameof(UserConfig.RunAtStartup))
+                .Throttle(TimeSpan.FromMilliseconds(500))
+                .Subscribe(_ => UpdateStartupOption(UserConfig.RunAtStartup))
+                .DisposeWith(disposable);
 
-        UserConfig.PropertyChanged
-            .Throttle(TimeSpan.FromMilliseconds(500))
-            .Subscribe(x => Save())
-            .DisposeWith(disposable);
+            config.PropertyChanged
+                .Throttle(TimeSpan.FromMilliseconds(500))
+                .Subscribe(x => Save())
+                .DisposeWith(disposable);
+
+            return config;
+        }, true);
     }
 
     void IDisposable.Dispose()
@@ -63,7 +76,7 @@ sealed class Config : IConfig, IDisposable
         disposable = null;
     }
 
-    public UserConfig UserConfig { get; }
+    public UserConfig UserConfig { get => userConfig.Value; }
 
     public FileInfo AppFile { get; }
 

@@ -109,9 +109,10 @@ sealed partial class PowerManagement : IPowerManagement, IDisposable
     private void UpdateActiveScheme()
     {
         IntPtr SchemeGuid = IntPtr.Zero;
-        if (PowerGetActiveScheme(IntPtr.Zero, ref SchemeGuid) != ERROR_SUCCESS)
+        var errorCode = PowerGetActiveScheme(IntPtr.Zero, ref SchemeGuid);
+        if (errorCode != ERROR_SUCCESS)
         {
-            throw new Win32Exception();
+            throw new Win32Exception((int)errorCode);
         }
         try
         {

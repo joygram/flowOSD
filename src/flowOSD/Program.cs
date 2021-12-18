@@ -19,6 +19,8 @@
 namespace flowOSD;
 
 using System.Diagnostics;
+using System.Reactive.Disposables;
+using flowOSD.Services;
 using static Extensions;
 
 public static class Program
@@ -26,8 +28,11 @@ public static class Program
     [STAThread]
     static void Main()
     {
+        var disposable = new CompositeDisposable();
+        var config = new Config().DisposeWith(disposable);
+
 #if !DEBUG
-        var logFileName = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "log.txt");
+        var logFileName = Path.Combine(config.DataDirectory.FullName, "log.txt");
         var listener = new TextWriterTraceListener(logFileName);
         Trace.Listeners.Add(listener);
 #endif
@@ -39,18 +44,21 @@ public static class Program
 
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
-            using (var app = new App())
-            {
-                Application.Run(app.ApplicationContext);
-            }
+            var app = new App(config).DisposeWith(disposable);
+
+            Application.Run(app.ApplicationContext);
         }
         catch (Exception ex)
         {
             TraceException(ex, "General Failure");
+            MessageBox.Show(ex.Message, "General Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
         }
 #if !DEBUG
         finally
         {
+            disposable.Dispose();
+
             listener.Flush();
             listener.Dispose();
         }
