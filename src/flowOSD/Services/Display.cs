@@ -54,7 +54,6 @@ sealed partial class Display : IDisposable, IDisplay
         IsHighRefreshRate = isHighRefreshRateSubject.AsObservable();
 
         messageQueue.Subscribe(WM_DISPLAY_CHANGE, ProcessMessage).DisposeWith(disposable);
-        isHighRefreshRateSubject.Subscribe(x => OnHighRefreshRateChanged(x)).DisposeWith(disposable);
 
         this.powerManagement.IsDC
             .Throttle(TimeSpan.FromSeconds(2))
@@ -126,18 +125,6 @@ sealed partial class Display : IDisposable, IDisplay
         catch (Exception ex)
         {
             TraceException(ex, "Error is occurred while toggling display refresh rate (Auto).");
-        }
-    }
-
-    private async void OnHighRefreshRateChanged(bool isHighRefreshRate)
-    {
-        if (await powerManagement.IsDC.FirstAsync())
-        {
-            config.UserConfig.HighDisplayRefreshRateDC = isHighRefreshRate;
-        }
-        else
-        {
-            config.UserConfig.HighDisplayRefreshRateAC = isHighRefreshRate;
         }
     }
 

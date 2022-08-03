@@ -340,10 +340,21 @@ sealed class App : IDisposable
         notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI", 12 * (dpi / 96f), GraphicsUnit.Pixel);
     }
 
-    private void ToggleRefreshRate()
+    private async void ToggleRefreshRate()
     {
         try
         {
+            var isHighRefreshRate = await display.IsHighRefreshRate.FirstAsync();
+
+            if (await powerManagement.IsDC.FirstAsync())
+            {
+                config.UserConfig.HighDisplayRefreshRateDC = !isHighRefreshRate;
+            }
+            else
+            {
+                config.UserConfig.HighDisplayRefreshRateAC = !isHighRefreshRate;
+            }
+
             display.ToggleRefreshRate();
         }
         catch (Exception ex)
