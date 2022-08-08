@@ -24,6 +24,7 @@ using System.Reflection;
 using flowOSD.Api;
 using flowOSD.Services;
 using flowOSD.UI;
+using flowOSD.UI.Commands;
 using static Extensions;
 
 sealed class App : IDisposable
@@ -42,12 +43,11 @@ sealed class App : IDisposable
     private IKeyboard keyboard;
     private IOsd osd;
 
-    private ConfigUI configUI;
-    private AboutUI aboutUI;
-
     private ToolStripMenuItem highRefreshRateMenuItem, touchPadMenuItem, boostMenuItem, aboutMenuItem;
     private NotifyIcon notifyIcon;
     private NativeUI nativeUI;
+
+    private CommandManager commandManager;
 
     public App(IConfig config)
     {
@@ -55,8 +55,6 @@ sealed class App : IDisposable
 
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
-        configUI = new ConfigUI(config);
-        aboutUI = new AboutUI(config).DisposeWith(disposable);
         Init();
 
         messageQueue = new MessageQueue().DisposeWith(disposable);
@@ -72,16 +70,6 @@ sealed class App : IDisposable
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
 
         nativeUI = new NativeUI(notifyIcon.ContextMenuStrip.Handle, messageQueue).DisposeWith(disposable);
-
-        powerManagement.IsBoost
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => boostMenuItem.Text = x ? "Disable Boost" : "Enable Boost")
-            .DisposeWith(disposable);
-
-        touchPad.IsEnabled
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => touchPadMenuItem.Text = x ? "Disable TouchPad" : "Enable TouchPad")
-            .DisposeWith(disposable);
 
         systemEvents.TabletMode
             .CombineLatest(systemEvents.SystemDarkMode, nativeUI.Dpi.Throttle(TimeSpan.FromSeconds(2)), (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
@@ -102,25 +90,6 @@ sealed class App : IDisposable
             .Subscribe(dpi => UpdateDpi(dpi))
             .DisposeWith(disposable);
 
-        display.IsHighRefreshRateSupported
-            .Throttle(TimeSpan.FromMilliseconds(200))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x =>
-            {
-                highRefreshRateMenuItem.Visible = x;
-                if (highRefreshRateMenuItem.Tag is ToolStripItem separator)
-                {
-                    separator.Visible = x;
-                }
-            })
-            .DisposeWith(disposable);
-
-        display.IsHighRefreshRate
-            .Throttle(TimeSpan.FromMilliseconds(200))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => highRefreshRateMenuItem.Text = x ? "Disable High Refresh Rate" : "Enable High Refresh Rate")
-            .DisposeWith(disposable);
-
         // Hotkeys
 
         atk.KeyPressed
@@ -128,33 +97,6 @@ sealed class App : IDisposable
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => osd.Show(new OsdData(Images.Keyboard, keyboard.GetBacklight())))
-            .DisposeWith(disposable);
-
-        atk.KeyPressed
-            .Where(x => x == AtkKey.Aura)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ => ToggleRefreshRate())
-            .DisposeWith(disposable);
-
-        atk.KeyPressed
-            .Where(x => x == AtkKey.Fan)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ => ToggleBoost())
-            .DisposeWith(disposable);
-
-        atk.KeyPressed
-            .Where(x => x == AtkKey.Rog)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ =>
-            {
-                if (config.UserConfig.UseRogKey)
-                {
-                    keyboard.SendKeys(Keys.PrintScreen);
-                }
-            })
             .DisposeWith(disposable);
 
         // Notifications
@@ -197,6 +139,42 @@ sealed class App : IDisposable
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => ToggleTouchPadOnTabletMode(x))
             .DisposeWith(disposable);
+
+        // Commands
+
+        commandManager = new CommandManager(
+            new ToggleRefreshRateCommand(powerManagement, display, config.UserConfig),
+            new ToggleTouchPadCommand(touchPad),
+            new ToggleBoostCommand(powerManagement),
+            new SettingsCommand(config),
+            new AboutCommand(config),
+            new ExitCommand(),
+            new PrintScreenCommand(keyboard));
+
+        BindCommandManager();
+
+        // Hotkeys
+
+        commandManager.Register(AtkKey.Aura, nameof(ToggleRefreshRateCommand));
+        commandManager.Register(AtkKey.Fan, nameof(ToggleBoostCommand));
+        commandManager.Register(AtkKey.Rog, nameof(PrintScreenCommand));
+
+        atk.KeyPressed
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => commandManager.Resolve(x)?.Execute())
+            .DisposeWith(disposable);
+    }
+
+    private void BindCommandManager()
+    {
+        foreach (var item in notifyIcon.ContextMenuStrip.Items)
+        {
+            if (item is CommandMenuItem commandItem)
+            {
+                commandItem.CommandManager = commandManager;
+            }
+        }
     }
 
     private void ShowPowerSourceNotification(bool isBattery)
@@ -268,52 +246,39 @@ sealed class App : IDisposable
         {
             x.RenderMode = ToolStripRenderMode.System;
         }).Add(
-            Create<ToolStripMenuItem>(x =>
-            {
-                x.Padding = new Padding(0, 2, 0, 2);
-                x.Margin = new Padding(0, 8, 0, 8);
-                x.Click += (sender, e) => ToggleRefreshRate();
-                x.ShortcutKeyDisplayString = "FN + F4";
-            }).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
-            Create<ToolStripSeparator>(x => highRefreshRateMenuItem.Tag = x).DisposeWith(disposable),
-            Create<ToolStripMenuItem>(x =>
-            {
-                x.Padding = new Padding(0, 2, 0, 2);
-                x.Margin = new Padding(0, 8, 0, 8);
-                x.Click += (sender, e) => ToggleTouchPad();
-                x.ShortcutKeyDisplayString = "FN + F10";
-            }).DisposeWith(disposable).LinkAs(ref touchPadMenuItem),
-            Create<ToolStripMenuItem>(x =>
-            {
-                x.Padding = new Padding(0, 2, 0, 2);
-                x.Margin = new Padding(0, 8, 0, 8);
-                x.Click += (sender, e) => ToggleBoost();
-                x.ShortcutKeyDisplayString = "FN + F5";
-            }).DisposeWith(disposable).LinkAs(ref boostMenuItem),
-            Create<ToolStripSeparator>().DisposeWith(disposable),
-            Create<ToolStripMenuItem>(x =>
-            {
-                x.Text = "Settings...";
-                x.Padding = new Padding(0, 2, 0, 2);
-                x.Margin = new Padding(0, 8, 0, 8);
-                x.Click += (sender, e) => ShowConfig();
-            }).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
-            Create<ToolStripMenuItem>(x =>
-            {
-                x.Text = "About";
-                x.Padding = new Padding(0, 2, 0, 2);
-                x.Margin = new Padding(0, 8, 0, 8);
-                x.Click += (sender, e) => ShowAbout();
-            }).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
-            Create<ToolStripSeparator>().DisposeWith(disposable),
-            Create<ToolStripMenuItem>(x =>
-            {
-                x.Text = "Exit";
-                x.Padding = new Padding(0, 2, 0, 2);
-                x.Margin = new Padding(0, 8, 0, 8);
-                x.Click += (sender, e) => Application.Exit();
-            }).DisposeWith(disposable)
+            CreateCommandMenuItem(nameof(ToggleRefreshRateCommand)).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
+            CreateSeparator(highRefreshRateMenuItem).DisposeWith(disposable),
+            CreateCommandMenuItem(nameof(ToggleTouchPadCommand)).DisposeWith(disposable).LinkAs(ref touchPadMenuItem),
+            CreateCommandMenuItem(nameof(ToggleBoostCommand)).DisposeWith(disposable).LinkAs(ref boostMenuItem),
+            CreateSeparator().DisposeWith(disposable),
+            CreateCommandMenuItem(nameof(SettingsCommand)).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
+            CreateCommandMenuItem(nameof(AboutCommand)).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
+            CreateSeparator().DisposeWith(disposable),
+            CreateCommandMenuItem(nameof(ExitCommand)).DisposeWith(disposable)
             );
+    }
+
+    private CommandMenuItem CreateCommandMenuItem(string commandName, object commandParameter = null)
+    {
+        var item = new CommandMenuItem();
+        item.Padding = new Padding(0, 2, 0, 2);
+        item.Margin = new Padding(0, 8, 0, 8);
+        item.CommandName = commandName;
+        item.CommandParameter = commandParameter;
+
+        return item;
+    }
+
+    private ToolStripSeparator CreateSeparator(ToolStripItem dependsOn = null)
+    {
+        var separator = new ToolStripSeparator();
+
+        if (dependsOn != null)
+        {
+            dependsOn.VisibleChanged += (sender, e) => separator.Visible = dependsOn.Visible;
+        }
+
+        return separator;
     }
 
     private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode, int dpi)
@@ -338,69 +303,6 @@ sealed class App : IDisposable
     {
         notifyIcon.ContextMenuStrip.Font?.Dispose();
         notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI", 12 * (dpi / 96f), GraphicsUnit.Pixel);
-    }
-
-    private async void ToggleRefreshRate()
-    {
-        try
-        {
-            var isHighRefreshRate = await display.IsHighRefreshRate.FirstAsync();
-
-            if (await powerManagement.IsDC.FirstAsync())
-            {
-                config.UserConfig.HighDisplayRefreshRateDC = !isHighRefreshRate;
-            }
-            else
-            {
-                config.UserConfig.HighDisplayRefreshRateAC = !isHighRefreshRate;
-            }
-
-            display.ToggleRefreshRate();
-        }
-        catch (Exception ex)
-        {
-            TraceException(ex, "Error is occurred while toggling display refresh rate (UI).");
-            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
-
-    private void ToggleBoost()
-    {
-        try
-        {
-            powerManagement.ToggleBoost();
-        }
-        catch (Exception ex)
-        {
-            TraceException(ex, "Error is occurred while toggling CPU boost mode (UI).");
-        }
-    }
-
-    private void ToggleTouchPad()
-    {
-        try
-        {
-            touchPad.Toggle();
-        }
-        catch (Exception ex)
-        {
-            TraceException(ex, "Error is occurred while toggling TouchPad state (UI).");
-        }
-    }
-
-    private void ShowConfig()
-    {
-        configUI.Show();
-    }
-
-    private void ShowAbout()
-    {
-        aboutUI.Show();
-    }
-
-    private void Exit()
-    {
-        Application.Exit();
     }
 
     private void ToggleTouchPadOnTabletMode(bool isTabletMode)

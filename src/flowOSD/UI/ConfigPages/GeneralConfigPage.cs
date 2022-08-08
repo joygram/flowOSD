@@ -124,33 +124,6 @@ internal class GeneralConfigPage : TableLayoutPanel
 
             y.DisposeWith(disposable);
         });
-
-        this.Add<CheckBox>(0, 6, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = new Padding(20, 5, 0, 5);
-            y.Text = "Use ROG key as Print Screen";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.UseRogKey),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 7, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = new Padding(15, 5, 0, 15);
-            y.Text = "Disable this option if ASUS Armoury Crate is used.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
     }
 
     protected override void Dispose(bool disposing)

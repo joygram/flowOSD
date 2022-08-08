@@ -32,7 +32,6 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool disableTouchPadInTabletMode;
     private bool controlDisplayRefreshRate;
     private bool highDisplayRefreshRateAC, highDisplayRefreshRateDC;
-    private bool useRogKey;
 
     private bool showPowerSourceNotification;
     private bool showBoostNotification;
@@ -52,8 +51,6 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         showBoostNotification = true;
         showTouchPadNotification = true;
         showDisplayRefreshRateNotification = true;
-
-        useRogKey = true;
 
         events = new Dictionary<PropertyChangedEventHandler, IDisposable>();
         propertyChangedSubject = new Subject<string>();
@@ -100,64 +97,58 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     public bool RunAtStartup
     {
         get => runAtStartup;
-        set => SetProperty(value, ref runAtStartup);
+        set => SetProperty(ref runAtStartup, value);
     }
 
     public bool DisableTouchPadInTabletMode
     {
         get => disableTouchPadInTabletMode;
-        set => SetProperty(value, ref disableTouchPadInTabletMode);
+        set => SetProperty(ref disableTouchPadInTabletMode, value);
     }
 
     public bool ControlDisplayRefreshRate
     {
         get => controlDisplayRefreshRate;
-        set => SetProperty(value, ref controlDisplayRefreshRate);
+        set => SetProperty(ref controlDisplayRefreshRate, value);
     }
 
     public bool HighDisplayRefreshRateAC
     {
         get => highDisplayRefreshRateAC;
-        set => SetProperty(value, ref highDisplayRefreshRateAC);
+        set => SetProperty(ref highDisplayRefreshRateAC, value);
     }
 
     public bool HighDisplayRefreshRateDC
     {
         get => highDisplayRefreshRateDC;
-        set => SetProperty(value, ref highDisplayRefreshRateDC);
-    }
-
-    public bool UseRogKey
-    {
-        get => useRogKey;
-        set => SetProperty(value, ref useRogKey);
+        set => SetProperty(ref highDisplayRefreshRateDC, value);
     }
 
     public bool ShowPowerSourceNotification
     {
         get => showPowerSourceNotification;
-        set => SetProperty(value, ref showPowerSourceNotification);
+        set => SetProperty(ref showPowerSourceNotification, value);
     }
 
     public bool ShowBoostNotification
     {
         get => showBoostNotification;
-        set => SetProperty(value, ref showBoostNotification);
+        set => SetProperty(ref showBoostNotification, value);
     }
 
     public bool ShowTouchPadNotification
     {
         get => showTouchPadNotification;
-        set => SetProperty(value, ref showTouchPadNotification);
+        set => SetProperty(ref showTouchPadNotification, value);
     }
 
     public bool ShowDisplayRateNotification
     {
         get => showDisplayRefreshRateNotification;
-        set => SetProperty(value, ref showDisplayRefreshRateNotification);
+        set => SetProperty(ref showDisplayRefreshRateNotification, value);
     }
 
-    private void SetProperty<T>(T value, ref T property, [CallerMemberName] string propertyName = null)
+    private void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)
     {
         if (!Equals(property, value))
         {
