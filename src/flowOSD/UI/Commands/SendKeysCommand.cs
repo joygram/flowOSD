@@ -23,20 +23,24 @@ using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
 
-sealed class ExitCommand : CommandBase
+sealed class SendKeysCommand : CommandBase
 {
-    public ExitCommand()
+    private IKeyboard keyboard;
+
+    public SendKeysCommand(IKeyboard keyboard)
     {
-        Text = "Exit";
+        this.keyboard = keyboard;
+
         Enabled = true;
     }
 
-    public override string Name => nameof(ExitCommand);
-
-    public override bool CanExecuteWithHotKey => false;
+    public override string Name => nameof(SendKeysCommand);
 
     public override void Execute(object parameter = null)
     {
-        Application.Exit();
+        if ((parameter is Keys keys) || (parameter is string text && Enum.TryParse(text, out keys)))
+        {
+            keyboard.SendKeys(keys);
+        }
     }
 }

@@ -30,5 +30,7 @@ public interface ICommand : INotifyPropertyChanged
 
     bool Enabled { get; }
 
+    bool CanExecuteWithHotKey { get; }
+
     void Execute(object parameter = null);
 }

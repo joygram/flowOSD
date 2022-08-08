@@ -23,8 +23,4 @@ using System.ComponentModel;
 public interface ICommandManager
 {
     ICommand Resolve(string commandName);
-
-    ICommand Resolve(AtkKey key);
-
-    void Register(AtkKey key, string commandName);
 }

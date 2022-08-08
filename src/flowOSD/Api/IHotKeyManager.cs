@@ -16,29 +16,11 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.UI.Commands;
+namespace flowOSD.Api;
 
-using System.ComponentModel;
-using System.Reactive.Disposables;
-using System.Runtime.CompilerServices;
-using flowOSD.Api;
-
-sealed class PrintScreenCommand : CommandBase
+public interface IHotKeyManager
 {
-    private IKeyboard keyboard;
+    void Register(AtkKey key, string commandName, object commandParameter = null);
 
-    public PrintScreenCommand(IKeyboard keyboard)
-    {
-        this.keyboard = keyboard;
-
-        Text = "Print Screen";
-        Enabled = true;
-    }
-
-    public override string Name => nameof(PrintScreenCommand);
-
-    public override void Execute(object parameter = null)
-    {
-        keyboard.SendKeys(Keys.PrintScreen);
-    }
+    void ExecuteCommand(AtkKey key);
 }

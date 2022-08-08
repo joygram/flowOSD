@@ -28,6 +28,8 @@ sealed class CommandMenuItem : ToolStripMenuItem
 
     private CommandBinding commandBinding;
 
+    public bool BindProperties { get; set; } = true;
+
     public string CommandName
     {
         get => commandName;
@@ -105,6 +107,11 @@ sealed class CommandMenuItem : ToolStripMenuItem
 
         private void OnPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            if (!menuItem.BindProperties)
+            {
+                return;
+            }
+
             switch (e.PropertyName)
             {
                 case nameof(ICommand.Text):
@@ -132,6 +139,11 @@ sealed class CommandMenuItem : ToolStripMenuItem
 
         private void InitMenuItem()
         {
+            if (!menuItem.BindProperties)
+            {
+                return;
+            }
+
             menuItem.Text = Command.Text;
             menuItem.Enabled = Command.Enabled;
         }

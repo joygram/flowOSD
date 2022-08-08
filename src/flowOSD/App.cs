@@ -48,6 +48,7 @@ sealed class App : IDisposable
     private NativeUI nativeUI;
 
     private CommandManager commandManager;
+    private HotKeyManager hotKeyManager;
 
     public App(IConfig config)
     {
@@ -149,20 +150,21 @@ sealed class App : IDisposable
             new SettingsCommand(config),
             new AboutCommand(config),
             new ExitCommand(),
-            new PrintScreenCommand(keyboard));
+            new SendKeysCommand(keyboard));
 
         BindCommandManager();
 
         // Hotkeys
 
-        commandManager.Register(AtkKey.Aura, nameof(ToggleRefreshRateCommand));
-        commandManager.Register(AtkKey.Fan, nameof(ToggleBoostCommand));
-        commandManager.Register(AtkKey.Rog, nameof(PrintScreenCommand));
+        hotKeyManager = new HotKeyManager(commandManager);
+        hotKeyManager.Register(AtkKey.Aura, nameof(ToggleRefreshRateCommand));
+        hotKeyManager.Register(AtkKey.Fan, nameof(ToggleBoostCommand));
+        hotKeyManager.Register(AtkKey.Rog, nameof(SendKeysCommand), Keys.PrintScreen.ToString());
 
         atk.KeyPressed
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => commandManager.Resolve(x)?.Execute())
+            .Subscribe(x => hotKeyManager.ExecuteCommand(x))
             .DisposeWith(disposable);
     }
 
@@ -258,13 +260,15 @@ sealed class App : IDisposable
             );
     }
 
-    private CommandMenuItem CreateCommandMenuItem(string commandName, object commandParameter = null)
+    private CommandMenuItem CreateCommandMenuItem(string commandName, object commandParameter = null, Action<CommandMenuItem> initializator = null)
     {
         var item = new CommandMenuItem();
         item.Padding = new Padding(0, 2, 0, 2);
         item.Margin = new Padding(0, 8, 0, 8);
         item.CommandName = commandName;
         item.CommandParameter = commandParameter;
+
+        initializator?.Invoke(item);
 
         return item;
     }

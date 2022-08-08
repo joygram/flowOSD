@@ -48,6 +48,8 @@ abstract class CommandBase : ICommand, IDisposable
         protected set => SetProperty(ref enabled, value);
     }
 
+    public virtual bool CanExecuteWithHotKey => true;
+
     protected CompositeDisposable Disposable { get; private set; } = new CompositeDisposable();
 
     private void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)

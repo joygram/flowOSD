@@ -26,7 +26,6 @@ using flowOSD.Api;
 sealed class CommandManager : ICommandManager
 {
     private Dictionary<string, ICommand> names = new Dictionary<string, ICommand>();
-    private Dictionary<AtkKey, ICommand> keys = new Dictionary<AtkKey, ICommand>();
 
     public CommandManager(params ICommand[] commands)
     {
@@ -36,25 +35,8 @@ sealed class CommandManager : ICommandManager
         }
     }
 
-    public void Register(AtkKey key, string commandName)
-    {
-        if (!string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out ICommand nextCommand))
-        {
-            keys[key] = nextCommand;
-        }
-        else
-        {
-            keys.Remove(key);
-        }
-    }
-
     public ICommand Resolve(string commandName)
     {
         return !string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out ICommand command) ? command : null;
-    }
-
-    public ICommand Resolve(AtkKey key)
-    {
-        return keys.TryGetValue(key, out ICommand command) ? command : null;
     }
 }
