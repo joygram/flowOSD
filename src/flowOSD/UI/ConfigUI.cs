@@ -28,10 +28,12 @@ sealed class ConfigUI : IDisposable
 {
     private Window instance;
     private IConfig config;
+    private ICommandManager commandManager;
 
-    public ConfigUI(IConfig config)
+    public ConfigUI(IConfig config, ICommandManager commandManager)
     {
-        this.config = config;
+        this.config = config ?? throw new ArgumentNullException(nameof(config));
+        this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
     }
 
     void IDisposable.Dispose()
@@ -53,7 +55,8 @@ sealed class ConfigUI : IDisposable
         {
             instance = new Window(
                 new ConfigPages.GeneralConfigPage(config),
-                new ConfigPages.NotificationsConfigPage(config));
+                new ConfigPages.NotificationsConfigPage(config),
+                new ConfigPages.HotKeysConfigPage(config, commandManager));
             instance.Show();
         }
     }

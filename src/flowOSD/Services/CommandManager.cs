@@ -27,11 +27,17 @@ sealed class CommandManager : ICommandManager
 {
     private Dictionary<string, ICommand> names = new Dictionary<string, ICommand>();
 
-    public CommandManager(params ICommand[] commands)
+    public CommandManager()
     {
-        foreach (var command in commands)
+    }
+
+    public void Register(ICommand command, params ICommand[] commands)
+    {
+        names[command.Name] = command;
+
+        foreach(var c in commands)
         {
-            names[command.Name] = command;
+            names[c.Name] = c;
         }
     }
 
@@ -39,4 +45,6 @@ sealed class CommandManager : ICommandManager
     {
         return !string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out ICommand command) ? command : null;
     }
+
+    public IList<ICommand> Commands => names.Values.Where(i => i.CanExecuteWithHotKey).ToArray();
 }

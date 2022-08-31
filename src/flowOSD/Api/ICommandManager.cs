@@ -23,4 +23,6 @@ using System.ComponentModel;
 public interface ICommandManager
 {
     ICommand Resolve(string commandName);
+
+    public IList<ICommand> Commands { get; }
 }

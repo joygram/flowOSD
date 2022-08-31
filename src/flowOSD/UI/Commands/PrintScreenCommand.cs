@@ -23,24 +23,22 @@ using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
 
-sealed class AboutCommand : CommandBase
+sealed class PrintScreenCommand : CommandBase
 {
-    private AboutUI aboutUI;
+    private IKeyboard keyboard;
 
-    public AboutCommand(IConfig config)
+    public PrintScreenCommand(IKeyboard keyboard)
     {
-        aboutUI = new AboutUI(config).DisposeWith(Disposable);
-    
-        Text = "About...";
+        this.keyboard = keyboard;
+
+        Text = "Print Screen";
         Enabled = true;
     }
 
-    public override string Name => nameof(AboutCommand);
-
-    public override bool CanExecuteWithHotKey => false;
+    public override string Name => nameof(PrintScreenCommand);
 
     public override void Execute(object parameter = null)
     {
-        aboutUI.Show();
+        keyboard.SendKeys(Keys.PrintScreen);
     }
 }

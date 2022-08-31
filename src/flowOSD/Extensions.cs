@@ -61,6 +61,16 @@ static class Extensions
         Trace.Flush();
     }
 
+    public static T Add<T>(this Panel control, Action<T> initializator) where T : Control
+    {
+        var obj = Activator.CreateInstance<T>();
+        initializator(obj);
+
+        control.Controls.Add(obj);
+
+        return obj;
+    }
+
     public static T Add<T>(this T control, params Control[] controls) where T : Control
     {
         control.Controls.AddRange(controls);

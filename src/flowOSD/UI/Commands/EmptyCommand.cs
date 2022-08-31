@@ -23,24 +23,17 @@ using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
 
-sealed class SendKeysCommand : CommandBase
+sealed class EmptyCommand : CommandBase
 {
-    private IKeyboard keyboard;
-
-    public SendKeysCommand(IKeyboard keyboard)
+    public EmptyCommand()
     {
-        this.keyboard = keyboard;
-
-        Enabled = true;
+        Text = "<None>";
+        Enabled = false;
     }
 
-    public override string Name => nameof(SendKeysCommand);
+    public override string Name => "";
 
     public override void Execute(object parameter = null)
-    {
-        if ((parameter is Keys keys) || (parameter is string text && Enum.TryParse(text, out keys)))
-        {
-            keyboard.SendKeys(keys);
-        }
+    {        
     }
 }

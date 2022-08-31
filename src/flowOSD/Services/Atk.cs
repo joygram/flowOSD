@@ -36,6 +36,8 @@ sealed class Atk : IAtk, IDisposable
     private const int AK_ROG = 0x38;
     private const int AK_MUTE_MIC = 0x7C;
     private const int AK_TABLET_STATE = 0xBD;
+    private const int AK_FN_C = 0x9E;
+    private const int AK_FN_V = 0x8A;
 
     private readonly Dictionary<int, AtkKey> codeToKey;
     private readonly Subject<AtkKey> keyPressedSubject;
@@ -52,6 +54,8 @@ sealed class Atk : IAtk, IDisposable
         codeToKey[AK_TOUCHPAD] = AtkKey.TouchPad;
         codeToKey[AK_ROG] = AtkKey.Rog;
         codeToKey[AK_MUTE_MIC] = AtkKey.MuteMic;
+        codeToKey[AK_FN_C] = AtkKey.Copy;
+        codeToKey[AK_FN_V] = AtkKey.Paste;
 
         keyPressedSubject = new Subject<AtkKey>();
 

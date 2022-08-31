@@ -28,6 +28,11 @@ abstract class CommandBase : ICommand, IDisposable
     private string text, description;
     private bool enabled;
 
+    protected CommandBase()
+    {
+        Text = Name;
+    }
+
     public abstract string Name { get; }
 
     public string Text

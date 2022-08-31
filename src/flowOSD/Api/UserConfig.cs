@@ -38,6 +38,8 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool showTouchPadNotification;
     private bool showDisplayRefreshRateNotification;
 
+    private string auraCommand, fanCommand, rogCommand, copyCommand, pasteCommand;
+
     public UserConfig()
     {
         // Default values
@@ -146,6 +148,36 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => showDisplayRefreshRateNotification;
         set => SetProperty(ref showDisplayRefreshRateNotification, value);
+    }
+
+    public string AuraCommand
+    {
+        get => auraCommand;
+        set => SetProperty(ref auraCommand, value);
+    }
+
+    public string FanCommand
+    {
+        get => fanCommand ;
+        set => SetProperty(ref fanCommand, value);
+    }
+
+    public string RogCommand
+    {
+        get => rogCommand;
+        set => SetProperty(ref rogCommand, value);
+    }
+
+    public string CopyCommand
+    {
+        get => copyCommand;
+        set => SetProperty(ref copyCommand, value);
+    }
+
+    public string PasteCommand
+    {
+        get => pasteCommand;
+        set => SetProperty(ref pasteCommand, value);
     }
 
     private void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)

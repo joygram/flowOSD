@@ -72,13 +72,6 @@ sealed class App : IDisposable
 
         nativeUI = new NativeUI(notifyIcon.ContextMenuStrip.Handle, messageQueue).DisposeWith(disposable);
 
-        systemEvents.TabletMode
-            .CombineLatest(systemEvents.SystemDarkMode, nativeUI.Dpi.Throttle(TimeSpan.FromSeconds(2)), (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
-            .DisposeWith(disposable);
-
         systemEvents.AppException
             .Subscribe(ex =>
             {
@@ -89,15 +82,6 @@ sealed class App : IDisposable
 
         nativeUI.Dpi
             .Subscribe(dpi => UpdateDpi(dpi))
-            .DisposeWith(disposable);
-
-        // Hotkeys
-
-        atk.KeyPressed
-            .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => osd.Show(new OsdData(Images.Keyboard, keyboard.GetBacklight())))
             .DisposeWith(disposable);
 
         // Notifications
@@ -133,6 +117,15 @@ sealed class App : IDisposable
             .Subscribe(x => ShowDisplayRefreshRateNotification(x))
             .DisposeWith(disposable);
 
+        // Keyboard Backlight
+
+        atk.KeyPressed
+            .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => osd.Show(new OsdData(Images.Keyboard, keyboard.GetBacklight())))
+            .DisposeWith(disposable);
+
         // Auto switching
 
         systemEvents.TabletMode
@@ -141,31 +134,81 @@ sealed class App : IDisposable
             .Subscribe(x => ToggleTouchPadOnTabletMode(x))
             .DisposeWith(disposable);
 
+        // Tray Icon
+
+        systemEvents.TabletMode
+            .CombineLatest(systemEvents.SystemDarkMode, nativeUI.Dpi.Throttle(TimeSpan.FromSeconds(2)), (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
+            .Throttle(TimeSpan.FromMilliseconds(100))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
+            .DisposeWith(disposable);
+
         // Commands
 
-        commandManager = new CommandManager(
+        commandManager = new CommandManager();
+        commandManager.Register(
             new ToggleRefreshRateCommand(powerManagement, display, config.UserConfig),
             new ToggleTouchPadCommand(touchPad),
             new ToggleBoostCommand(powerManagement),
-            new SettingsCommand(config),
+            new SettingsCommand(config, commandManager),
             new AboutCommand(config),
             new ExitCommand(),
-            new SendKeysCommand(keyboard));
+            new PrintScreenCommand(keyboard)
+        );
 
         BindCommandManager();
 
         // Hotkeys
 
         hotKeyManager = new HotKeyManager(commandManager);
-        hotKeyManager.Register(AtkKey.Aura, nameof(ToggleRefreshRateCommand));
-        hotKeyManager.Register(AtkKey.Fan, nameof(ToggleBoostCommand));
-        hotKeyManager.Register(AtkKey.Rog, nameof(SendKeysCommand), Keys.PrintScreen.ToString());
+        config.UserConfig.PropertyChanged.Subscribe(propertyName =>
+        {
+            switch (propertyName)
+            {
+                case nameof(UserConfig.AuraCommand):
+                    hotKeyManager.Register(AtkKey.Aura, config.UserConfig.AuraCommand);
+                    break;
+
+                case nameof(UserConfig.FanCommand):
+                    hotKeyManager.Register(AtkKey.Fan, config.UserConfig.FanCommand);
+                    break;
+
+                case nameof(UserConfig.RogCommand):
+                    hotKeyManager.Register(AtkKey.Rog, config.UserConfig.RogCommand);
+                    break;
+
+                case nameof(UserConfig.CopyCommand):
+                    hotKeyManager.Register(AtkKey.Copy, config.UserConfig.CopyCommand);
+                    break;
+
+                case nameof(UserConfig.PasteCommand):
+                    hotKeyManager.Register(AtkKey.Paste, config.UserConfig.PasteCommand);
+                    break;
+
+                case "":
+                case null:
+                    RegisterHotKeys();
+                    break;
+            }
+        }).DisposeWith(disposable);
+
+        RegisterHotKeys();
 
         atk.KeyPressed
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => hotKeyManager.ExecuteCommand(x))
             .DisposeWith(disposable);
+    }
+
+
+    private void RegisterHotKeys()
+    {
+        hotKeyManager.Register(AtkKey.Aura, config.UserConfig.AuraCommand);
+        hotKeyManager.Register(AtkKey.Fan, config.UserConfig.FanCommand);
+        hotKeyManager.Register(AtkKey.Rog, config.UserConfig.RogCommand);
+        hotKeyManager.Register(AtkKey.Copy, config.UserConfig.CopyCommand);
+        hotKeyManager.Register(AtkKey.Paste, config.UserConfig.PasteCommand);
     }
 
     private void BindCommandManager()

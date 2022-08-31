@@ -26,17 +26,18 @@ using flowOSD.Api;
 sealed class SettingsCommand : CommandBase
 {
     private ConfigUI configUI;
-    private IConfig config;
 
-    public SettingsCommand(IConfig config)
+    public SettingsCommand(IConfig config, ICommandManager commandManager)
     {
-        configUI = new ConfigUI(config);
+        configUI = new ConfigUI(config, commandManager);
 
         Text = "Settings...";
         Enabled = true;
     }
 
     public override string Name => nameof(SettingsCommand);
+
+    public override bool CanExecuteWithHotKey => false;
 
     public override void Execute(object parameter = null)
     {
