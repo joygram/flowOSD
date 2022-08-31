@@ -32,6 +32,7 @@ sealed class PrintScreenCommand : CommandBase
         this.keyboard = keyboard;
 
         Text = "Print Screen";
+        Description = Text;
         Enabled = true;
     }
 

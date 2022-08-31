@@ -153,7 +153,9 @@ sealed class App : IDisposable
             new SettingsCommand(config, commandManager),
             new AboutCommand(config),
             new ExitCommand(),
-            new PrintScreenCommand(keyboard)
+            new PrintScreenCommand(keyboard),
+            new ClipboardCopyPlainTextCommand(keyboard),
+            new ClipboardPastePlainTextCommand(keyboard)
         );
 
         BindCommandManager();

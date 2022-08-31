@@ -38,7 +38,7 @@ internal class HotKeysConfigPage : TableLayoutPanel
 
         var c = new List<HotKeyCommand>();
         c.Add(new HotKeyCommand("", null));
-        c.AddRange(commandManager.Commands.Select(i => new HotKeyCommand(i.Text, i.Name)));
+        c.AddRange(commandManager.Commands.Select(i => new HotKeyCommand(i.Description, i.Name)));
         hotKeyCommands = c.ToArray();
 
         Text = "HotKeys";

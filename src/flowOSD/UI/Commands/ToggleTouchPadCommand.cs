@@ -37,6 +37,7 @@ sealed class ToggleTouchPadCommand : CommandBase
             .Subscribe(x => Text = x ? "Disable TouchPad" : "Enable TouchPad")
             .DisposeWith(Disposable);
 
+        Description = "Toggle TouchPad";
         Enabled = true;
     }
 

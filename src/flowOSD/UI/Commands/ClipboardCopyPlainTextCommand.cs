@@ -18,40 +18,25 @@
  */
 namespace flowOSD.UI.Commands;
 
-using System.ComponentModel;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using System.Runtime.CompilerServices;
+using System.Windows.Forms;
 using flowOSD.Api;
 
-sealed class ToggleBoostCommand : CommandBase
+sealed class ClipboardCopyPlainTextCommand : CommandBase
 {
-    private IPowerManagement powerManagement;
+    private IKeyboard keyboard;
 
-    public ToggleBoostCommand(IPowerManagement powerManagement)
+    public ClipboardCopyPlainTextCommand(IKeyboard keyboard)
     {
-        this.powerManagement = powerManagement;
+        this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
 
-        this.powerManagement.IsBoost
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => Text = x ? "Disable Boost" : "Enable Boost")
-            .DisposeWith(Disposable);
-
-        Description = "Toggle CPU Boost Mode";
+        Description = "Copy to the clipboard";
         Enabled = true;
     }
 
-    public override string Name => nameof(ToggleBoostCommand);
+    public override string Name => nameof(ClipboardCopyPlainTextCommand);
 
     public override void Execute(object parameter = null)
     {
-        try
-        {
-            powerManagement.ToggleBoost();
-        }
-        catch (Exception ex)
-        {
-            Extensions.TraceException(ex, "Error is occurred while toggling CPU boost mode (UI).");
-        }
+        keyboard.SendKeys(Keys.C, Keys.ControlKey);
     }
 }

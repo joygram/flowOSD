@@ -47,6 +47,9 @@ sealed class ToggleRefreshRateCommand : CommandBase
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => Text = x ? "Disable High Refresh Rate" : "Enable High Refresh Rate")
             .DisposeWith(Disposable);
+
+        Description = "Toggle High Refresh Rate";
+        Enabled = true;
     }
 
     public override string Name => nameof(ToggleRefreshRateCommand);
