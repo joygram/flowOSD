@@ -28,16 +28,27 @@ public static class Program
     [STAThread]
     static void Main()
     {
+        var instanceMutex = new Mutex(true, "com.albertakhmetov.flowosd", out bool isMutexCreated);
+        if (!isMutexCreated)
+        {
+            instanceMutex = null;
+            return;
+        }
+
         var disposable = new CompositeDisposable();
         var config = new Config().DisposeWith(disposable);
 
-#if !DEBUG
-        var logFileName = Path.Combine(config.DataDirectory.FullName, "log.txt");
-        var listener = new TextWriterTraceListener(logFileName);
-        Trace.Listeners.Add(listener);
-#endif
+        var listener = default(TextWriterTraceListener);
+
         try
         {
+#if !DEBUG
+            var logFileName = Path.Combine(config.DataDirectory.FullName, "log.txt");
+            listener = new TextWriterTraceListener(logFileName);
+            Trace.Listeners.Add(listener);
+#endif
+            listener?.DisposeWith(disposable);
+
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -54,14 +65,13 @@ public static class Program
             MessageBox.Show(ex.Message, "General Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
         }
-#if !DEBUG
         finally
         {
-            disposable.Dispose();
+            instanceMutex?.ReleaseMutex();
 
-            listener.Flush();
-            listener.Dispose();
+            listener?.Flush();
+
+            disposable.Dispose();
         }
-#endif
     }
 }

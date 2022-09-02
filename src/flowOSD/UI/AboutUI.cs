@@ -22,6 +22,7 @@ using System.Reactive.Disposables;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Windows.Forms;
 using flowOSD.Api;
 using static Extensions;
 using static Native;
@@ -110,7 +111,11 @@ sealed class AboutUI : IDisposable
                 .Add<Label>(1, 1, x =>
                 {
                     var sb = new StringBuilder();
+#if !DEBUG
                     sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion}");
+#else
+                    sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion} [DEBUG BUILD]");
+#endif
                     sb.AppendLine($"{config.AppFileInfo.LegalCopyright}");
                     sb.AppendLine();
                     sb.AppendLine($"{config.AppFileInfo.Comments}");

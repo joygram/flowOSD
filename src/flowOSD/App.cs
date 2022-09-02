@@ -43,8 +43,7 @@ sealed class App : IDisposable
     private IKeyboard keyboard;
     private IOsd osd;
 
-    private ToolStripMenuItem highRefreshRateMenuItem, touchPadMenuItem, boostMenuItem, aboutMenuItem;
-    private NotifyIcon notifyIcon;
+    private TrayIcon trayIcon;
     private NativeUI nativeUI;
 
     private CommandManager commandManager;
@@ -56,10 +55,12 @@ sealed class App : IDisposable
 
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
-        Init();
 
         messageQueue = new MessageQueue().DisposeWith(disposable);
         imageSource = new ImageSource().DisposeWith(disposable);
+
+        nativeUI = new NativeUI(messageQueue).DisposeWith(disposable);
+
         keyboard = new Keyboard();
         powerManagement = new PowerManagement().DisposeWith(disposable);
 
@@ -70,18 +71,12 @@ sealed class App : IDisposable
 
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
 
-        nativeUI = new NativeUI(notifyIcon.ContextMenuStrip.Handle, messageQueue).DisposeWith(disposable);
-
         systemEvents.AppException
             .Subscribe(ex =>
             {
                 TraceException(ex, "Unhandled application exception");
                 MessageBox.Show(ex.Message, "Unhandled application exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
             })
-            .DisposeWith(disposable);
-
-        nativeUI.Dpi
-            .Subscribe(dpi => UpdateDpi(dpi))
             .DisposeWith(disposable);
 
         // Notifications
@@ -134,15 +129,6 @@ sealed class App : IDisposable
             .Subscribe(x => ToggleTouchPadOnTabletMode(x))
             .DisposeWith(disposable);
 
-        // Tray Icon
-
-        systemEvents.TabletMode
-            .CombineLatest(systemEvents.SystemDarkMode, nativeUI.Dpi.Throttle(TimeSpan.FromSeconds(2)), (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
-            .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
-            .DisposeWith(disposable);
-
         // Commands
 
         commandManager = new CommandManager();
@@ -158,7 +144,12 @@ sealed class App : IDisposable
             new ClipboardPastePlainTextCommand(keyboard)
         );
 
-        BindCommandManager();
+        trayIcon = new TrayIcon(
+            nativeUI,
+            config,
+            imageSource,
+            commandManager,
+            systemEvents).DisposeWith(disposable);
 
         // Hotkeys
 
@@ -213,17 +204,6 @@ sealed class App : IDisposable
         hotKeyManager.Register(AtkKey.Paste, config.UserConfig.PasteCommand);
     }
 
-    private void BindCommandManager()
-    {
-        foreach (var item in notifyIcon.ContextMenuStrip.Items)
-        {
-            if (item is CommandMenuItem commandItem)
-            {
-                commandItem.CommandManager = commandManager;
-            }
-        }
-    }
-
     private void ShowPowerSourceNotification(bool isBattery)
     {
         if (!config.UserConfig.ShowPowerSourceNotification)
@@ -271,88 +251,6 @@ sealed class App : IDisposable
     }
 
     public ApplicationContext ApplicationContext { get; }
-
-    private void Init()
-    {
-        notifyIcon = Create<NotifyIcon>().DisposeWith(disposable);
-        notifyIcon.Click += (sender, e) =>
-        {
-            var methodInfo = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-            methodInfo.Invoke(notifyIcon, null);
-        };
-
-        notifyIcon.Text = $"{config.AppFileInfo.ProductName} ({config.AppFileInfo.ProductVersion})";
-        notifyIcon.ContextMenuStrip = InitContextMenu();
-
-        notifyIcon.Visible = true;
-    }
-
-    private ContextMenuStrip InitContextMenu()
-    {
-        return Create<ContextMenuStrip>(x =>
-        {
-            x.RenderMode = ToolStripRenderMode.System;
-        }).Add(
-            CreateCommandMenuItem(nameof(ToggleRefreshRateCommand)).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
-            CreateSeparator(highRefreshRateMenuItem).DisposeWith(disposable),
-            CreateCommandMenuItem(nameof(ToggleTouchPadCommand)).DisposeWith(disposable).LinkAs(ref touchPadMenuItem),
-            CreateCommandMenuItem(nameof(ToggleBoostCommand)).DisposeWith(disposable).LinkAs(ref boostMenuItem),
-            CreateSeparator().DisposeWith(disposable),
-            CreateCommandMenuItem(nameof(SettingsCommand)).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
-            CreateCommandMenuItem(nameof(AboutCommand)).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
-            CreateSeparator().DisposeWith(disposable),
-            CreateCommandMenuItem(nameof(ExitCommand)).DisposeWith(disposable)
-            );
-    }
-
-    private CommandMenuItem CreateCommandMenuItem(string commandName, object commandParameter = null, Action<CommandMenuItem> initializator = null)
-    {
-        var item = new CommandMenuItem();
-        item.Padding = new Padding(0, 2, 0, 2);
-        item.Margin = new Padding(0, 8, 0, 8);
-        item.CommandName = commandName;
-        item.CommandParameter = commandParameter;
-
-        initializator?.Invoke(item);
-
-        return item;
-    }
-
-    private ToolStripSeparator CreateSeparator(ToolStripItem dependsOn = null)
-    {
-        var separator = new ToolStripSeparator();
-
-        if (dependsOn != null)
-        {
-            dependsOn.VisibleChanged += (sender, e) => separator.Visible = dependsOn.Visible;
-        }
-
-        return separator;
-    }
-
-    private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode, int dpi)
-    {
-        notifyIcon.Icon = null;
-
-        if (isDarkMode)
-        {
-            notifyIcon.Icon = isTabletMode
-                ? imageSource.GetIcon(Images.TabletWhite, dpi)
-                : imageSource.GetIcon(Images.NotebookWhite, dpi);
-        }
-        else
-        {
-            notifyIcon.Icon = isTabletMode
-                ? imageSource.GetIcon(Images.Tablet, dpi)
-                : imageSource.GetIcon(Images.Notebook, dpi);
-        }
-    }
-
-    private void UpdateDpi(int dpi)
-    {
-        notifyIcon.ContextMenuStrip.Font?.Dispose();
-        notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI", 12 * (dpi / 96f), GraphicsUnit.Pixel);
-    }
 
     private void ToggleTouchPadOnTabletMode(bool isTabletMode)
     {

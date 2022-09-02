@@ -28,8 +28,13 @@ sealed class NativeUI : NativeWindow, IDisposable
     private BehaviorSubject<int> dpiSubject;
     private IMessageQueue messageQueue;
 
-    public NativeUI(IntPtr handle, IMessageQueue messageQueue)
+    private Form form;
+
+    public NativeUI(IMessageQueue messageQueue)
     {
+        form = new Form();
+        var handle = form.Handle;
+
         this.messageQueue = messageQueue;
 
         dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(handle));
@@ -52,6 +57,9 @@ sealed class NativeUI : NativeWindow, IDisposable
 
     private void Dispose(bool disposing)
     {
+        form.Dispose();
+        form = null;
+
         ReleaseHandle();
     }
 
