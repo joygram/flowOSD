@@ -42,6 +42,7 @@ sealed class App : IDisposable
     private ITouchPad touchPad;
     private IKeyboard keyboard;
     private IOsd osd;
+    private IAudio audio;
 
     private TrayIcon trayIcon;
     private NativeUI nativeUI;
@@ -70,6 +71,7 @@ sealed class App : IDisposable
         osd = new Osd(systemEvents, imageSource).DisposeWith(disposable);
 
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
+        audio = new Audio();
 
         systemEvents.AppException
             .Subscribe(ex =>
@@ -119,6 +121,21 @@ sealed class App : IDisposable
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => osd.Show(new OsdData(Images.Keyboard, keyboard.GetBacklight())))
+            .DisposeWith(disposable);
+
+        // Mic Status
+
+        atk.KeyPressed
+            .Where(x => x == AtkKey.MuteMic)
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x =>
+            {
+                var isMuted = audio.IsMicMuted();
+                osd.Show(new OsdData(
+                    isMuted ? Images.MicMuted : Images.Mic,
+                    isMuted ? "Muted" : "On air"));
+            })
             .DisposeWith(disposable);
 
         // Auto switching

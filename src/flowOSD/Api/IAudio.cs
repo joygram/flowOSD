@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2022, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2022, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -18,18 +18,7 @@
  */
 namespace flowOSD.Api;
 
-public static class Images
+public interface IAudio
 {
-    public const string Tablet = "tablet";
-    public const string TabletWhite = "tablet-white";
-    public const string Notebook = "notebook";
-    public const string NotebookWhite = "notebook-white";
-    public const string Keyboard = "keyboard";
-    public const string AC = "ac";
-    public const string DC = "dc";
-    public const string Boost = "boost";
-    public const string RefreshRate = "refresh-rate";
-    public const string TouchPad = "touchpad";
-    public const string Mic = "mic";
-    public const string MicMuted = "mic-muted";
+    bool IsMicMuted();
 }
