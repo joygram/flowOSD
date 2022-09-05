@@ -17,11 +17,16 @@ flowOSD shows the following OSDs:
 * Display refresh rate is changed
 * CPU Boost is disabled/enabled (see below)
 * Power source is changed (AC/DC)
+* Microphone state (muted/on air)
 
-In addition, flowOSD provides shortcuts for the following utilites:
+In addition, flowOSD provides customizable shortcuts for the following keys:
 
-* Disable/enable CPU Boost (Fn + F5). This option reduces the CPU speed, but can increase battery life time and decreases CPU temperature
-* Disable/enable Display High Refresh Rate (Fn + F4). App also can control display refresh rate depending on power source (for example, set 60Hz if notebook is on battery power)
-* Disables touchpad when notebook goes into the tablet mode
+* Fn+F4 (AURA)
+* Fn+F5 (FAN)
+* ROG key (works only if ASUS Armoury Crate Interface is disabled in BIOS)
+* Fn+C
+* Fn+V
 
-If ASUS Armoury Crate Interface is disabled (in BIOS), ROG key is used as Print Screen.
+Note:
+
+If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.
