@@ -131,10 +131,17 @@ sealed class App : IDisposable
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x =>
             {
-                var isMuted = audio.IsMicMuted();
-                osd.Show(new OsdData(
-                    isMuted ? Images.MicMuted : Images.Mic,
-                    isMuted ? "Muted" : "On air"));
+                try
+                {
+                    var isMuted = audio.IsMicMuted();
+                    osd.Show(new OsdData(
+                        isMuted ? Images.MicMuted : Images.Mic,
+                        isMuted ? "Muted" : "On air"));
+                }
+                catch (Exception ex)
+                {
+                    TraceException(ex, "Error is occurred while toggling TouchPad state (Auto).");
+                }
             })
             .DisposeWith(disposable);
 
