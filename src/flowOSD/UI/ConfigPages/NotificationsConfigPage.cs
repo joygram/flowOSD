@@ -39,6 +39,8 @@ internal class NotificationsConfigPage : TableLayoutPanel
         RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
         RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
         RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
+        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
+        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
 
         var checkBoxMargin = new Padding(20, 5, 0, 5);
         var labelMargin = new Padding(15, 5, 0, 15);
@@ -145,6 +147,33 @@ internal class NotificationsConfigPage : TableLayoutPanel
             y.AutoSize = true;
             y.Margin = labelMargin;
             y.Text = "Indicates whether notification shows when display refresh rate changes.";
+            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+            y.ForeColor = SystemColors.ControlDarkDark;
+
+            y.DisposeWith(disposable);
+        });
+
+        this.Add<CheckBox>(0, 8, y =>
+        {
+            y.AutoSize = true;
+            y.Margin = checkBoxMargin;
+            y.Text = "Show microphone status notifications";
+            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+            y.DataBindings.Add(
+                "Checked",
+                config.UserConfig,
+                nameof(UserConfig.ShowMicNotification),
+                false,
+                DataSourceUpdateMode.OnPropertyChanged);
+
+            y.DisposeWith(disposable);
+        });
+
+        this.Add<Label>(0, 9, y =>
+        {
+            y.AutoSize = true;
+            y.Margin = labelMargin;
+            y.Text = "Indicates whether notification shows when microphone state changes.";
             y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             y.ForeColor = SystemColors.ControlDarkDark;
 

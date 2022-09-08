@@ -29,7 +29,7 @@ using static Extensions;
 
 sealed partial class Display : IDisposable, IDisplay
 {
-    public readonly static int WM_DISPLAY_CHANGE = (int)RegisterWindowMessage("UxdDisplayChangeMessage");
+    public const int WM_DISPLAYCHANGE = 0x007E;
 
     private CompositeDisposable disposable = new CompositeDisposable();
 
@@ -53,7 +53,7 @@ sealed partial class Display : IDisposable, IDisplay
         IsHighRefreshRateSupported = isHighRefreshRateSupportedSubject.AsObservable();
         IsHighRefreshRate = isHighRefreshRateSubject.AsObservable();
 
-        messageQueue.Subscribe(WM_DISPLAY_CHANGE, ProcessMessage).DisposeWith(disposable);
+        messageQueue.Subscribe(WM_DISPLAYCHANGE, ProcessMessage).DisposeWith(disposable);
 
         this.powerManagement.IsDC
             .Throttle(TimeSpan.FromSeconds(2))
@@ -130,7 +130,7 @@ sealed partial class Display : IDisposable, IDisplay
 
     private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
     {
-        if (messageId == WM_DISPLAY_CHANGE)
+        if (messageId == WM_DISPLAYCHANGE)
         {
             refreshRates = GetSupportedRefreshRates();
 

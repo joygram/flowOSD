@@ -37,6 +37,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool showBoostNotification;
     private bool showTouchPadNotification;
     private bool showDisplayRefreshRateNotification;
+    private bool showMicNotification;
 
     private string auraCommand, fanCommand, rogCommand, copyCommand, pasteCommand;
 
@@ -53,6 +54,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         showBoostNotification = true;
         showTouchPadNotification = true;
         showDisplayRefreshRateNotification = true;
+        showMicNotification = true;
 
         events = new Dictionary<PropertyChangedEventHandler, IDisposable>();
         propertyChangedSubject = new Subject<string>();
@@ -148,6 +150,12 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => showDisplayRefreshRateNotification;
         set => SetProperty(ref showDisplayRefreshRateNotification, value);
+    }
+
+    public bool ShowMicNotification
+    {
+        get => showMicNotification;
+        set => SetProperty(ref showMicNotification, value);
     }
 
     public string AuraCommand

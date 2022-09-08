@@ -131,6 +131,11 @@ sealed class App : IDisposable
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x =>
             {
+                if (!config.UserConfig.ShowMicNotification)
+                {
+                    return;
+                }
+
                 try
                 {
                     var isMuted = audio.IsMicMuted();
