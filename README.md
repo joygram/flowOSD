@@ -30,3 +30,5 @@ In addition, flowOSD provides customizable shortcuts for the following keys:
 Note:
 
 If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.
+
+![osd](https://user-images.githubusercontent.com/5954460/189478814-6c7d2c5b-e0a4-49f3-810e-6573565076b6.png)
