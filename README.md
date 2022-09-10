@@ -27,8 +27,12 @@ In addition, flowOSD provides customizable shortcuts for the following keys:
 * Fn+C
 * Fn+V
 
+flowOSD allows you to control the processor boost mode, display refresh rate (these parameters are set depending on the power source - AC / DC) and disable the touchpad when the laptop becomes a tablet.
+
 Note:
 
 If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.
+
+The OSD messages looks like this (Windows 10 style):
 
 ![osd](https://user-images.githubusercontent.com/5954460/189478814-6c7d2c5b-e0a4-49f3-810e-6573565076b6.png)
