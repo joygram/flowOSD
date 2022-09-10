@@ -33,6 +33,6 @@ Note:
 
 If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.
 
-The OSD messages looks like this (Windows 10 style):
+The OSD messages look like this (Windows 10 style):
 
 ![osd](https://user-images.githubusercontent.com/5954460/189478814-6c7d2c5b-e0a4-49f3-810e-6573565076b6.png)
