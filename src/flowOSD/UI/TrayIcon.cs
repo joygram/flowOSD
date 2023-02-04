@@ -82,8 +82,8 @@ sealed class TrayIcon : IDisposable
                 commandItem.CommandManager = commandManager;
             }
         }
-    }    
-    
+    }
+
     private void Init()
     {
         notifyIcon = Create<NotifyIcon>().DisposeWith(disposable);
@@ -97,6 +97,7 @@ sealed class TrayIcon : IDisposable
 
         notifyIcon.ContextMenuStrip = InitContextMenu();
 
+
         notifyIcon.Visible = true;
     }
 
@@ -108,8 +109,9 @@ sealed class TrayIcon : IDisposable
 
     private ContextMenuStrip InitContextMenu()
     {
-        return Create<ContextMenuStrip>(x =>
+        var menu = Create<Menu>(x =>
         {
+            x.ForeColor = Color.White;
             x.RenderMode = ToolStripRenderMode.System;
         }).Add(
             CreateCommandMenuItem(nameof(ToggleRefreshRateCommand)).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
@@ -122,6 +124,11 @@ sealed class TrayIcon : IDisposable
             CreateSeparator().DisposeWith(disposable),
             CreateCommandMenuItem(nameof(ExitCommand)).DisposeWith(disposable)
             );
+
+        SetCornerPreference(menu.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+        menu.Opacity = 0.98;
+
+        return menu;
     }
 
     private CommandMenuItem CreateCommandMenuItem(string commandName, object commandParameter = null, Action<CommandMenuItem> initializator = null)
@@ -171,5 +178,19 @@ sealed class TrayIcon : IDisposable
     {
         notifyIcon.ContextMenuStrip.Font?.Dispose();
         notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI", 12 * (dpi / 96f), GraphicsUnit.Pixel);
+    }
+
+    private class Menu : ContextMenuStrip
+    {
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            EnableAcrylic(this, Color.FromArgb(200, Color.Black));
+            base.OnHandleCreated(e);
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            e.Graphics.Clear(Color.Transparent);
+        }
     }
 }
