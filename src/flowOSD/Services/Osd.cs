@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2022, Albert Akhmetov <akhmetov@live.com>   
+/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -29,7 +29,6 @@ sealed partial class Osd : IOsd, IDisposable
 {
     private CompositeDisposable disposable = new CompositeDisposable();
     private OsdForm form;
-    private SystemOsd systemOsd;
 
     private Subject<OsdData> dataSubject;
 
@@ -42,7 +41,6 @@ sealed partial class Osd : IOsd, IDisposable
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x =>
             {
-                systemOsd.Hide();
                 form.Show(x);
             })
             .DisposeWith(disposable);
@@ -52,19 +50,12 @@ sealed partial class Osd : IOsd, IDisposable
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x =>
             {
-                systemOsd.Hide();
                 form.Show(x);
             })
             .DisposeWith(disposable);
 
         form = new OsdForm(systemEvents, imageSource).DisposeWith(disposable);
-
-        systemOsd = new SystemOsd().DisposeWith(disposable);
-        systemOsd.IsVisible
-            .Where(x => x)
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => form.Visible = false)
-            .DisposeWith(disposable);
+        SetCornerPreference(form.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
     }
 
     void IDisposable.Dispose()
@@ -80,30 +71,60 @@ sealed partial class Osd : IOsd, IDisposable
 
     private sealed class OsdForm : Form
     {
+        private const int ImageWidth = 48;
+        private const int ImageHeight = 48;
+        private const int ImagePadding = 12;
+
         private CompositeDisposable disposable = new CompositeDisposable();
         private IDisposable hideTimer;
         private OsdData data;
 
         private IImageSource imageSource;
 
-        private SolidBrush accentBrush, grayBrush;
+        private bool isDarkTheme;
+        private Brush textBrush;
+        private Pen accentPen, grayPen, lightGrayPen, darkGrayPen;
 
         public OsdForm(ISystemEvents systemEvents, IImageSource imageSource)
         {
             this.imageSource = imageSource;
+            this.isDarkTheme = false;
 
             FormBorderStyle = FormBorderStyle.None;
-            BackColor = Color.FromArgb(18, 18, 18);
+
             ShowInTaskbar = false;
             DoubleBuffered = true;
 
             Font = new Font("Segoe UI Light", 20, FontStyle.Bold);
 
-            grayBrush = new SolidBrush(Color.FromArgb(106, 106, 106)).DisposeWith(disposable);
+            darkGrayPen = new Pen(Color.FromArgb(170, 170, 170), DpiScaleValue(6)).DisposeWith(disposable);
+            darkGrayPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+            darkGrayPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+
+            lightGrayPen = new Pen(Color.FromArgb(125, 125, 125), DpiScaleValue(6)).DisposeWith(disposable);
+            lightGrayPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+            lightGrayPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+
+            UpdateTheme();
 
             systemEvents.AccentColor
                 .Subscribe(color => InvalidateAccentColor(color))
                 .DisposeWith(disposable);
+
+            systemEvents.SystemDarkMode
+                .Subscribe(isDarkMode => IsDarkTheme = isDarkMode)
+                .DisposeWith(disposable);
+        }
+
+        public bool IsDarkTheme
+        {
+            get { return isDarkTheme; }
+            private set
+            {
+                isDarkTheme = value;
+
+                UpdateTheme();
+            }
         }
 
         public void Show(OsdData data)
@@ -115,22 +136,33 @@ sealed partial class Osd : IOsd, IDisposable
 
             UpdatePositionAndSize();
 
-            Opacity = .96;
+            Opacity = 0.98;
             Invalidate();
             Visible = true;
 
             hideTimer = Observable
-                .Timer(DateTimeOffset.Now.AddMilliseconds(2000), TimeSpan.FromMilliseconds(500 / 8))
+                .Timer(DateTimeOffset.Now.AddMilliseconds(1500), TimeSpan.FromMilliseconds(500 / 16))
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(t =>
                 {
                     Opacity -= .1;
+                    Location = new Point(Location.X, Location.Y - 5);
 
                     if (Opacity <= 0)
                     {
                         Visible = false;
                     }
                 });
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            e.Graphics.Clear(Color.Transparent);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -147,27 +179,43 @@ sealed partial class Osd : IOsd, IDisposable
             base.OnPaint(e);
         }
 
+        private void UpdateTheme()
+        {
+            grayPen = IsDarkTheme ? darkGrayPen : lightGrayPen;
+            textBrush = IsDarkTheme ? Brushes.White : Brushes.Black;
+
+            var color = IsDarkTheme
+                ? Color.FromArgb(210, 44, 44, 44)
+                : Color.FromArgb(210, 249, 249, 249);
+
+            EnableAcrylic(this, color);
+
+            Invalidate();
+        }
+
         private void DrawText(Graphics g)
         {
             if (data.HasImage)
             {
-                var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle));
+                var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle), IsDarkTheme);
 
                 g.DrawImage(
                     image,
-                    (Height - image.Height),
-                    (Height - image.Height) / 2,
-                    image.Width,
-                    image.Height);
+                    DpiScaleValue(ImagePadding),
+                    (Height - DpiScaleValue(ImageHeight)) / 2,
+                    DpiScaleValue(ImageWidth),
+                    DpiScaleValue(ImageHeight));
             }
 
 
-            var x = data.HasImage ? DpiScaleValue(80) : DpiScaleValue(25);
+            var x = data.HasImage ? DpiScaleValue(ImagePadding * 2 + ImageWidth) : DpiScaleValue(ImagePadding * 2);
             var txtSize = g.MeasureString(data.Text, Font);
+
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
             g.DrawString(
                 data.Text,
                 Font,
-                Brushes.White,
+                textBrush,
                 x,
                 (Size.Height - txtSize.Height) / 2
             );
@@ -175,39 +223,29 @@ sealed partial class Osd : IOsd, IDisposable
 
         private void DrawIndicator(Graphics g)
         {
-            var thumbHeight = DpiScaleValue(11);
+            var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle), IsDarkTheme);
+            var barWidth = Width - image.Width * 4;
 
-            var iRect = new RectangleF(
-                DpiScaleValue(27),
-                DpiScaleValue(20),
-                DpiScaleValue(11),
-                DpiScaleValue(79)
-            );
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+            g.DrawLine(
+                grayPen,
+                new PointF(image.Width * 3, Height / 2),
+                new PointF(image.Width * 3 + barWidth, Height / 2));
 
-            var fillHeight = iRect.Height * (float)(data.Value ?? 0);
+            var percent = (float)(data.Value ?? 0);
 
-            g.FillRectangle(grayBrush, iRect);
-            g.FillRectangle(
-                accentBrush,
-                iRect.Left,
-                iRect.Bottom - fillHeight,
-                iRect.Width,
-                fillHeight
-            );
-            g.FillRectangle(
-                Brushes.White,
-                iRect.Left,
-                iRect.Bottom - Math.Max(thumbHeight, fillHeight),
-                iRect.Width,
-                thumbHeight
-            );
-
-            var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle));
+            if (percent > 0)
+            {
+                g.DrawLine(
+                    accentPen,
+                    new PointF(image.Width * 3, Height / 2),
+                    new PointF(image.Width * 3 + barWidth * percent, Height / 2));
+            }
 
             g.DrawImage(
                 image,
-                (Width - image.Width) / 2,
-                Height - image.Height - DpiScaleValue(16),
+                image.Width,
+                (Height - image.Height) / 2,
                 image.Width,
                 image.Height);
         }
@@ -243,8 +281,8 @@ sealed partial class Osd : IOsd, IDisposable
             hideTimer?.Dispose();
             hideTimer = null;
 
-            accentBrush?.Dispose();
-            accentBrush = null;
+            accentPen?.Dispose();
+            accentPen = null;
 
             disposable?.Dispose();
             disposable = null;
@@ -261,15 +299,17 @@ sealed partial class Osd : IOsd, IDisposable
 
         private void InvalidateAccentColor(Color accentColor)
         {
-            if (accentBrush != null && accentBrush.Color != accentColor)
+            if (accentPen != null && accentPen.Color != accentColor)
             {
-                accentBrush.Dispose();
-                accentBrush = null;
+                accentPen.Dispose();
+                accentPen = null;
             }
 
-            if (accentBrush == null)
+            if (accentPen == null)
             {
-                accentBrush = new SolidBrush(accentColor);
+                accentPen = new Pen(accentColor, DpiScaleValue(6));
+                accentPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+                accentPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
             }
         }
 
@@ -280,135 +320,32 @@ sealed partial class Osd : IOsd, IDisposable
                 return;
             }
 
-            Location = new Point(DpiScaleValue(49.9f), DpiScaleValue(60));
             if (data.IsIndicator)
             {
-                Size = new Size(DpiScaleValue(65), DpiScaleValue(140));
+                Size = new Size(DpiScaleValue(200), DpiScaleValue(50));
             }
             else
             {
-                var x = data.HasImage ? DpiScaleValue(80) : DpiScaleValue(25);
+                var x = data.HasImage ? DpiScaleValue(ImageWidth + ImagePadding * 2) : DpiScaleValue(ImagePadding * 2);
 
                 using (var g = Graphics.FromHwnd(Handle))
                 {
                     var txtSize = g.MeasureString(data.Text, Font);
                     Size = new Size(
-                        x + DpiScaleValue(25) + (int)txtSize.Width,
-                        DpiScaleValue(65)
+                        x + DpiScaleValue(ImagePadding * 2) + (int)txtSize.Width,
+                        DpiScaleValue(ImageHeight + ImagePadding * 2)
                     );
                 }
             }
+
+            Location = new Point(
+                (Screen.PrimaryScreen.WorkingArea.Width - Size.Width) / 2,
+                DpiScaleValue(32));
         }
 
         private int DpiScaleValue(float value)
         {
             return (int)Math.Round(value * GetDpiForWindow(Handle) / 96.0, 0, MidpointRounding.AwayFromZero);
-        }
-    }
-
-    private sealed class SystemOsd : IDisposable
-    {
-        const uint EVENT_OBJECT_CREATE = 0x8000;
-        const uint EVENT_OBJECT_SHOW = 0x8002;
-        const uint EVENT_OBJECT_HIDE = 0x8003;
-        const uint EVENT_OBJECT_STATECHANGE = 0x800A;
-
-        private Subject<bool> isVisibleSubject;
-
-        private WINEVENTPROC proc;
-        private IntPtr hookId;
-        private IntPtr handle;
-
-        public SystemOsd()
-        {
-            const uint WINEVENT_OUTOFCONTEXT = 0x0000;
-
-            isVisibleSubject = new Subject<bool>();
-            proc = new WINEVENTPROC(WinEventProc);
-
-            hookId = SetWinEventHook(
-               EVENT_OBJECT_CREATE,
-               EVENT_OBJECT_STATECHANGE,
-               IntPtr.Zero,
-               proc,
-               (uint)GetShellProcessId(),
-               0,
-               WINEVENT_OUTOFCONTEXT);
-
-            IsVisible = isVisibleSubject.AsObservable();
-        }
-
-        ~SystemOsd()
-        {
-            Dispose(false);
-        }
-
-        void IDisposable.Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public IObservable<bool> IsVisible { get; }
-
-        public void Hide()
-        {
-            ShowWindow(handle, 0);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                isVisibleSubject?.Dispose();
-                isVisibleSubject = null;
-            }
-
-            UnhookWinEvent(hookId);
-        }
-
-        private void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hWnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
-        {
-            if (idObject != 0 || idChild != 0)
-            {
-                return;
-            }
-
-            if (handle == IntPtr.Zero && (eventType == EVENT_OBJECT_CREATE || eventType == EVENT_OBJECT_SHOW))
-            {
-                if (GetWindowClassName(hWnd) == "NativeHWNDHost")
-                {
-                    handle = GetSystemOsdHandle();
-                }
-            }
-
-            if (handle == hWnd && eventType == EVENT_OBJECT_SHOW)
-            {
-                isVisibleSubject.OnNext(true);
-            }
-
-            if (handle == hWnd && eventType == EVENT_OBJECT_HIDE)
-            {
-                isVisibleSubject.OnNext(false);
-            }
-        }
-
-        private static IntPtr GetSystemOsdHandle()
-        {
-            IntPtr hWndHost;
-            while ((hWndHost = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "NativeHWNDHost", "")) != IntPtr.Zero)
-            {
-                if (FindWindowEx(hWndHost, IntPtr.Zero, "DirectUIHWND", "") != IntPtr.Zero)
-                {
-                    GetWindowThreadProcessId(hWndHost, out int pid);
-                    if (Process.GetProcessById(pid).ProcessName.ToLower() == "explorer")
-                    {
-                        return hWndHost;
-                    }
-                }
-            }
-
-            return IntPtr.Zero;
         }
     }
 }

@@ -68,7 +68,7 @@ sealed class App : IDisposable
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);
         atk = new Atk(messageQueue).DisposeWith(disposable);
         touchPad = new TouchPad(keyboard, messageQueue).DisposeWith(disposable);
-        osd = new Osd2(systemEvents, imageSource).DisposeWith(disposable);
+        osd = new Osd(systemEvents, imageSource).DisposeWith(disposable);
 
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
         audio = new Audio();

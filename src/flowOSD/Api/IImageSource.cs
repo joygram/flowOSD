@@ -20,7 +20,8 @@ namespace flowOSD.Api;
 
 public interface IImageSource
 {
-    Image GetImage(string name, int? dpi);
+    Image GetImage(string name, int dpi, bool? isDarkTheme = null);
+
 
     Icon GetIcon(string name, int? dpi);
 }

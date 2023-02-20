@@ -39,19 +39,43 @@ sealed class ImageSource : IImageSource, IDisposable
         disposable?.Dispose();
     }
 
-    public Image GetImage(string name, int? dpi)
+    public Image GetImage(string name, int dpi, bool? isDarkTheme = null)
     {
-        var key = dpi == null ? name : $"{name}-{dpi}";
+        var image = default(Image);
+        var scale = Math.Truncate(dpi / 96f * 100);
+
+        do
+        {
+            image = GetImageByKey(GetImageKey(name, scale, isDarkTheme));
+
+            if (image == null)
+            {
+                scale = Math.Round(Math.Floor(scale / 100) + 1) * 100;
+            }
+        }
+        while (image == null && scale < 400);
+
+        if (image == null)
+        {
+            throw new ApplicationException($"Image was not found: {name}{(isDarkTheme == null ? "" : " (dark: " + isDarkTheme + ") ")} @{dpi}.");
+        }
+
+        return image;
+    }
+
+    private Image GetImageByKey(string key)
+    {
         if (!images.ContainsKey(key))
         {
             var assembly = typeof(Images).Assembly;
 
             var resourceName = $"flowOSD.Resources.{key}.png";
+
             using (Stream stream = assembly.GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
                 {
-                    throw new ApplicationException($"Image was not found: {resourceName}.");
+                    return null;
                 }
 
                 images[key] = Image.FromStream(stream).DisposeWith(disposable);
@@ -59,6 +83,23 @@ sealed class ImageSource : IImageSource, IDisposable
         }
 
         return images[key];
+    }
+
+    private static string GetImageKey(string name, double scale, bool? isDarkTheme)
+    {
+        return $"{GetThemeFolder(isDarkTheme)}_{(int)scale}.{name}";
+    }
+
+    private static string GetThemeFolder(bool? isDarkTheme)
+    {
+        if (isDarkTheme == null)
+        {
+            return string.Empty;
+        }
+        else
+        {
+            return isDarkTheme.Value ? "Dark." : "Light.";
+        }
     }
 
     public Icon GetIcon(string name, int? dpi)

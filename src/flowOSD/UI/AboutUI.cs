@@ -18,6 +18,7 @@
  */
 namespace flowOSD.UI;
 
+using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reflection;
 using System.Runtime.Versioning;
@@ -86,6 +87,7 @@ sealed class AboutUI : IDisposable
                 x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             }).DisposeWith(disposable)
@@ -110,6 +112,18 @@ sealed class AboutUI : IDisposable
                 })
                 .Add<Label>(1, 1, x =>
                 {
+                    x.Text = "https://github.com/albertakhmetov/flowOSD";
+                    x.ForeColor = Color.Blue;
+                    x.Cursor = Cursors.Hand;
+                    x.Click += (sender, e) => { Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = x.Text }); };
+
+                    x.AutoSize = true;
+
+                    x.Margin = new Padding(5, 3, 0, 3);
+                    x.DisposeWith(disposable);
+                })
+                .Add<Label>(1, 2, x =>
+                {
                     var sb = new StringBuilder();
 #if !DEBUG
                     sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion}");
@@ -127,7 +141,7 @@ sealed class AboutUI : IDisposable
                     x.Margin = new Padding(5, 15, 20, 3);
                     x.DisposeWith(disposable);
                 })
-                .Add<Button>(1, 2, x =>
+                .Add<Button>(1, 3, x =>
                 {
                     x.Text = "OK";
                     x.AutoSize = true;

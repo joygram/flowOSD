@@ -20,6 +20,7 @@ namespace flowOSD.UI;
 
 using System;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reflection;
@@ -54,10 +55,10 @@ sealed class TrayIcon : IDisposable
 
         Init();
 
-        BindCommandManager(commandManager);
-
         nativeUI.Dpi
-            .Subscribe(dpi => UpdateDpi(dpi))
+            .CombineLatest(systemEvents.SystemDarkMode, (dpi, isDarkMode) => new { dpi, isDarkMode })
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => UpdateContextMenu(x.dpi, x.isDarkMode))
             .DisposeWith(disposable);
 
         systemEvents.TabletMode
@@ -65,6 +66,10 @@ sealed class TrayIcon : IDisposable
             .Throttle(TimeSpan.FromMilliseconds(100))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
+            .DisposeWith(disposable);
+
+        systemEvents.SystemDarkMode
+            .Subscribe(isDarkMode => (notifyIcon?.ContextMenuStrip as Menu)?.UpdateBackground(isDarkMode))
             .DisposeWith(disposable);
     }
 
@@ -95,9 +100,6 @@ sealed class TrayIcon : IDisposable
 #if DEBUG
         notifyIcon.Text += " [DEBUG BUILD]";
 #endif
-
-        notifyIcon.ContextMenuStrip = InitContextMenu();
-
 
         notifyIcon.Visible = true;
     }
@@ -151,6 +153,20 @@ sealed class TrayIcon : IDisposable
         return separator;
     }
 
+    private void UpdateContextMenu(int dpi, bool isDarkMode)
+    {
+        notifyIcon.ContextMenuStrip?.Font?.Dispose();
+        notifyIcon.ContextMenuStrip?.Dispose();
+
+        notifyIcon.ContextMenuStrip = InitContextMenu();
+        notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI Variable Display", 14 * (dpi / 96f), GraphicsUnit.Pixel);
+
+        (notifyIcon.ContextMenuStrip as Menu).UpdateBackground(isDarkMode);
+
+        BindCommandManager(commandManager);        
+    }
+
+
     private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode, int dpi)
     {
         notifyIcon.Icon = null;
@@ -169,20 +185,34 @@ sealed class TrayIcon : IDisposable
         }
     }
 
-    private void UpdateDpi(int dpi)
-    {
-        notifyIcon.ContextMenuStrip.Font?.Dispose();
-        notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI Variable Display", 10, GraphicsUnit.Point);//  13 * (dpi / 96f), GraphicsUnit.Pixel);
-    }
-
     private class Menu : ContextMenuStrip
     {
         public Menu()
         {
-            Renderer = new MenuRenderer();
-
-            AllowTransparency = true;
+            Renderer = new MenuRenderer(this);
+            BackColor = Color.Transparent;
         }
+
+        public bool IsDarkTheme { get; private set; }
+
+        public void UpdateBackground(bool isDarkTheme)
+        {
+            IsDarkTheme = isDarkTheme;
+
+            var color = IsDarkTheme
+                ? Color.FromArgb(210, 44, 44, 44)
+                : Color.FromArgb(210, 249, 249, 249);
+
+            EnableAcrylic(this, color);
+
+            var handler = ThemeChanged;
+            if (handler != null)
+            {
+                handler(this, EventArgs.Empty);
+            }
+        }
+
+        public event EventHandler ThemeChanged;
 
         protected override void Dispose(bool disposing)
         {
@@ -197,7 +227,6 @@ sealed class TrayIcon : IDisposable
 
         protected override void OnHandleCreated(EventArgs e)
         {
-            EnableAcrylic(this, Color.FromArgb(210, 44, 44, 44));
             base.OnHandleCreated(e);
         }
 
@@ -209,22 +238,35 @@ sealed class TrayIcon : IDisposable
 
     private class MenuRenderer : ToolStripRenderer, IDisposable
     {
-        private Brush selectedBrush;
+        private Brush selectedBrush, textBrush, selectedTextBrush;
         private Pen separatorPen;
         private CompositeDisposable disposable;
 
-        public MenuRenderer()
+        private Menu owner;
+
+        public MenuRenderer(Menu owner)
         {
+            this.owner = owner;
+            this.owner.ThemeChanged += OnThemeChanged;
+
             disposable = new CompositeDisposable();
 
-            separatorPen = new Pen(Color.FromArgb(255, 96, 96, 96), 2).DisposeWith(disposable);
+            separatorPen = new Pen(Color.FromArgb(255, 96, 96, 96), 1).DisposeWith(disposable);
             selectedBrush = new SolidBrush(Color.FromArgb(255, 25, 110, 191)).DisposeWith(disposable);
+
+            InitBrushes();
         }
 
         public void Dispose()
         {
             disposable?.Dispose();
             disposable = null;
+
+            if (owner != null)
+            {
+                owner.ThemeChanged -= OnThemeChanged;
+                owner = null;
+            }
         }
 
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
@@ -234,10 +276,12 @@ sealed class TrayIcon : IDisposable
                 e.TextRectangle.X,
                 e.TextRectangle.Y + (e.TextRectangle.Height - textHeight) / 2);
 
+            e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+
             e.Graphics.DrawString(
                 e.Text,
                 e.TextFont,
-                Brushes.White,
+                e.Item.Selected ? selectedTextBrush : textBrush,
                 point
                 );
         }
@@ -246,6 +290,7 @@ sealed class TrayIcon : IDisposable
         {
             var y = e.Item.ContentRectangle.Y + e.Item.ContentRectangle.Height / 2;
 
+            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
             e.Graphics.DrawLine(
                 separatorPen,
                 e.Item.ContentRectangle.X,
@@ -263,24 +308,25 @@ sealed class TrayIcon : IDisposable
                 var width = e.Item.ContentRectangle.Width - 8;
                 var height = e.Item.ContentRectangle.Height - 2;
 
-                var diameter = 8; 
+                var diameter = 4;
                 var path = GetRoundedRectPath(x, y, width, height, diameter);
 
+                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
                 e.Graphics.FillPath(selectedBrush, path);
             }
         }
 
-        private static GraphicsPath GetRoundedRectPath(int x, int y, int width, int height, int diameter)
+        private static GraphicsPath GetRoundedRectPath(int x, int y, int width, int height, int r)
         {
-            var arc = new Rectangle(x, y, diameter, diameter);
+            var arc = new Rectangle(x, y, r * 2, r * 2);
             var path = new GraphicsPath();
 
             path.AddArc(arc, 180, 90);
 
-            arc.X = x + width - diameter;
+            arc.X = x + width - r * 2;
             path.AddArc(arc, 270, 90);
 
-            arc.Y = y + height - diameter;
+            arc.Y = y + height - r * 2;
             path.AddArc(arc, 0, 90);
 
             arc.X = x;
@@ -289,6 +335,20 @@ sealed class TrayIcon : IDisposable
             path.CloseFigure();
 
             return path;
+        }
+
+        private void InitBrushes()
+        {
+            if (owner != null)
+            {
+                textBrush = owner.IsDarkTheme ? Brushes.White : Brushes.Black;
+                selectedTextBrush = Brushes.White;
+            }
+        }
+
+        private void OnThemeChanged(object sender, EventArgs e)
+        {
+            InitBrushes();
         }
     }
 }
