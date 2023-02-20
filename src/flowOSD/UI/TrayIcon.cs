@@ -159,7 +159,7 @@ sealed class TrayIcon : IDisposable
         notifyIcon.ContextMenuStrip?.Dispose();
 
         notifyIcon.ContextMenuStrip = InitContextMenu();
-        notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI Variable Display", 14 * (dpi / 96f), GraphicsUnit.Pixel);
+        notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI Light", 14 * (dpi / 96f), FontStyle.Bold, GraphicsUnit.Pixel);
 
         (notifyIcon.ContextMenuStrip as Menu).UpdateBackground(isDarkMode);
 

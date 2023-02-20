@@ -38,7 +38,7 @@ sealed class ConfigUI : IDisposable
 
     void IDisposable.Dispose()
     {
-        if(instance != null && !instance.IsDisposed)
+        if (instance != null && !instance.IsDisposed)
         {
             instance.Dispose();
             instance = null;
@@ -154,7 +154,7 @@ sealed class ConfigUI : IDisposable
 
                 x.DataSource = pages;
                 x.DisplayMember = nameof(Control.Text);
-
+             
                 x.SelectedIndexChanged += (_, _) =>
                 {
                     CurrentPage = x.SelectedIndex < 0 ? null : pages[x.SelectedIndex];
@@ -170,6 +170,7 @@ sealed class ConfigUI : IDisposable
 
                     using var brush = new SolidBrush(e.State == DrawItemState.Selected ? e.BackColor : e.ForeColor);
 
+                    e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                     e.Graphics.DrawString(
                         text,
                         e.Font,
@@ -233,7 +234,7 @@ sealed class ConfigUI : IDisposable
 
             var scale = GetDpiForWindow(Handle) / 96f;
             this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
-            UpdateSize(GetDpiForWindow(Handle));
+            UpdateSize(GetDpiForWindow(Handle));            
 
             StartPosition = FormStartPosition.CenterScreen;
         }
