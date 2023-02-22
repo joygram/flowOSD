@@ -94,6 +94,7 @@ sealed partial class Osd : IOsd, IDisposable
 
             ShowInTaskbar = false;
             DoubleBuffered = true;
+            TopMost = true;
 
             Font = new Font("Segoe UI Light", 20, FontStyle.Bold);
 
@@ -136,7 +137,7 @@ sealed partial class Osd : IOsd, IDisposable
 
             UpdatePositionAndSize();
 
-            Opacity = 0.98;
+            Opacity = 1;
             Invalidate();
             Visible = true;
 
@@ -183,6 +184,10 @@ sealed partial class Osd : IOsd, IDisposable
         {
             grayPen = IsDarkTheme ? darkGrayPen : lightGrayPen;
             textBrush = IsDarkTheme ? Brushes.White : Brushes.Black;
+
+            BackColor = IsDarkTheme
+                ? Color.FromArgb(255, 44, 44, 44)
+                : Color.FromArgb(255, 249, 249, 249);
 
             var color = IsDarkTheme
                 ? Color.FromArgb(210, 44, 44, 44)
@@ -259,21 +264,6 @@ sealed partial class Osd : IOsd, IDisposable
             }
 
             base.OnVisibleChanged(e);
-        }
-
-        protected override CreateParams CreateParams
-        {
-            get
-            {
-                const int WS_EX_TOPMOST = 0x00000008;
-                const int WS_EX_LAYERED = 0x00080000;
-                const int WS_EX_NOACTIVATE = 0x08000000;
-
-                var p = base.CreateParams;
-                p.ExStyle = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE;
-
-                return p;
-            }
         }
 
         protected override void OnClosed(EventArgs e)
