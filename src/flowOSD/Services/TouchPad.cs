@@ -41,7 +41,7 @@ sealed class TouchPad : ITouchPad, IDisposable
         this.keyboard = keyboard;
 
         using (var key = Registry.CurrentUser.OpenSubKey(TOUCHPAD_STATE_KEY, false))
-        {
+        { 
             var isEnabled = key.GetValue(TOUCHPAD_STATE_VALUE)?.ToString() == "1";
             isEnabledSubject = new BehaviorSubject<bool>(isEnabled);
         }

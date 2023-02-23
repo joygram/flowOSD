@@ -108,6 +108,7 @@ sealed class TrayIcon : IDisposable
             CreateSeparator(highRefreshRateMenuItem).DisposeWith(disposable),
             CreateCommandMenuItem(commandManager.Resolve<ToggleTouchPadCommand>()).DisposeWith(disposable),
             CreateCommandMenuItem(commandManager.Resolve<ToggleBoostCommand>()).DisposeWith(disposable),
+            CreateCommandMenuItem(commandManager.Resolve<ToggleGpuCommand>()).DisposeWith(disposable),
             CreateSeparator().DisposeWith(disposable),
             CreateCommandMenuItem(commandManager.Resolve<SettingsCommand>()).DisposeWith(disposable),
             CreateCommandMenuItem(commandManager.Resolve<AboutCommand>()).DisposeWith(disposable),

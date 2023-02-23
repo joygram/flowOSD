@@ -35,4 +35,5 @@ public static class Images
     public const string TouchPad = "touchpad";
     public const string Mic = "mic";
     public const string MicMuted = "mic-muted";
+    public const string Gpu = "gpu";
 }

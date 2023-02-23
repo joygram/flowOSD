@@ -27,6 +27,9 @@ static class Native
 
     public const int ERROR_SUCCESS = 0x0;
 
+    public const uint WM_DEVICECHANGE = 0x219;
+
+
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     public static extern UInt32 RegisterWindowMessage(string lpString);
 

@@ -18,12 +18,13 @@
  */
 namespace flowOSD.Api;
 
-public interface IAtk
+public interface IGpu
 {
-    IObservable<AtkKey> KeyPressed { get; }
+    IObservable<bool> IsEnabled { get; }
 
-    int Get(uint deviceId);
+    void Enable();
 
-    void Set(uint deviceId, uint status);
+    void Disable();
 
+    void Toggle();
 }

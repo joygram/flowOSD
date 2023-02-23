@@ -207,6 +207,8 @@ sealed partial class Osd : IOsd, IDisposable
                     return "\ued39";
                 case Images.KeyboardLowerBrightness:
                     return "\ued3a";
+                case Images.Gpu:
+                    return "\uf211";
 
                 default:
                     return string.Empty;

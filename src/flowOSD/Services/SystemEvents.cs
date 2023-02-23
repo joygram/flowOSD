@@ -30,6 +30,7 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
     private const int SM_CONVERTIBLESLATEMODE = 0x2003;
     private const int WM_WININICHANGE = 0x001A;
     private const int WM_DISPLAYCHANGE = 0x7E;
+    private const int WM_DEVICECHANGE = 0x219;
 
     private CompositeDisposable disposable = new CompositeDisposable();
 

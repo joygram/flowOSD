@@ -23,162 +23,43 @@ using System.Reactive.Disposables;
 
 internal class NotificationsConfigPage : TableLayoutPanel
 {
+    private readonly Padding CheckBoxMargin = new Padding(20, 5, 0, 5);
+    private readonly Padding LabelMargin = new Padding(15, 5, 0, 15);
+
     private CompositeDisposable disposable = new CompositeDisposable();
+    private IConfig config;
 
     public NotificationsConfigPage(IConfig config)
     {
-        Text = "Notifications";
+        this.config = config;
 
+        Text = "Notifications";
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-
-        var checkBoxMargin = new Padding(20, 5, 0, 5);
-        var labelMargin = new Padding(15, 5, 0, 15);
-
-        this.Add<CheckBox>(0, 0, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = checkBoxMargin;
-            y.Text = "Show power source notifications";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.ShowPowerSourceNotification),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 1, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = labelMargin;
-            y.Text = "Indicates whether notification shows when notebook power source changes.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<CheckBox>(0, 2, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = checkBoxMargin;
-            y.Text = "Show CPU boost mode notifications";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.ShowBoostNotification),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 3, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = labelMargin;
-            y.Text = "Indicates whether notification shows when CPU boost mode is disabled or enabled.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<CheckBox>(0, 4, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = checkBoxMargin;
-            y.Text = "Show TouchPad notifications";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.ShowTouchPadNotification),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 5, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = labelMargin;
-            y.Text = "Indicates whether notification shows when TochPad is disabled or enabled.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<CheckBox>(0, 6, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = checkBoxMargin;
-            y.Text = "Show display refesh rate notifications";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.ShowDisplayRateNotification),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 7, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = labelMargin;
-            y.Text = "Indicates whether notification shows when display refresh rate changes.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<CheckBox>(0, 8, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = checkBoxMargin;
-            y.Text = "Show microphone status notifications";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.ShowMicNotification),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 9, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = labelMargin;
-            y.Text = "Indicates whether notification shows when microphone state changes.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
+        AddConfig(
+            "Show power source notifications",
+            "Indicates whether notification shows when notebook power source changes.",
+            nameof(UserConfig.ShowPowerSourceNotification));
+        AddConfig(
+            "Show CPU boost mode notifications",
+            "Indicates whether notification shows when CPU boost mode is disabled or enabled.",
+            nameof(UserConfig.ShowBoostNotification));
+        AddConfig(
+            "Show TouchPad notifications",
+            "Indicates whether notification shows when TochPad is disabled or enabled.",
+            nameof(UserConfig.ShowTouchPadNotification));
+        AddConfig(
+            "Show display refesh rate notifications",
+            "Indicates whether notification shows when display refresh rate changes.",
+            nameof(UserConfig.ShowDisplayRateNotification));
+        AddConfig(
+            "Show microphone status notifications",
+            "Indicates whether notification shows when microphone state changes.",
+            nameof(UserConfig.ShowMicNotification));
+        AddConfig(
+            "Show eGPU notifications",
+            "Indicates whether notification shows when eGPU is disabled or enabled.",
+            nameof(UserConfig.ShowGpuNotification));
     }
 
     protected override void Dispose(bool disposing)
@@ -187,5 +68,37 @@ internal class NotificationsConfigPage : TableLayoutPanel
         disposable = null;
 
         base.Dispose(disposing);
+    }
+
+    private void AddConfig(string text, string description, string propertyName)
+    {
+        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
+        this.Add<CheckBox>(0, RowStyles.Count - 1, y =>
+        {
+            y.AutoSize = true;
+            y.Margin = CheckBoxMargin;
+            y.Text = text;
+            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+            y.DataBindings.Add(
+                "Checked",
+                config.UserConfig,
+                propertyName,
+                false,
+                DataSourceUpdateMode.OnPropertyChanged);
+
+            y.DisposeWith(disposable);
+        });
+
+        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
+        this.Add<Label>(0, RowStyles.Count - 1, y =>
+        {
+            y.AutoSize = true;
+            y.Margin = LabelMargin;
+            y.Text = description;
+            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+            y.ForeColor = SystemColors.ControlDarkDark;
+
+            y.DisposeWith(disposable);
+        });
     }
 }

@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -16,14 +16,15 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api;
+namespace flowOSD.Services;
 
-public interface IAtk
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using flowOSD.Api;
+using static Native;
+
+partial class Gpu
 {
-    IObservable<AtkKey> KeyPressed { get; }
-
-    int Get(uint deviceId);
-
-    void Set(uint deviceId, uint status);
-
+    const uint GPU_ECO_MODE = 0x00090020;
 }

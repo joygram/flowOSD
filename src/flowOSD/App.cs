@@ -43,6 +43,7 @@ sealed class App : IDisposable
     private IKeyboard keyboard;
     private IOsd osd;
     private IAudio audio;
+    private IGpu gpu;
 
     private TrayIcon trayIcon;
     private NativeUI nativeUI;
@@ -72,6 +73,7 @@ sealed class App : IDisposable
 
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
         audio = new Audio();
+        gpu = new Gpu(atk);
 
         systemEvents.AppException
             .Subscribe(ex =>
@@ -112,6 +114,14 @@ sealed class App : IDisposable
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => ShowDisplayRefreshRateNotification(x))
+            .DisposeWith(disposable);
+
+        gpu.IsEnabled
+            .Skip(1)
+            .DistinctUntilChanged()
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => ShowGpuNotification(x))
             .DisposeWith(disposable);
 
         // Keyboard Backlight
@@ -167,6 +177,7 @@ sealed class App : IDisposable
             new ToggleRefreshRateCommand(powerManagement, display, config.UserConfig),
             new ToggleTouchPadCommand(touchPad),
             new ToggleBoostCommand(powerManagement),
+            new ToggleGpuCommand(gpu),
             new SettingsCommand(config, commandManager),
             new AboutCommand(config),
             new ExitCommand(),
@@ -287,6 +298,16 @@ sealed class App : IDisposable
         }
 
         osd.Show(new OsdData(Images.TouchPad, isEnabled ? "TouchPad is on" : "TouchPad is off"));
+    }
+
+    private void ShowGpuNotification(bool isEnabled)
+    {
+        if (!config.UserConfig.ShowGpuNotification)
+        {
+            return;
+        }
+
+        osd.Show(new OsdData(Images.Gpu, isEnabled ? "eGPU is on" : "eGPU is off"));
     }
 
     void IDisposable.Dispose()
