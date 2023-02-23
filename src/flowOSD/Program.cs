@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2022, Albert Akhmetov <akhmetov@live.com>   
+/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -52,6 +52,17 @@ public static class Program
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            if (Environment.OSVersion.Version.Build < 22621)
+            {
+                MessageBox.Show(
+                    "This version of flowOSD supports only Windows 11 22H2. Please, use an older version of flowOSD instead.\r\n\r\nFor details, see https://github.com/albertakhmetov/flowOSD",
+                    "Not supported OS version",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                return;
+            }
 
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
