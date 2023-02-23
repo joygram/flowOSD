@@ -25,13 +25,13 @@ using flowOSD.Api;
 
 sealed class CommandManager : ICommandManager
 {
-    private Dictionary<string, ICommand> names = new Dictionary<string, ICommand>();
+    private Dictionary<string, CommandBase> names = new Dictionary<string, CommandBase>();
 
     public CommandManager()
     {
     }
 
-    public void Register(ICommand command, params ICommand[] commands)
+    public void Register(CommandBase command, params CommandBase[] commands)
     {
         names[command.Name] = command;
 
@@ -41,10 +41,15 @@ sealed class CommandManager : ICommandManager
         }
     }
 
-    public ICommand Resolve(string commandName)
+    public CommandBase Resolve(string commandName)
     {
-        return !string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out ICommand command) ? command : null;
+        return !string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out CommandBase command) ? command : null;
     }
 
-    public IList<ICommand> Commands => names.Values.Where(i => i.CanExecuteWithHotKey).ToArray();
+    public CommandBase Resolve<T>()
+    {
+        return Resolve(typeof(T).Name);
+    }
+
+    public IList<CommandBase> Commands => names.Values.Where(i => i.CanExecuteWithHotKey).ToArray();
 }

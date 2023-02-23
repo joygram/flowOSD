@@ -23,6 +23,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
+using System.Windows.Input;
 using flowOSD.Api;
 
 sealed class HotKeyManager : IHotKeyManager

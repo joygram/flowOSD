@@ -26,6 +26,7 @@ using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Windows.Input;
 using flowOSD.Api;
 using flowOSD.Services;
 using flowOSD.UI.Commands;
@@ -36,7 +37,6 @@ sealed class TrayIcon : IDisposable
 {
     private CompositeDisposable disposable = new CompositeDisposable();
     private NotifyIcon notifyIcon;
-    private ToolStripMenuItem highRefreshRateMenuItem, touchPadMenuItem, boostMenuItem, aboutMenuItem;
 
     private NativeUI nativeUI;
     private ICommandManager commandManager;
@@ -79,17 +79,6 @@ sealed class TrayIcon : IDisposable
         disposable = null;
     }
 
-    private void BindCommandManager(ICommandManager commandManager)
-    {
-        foreach (var item in notifyIcon.ContextMenuStrip.Items)
-        {
-            if (item is CommandMenuItem commandItem)
-            {
-                commandItem.CommandManager = commandManager;
-            }
-        }
-    }
-
     private void Init()
     {
         notifyIcon = Create<NotifyIcon>().DisposeWith(disposable);
@@ -112,31 +101,32 @@ sealed class TrayIcon : IDisposable
 
     private ContextMenuStrip InitContextMenu()
     {
-        var menu = Create<Menu>().Add(
-            CreateCommandMenuItem(nameof(ToggleRefreshRateCommand)).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
-            CreateSeparator(highRefreshRateMenuItem).DisposeWith(disposable),
-            CreateCommandMenuItem(nameof(ToggleTouchPadCommand)).DisposeWith(disposable).LinkAs(ref touchPadMenuItem),
-            CreateCommandMenuItem(nameof(ToggleBoostCommand)).DisposeWith(disposable).LinkAs(ref boostMenuItem),
-            CreateSeparator().DisposeWith(disposable),
-            CreateCommandMenuItem(nameof(SettingsCommand)).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
-            CreateCommandMenuItem(nameof(AboutCommand)).DisposeWith(disposable).LinkAs(ref aboutMenuItem),
-            CreateSeparator().DisposeWith(disposable),
-            CreateCommandMenuItem(nameof(ExitCommand)).DisposeWith(disposable)
-            );
+        var highRefreshRateMenuItem = default(ToolStripItem);
 
-        SetCornerPreference(menu.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+        var menu = Create<Menu>().Add(
+            CreateCommandMenuItem(commandManager.Resolve<ToggleRefreshRateCommand>()).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
+            CreateSeparator(highRefreshRateMenuItem).DisposeWith(disposable),
+            CreateCommandMenuItem(commandManager.Resolve<ToggleTouchPadCommand>()).DisposeWith(disposable),
+            CreateCommandMenuItem(commandManager.Resolve<ToggleBoostCommand>()).DisposeWith(disposable),
+            CreateSeparator().DisposeWith(disposable),
+            CreateCommandMenuItem(commandManager.Resolve<SettingsCommand>()).DisposeWith(disposable),
+            CreateCommandMenuItem(commandManager.Resolve<AboutCommand>()).DisposeWith(disposable),
+            CreateSeparator().DisposeWith(disposable),
+            CreateCommandMenuItem(commandManager.Resolve<ExitCommand>()).DisposeWith(disposable)
+            );
 
         return menu;
     }
 
-    private CommandMenuItem CreateCommandMenuItem(string commandName, object commandParameter = null, Action<CommandMenuItem> initializator = null)
+    private ToolStripMenuItem CreateCommandMenuItem(CommandBase command, object commandParameter = null)
     {
-        var item = new CommandMenuItem();
+        var item = new ToolStripMenuItem();
         item.Margin = new Padding(0, 8, 0, 8);
-        item.CommandName = commandName;
+        item.Command = command;
         item.CommandParameter = commandParameter;
 
-        initializator?.Invoke(item);
+        item.DataBindings.Add("Text", command, "Text");
+        item.DataBindings.Add("Visible", command, "Enabled");
 
         return item;
     }
@@ -162,10 +152,7 @@ sealed class TrayIcon : IDisposable
         notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI Light", 14 * (dpi / 96f), FontStyle.Bold, GraphicsUnit.Pixel);
 
         (notifyIcon.ContextMenuStrip as Menu).UpdateBackground(isDarkMode);
-
-        BindCommandManager(commandManager);        
     }
-
 
     private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode, int dpi)
     {
@@ -191,6 +178,8 @@ sealed class TrayIcon : IDisposable
         {
             Renderer = new MenuRenderer(this);
             BackColor = Color.Transparent;
+
+            SetCornerPreference(Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
         }
 
         public bool IsDarkTheme { get; private set; }
@@ -205,11 +194,7 @@ sealed class TrayIcon : IDisposable
 
             EnableAcrylic(this, color);
 
-            var handler = ThemeChanged;
-            if (handler != null)
-            {
-                handler(this, EventArgs.Empty);
-            }
+            ThemeChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public event EventHandler ThemeChanged;

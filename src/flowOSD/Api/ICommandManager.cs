@@ -22,7 +22,9 @@ using System.ComponentModel;
 
 public interface ICommandManager
 {
-    ICommand Resolve(string commandName);
+    CommandBase Resolve(string commandName);
 
-    public IList<ICommand> Commands { get; }
+    CommandBase Resolve<T>();
+
+    public IList<CommandBase> Commands { get; }
 }

@@ -16,14 +16,15 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.UI.Commands;
+
+namespace flowOSD.Api;
 
 using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
-using flowOSD.Api;
+using System.Windows.Input;
 
-abstract class CommandBase : ICommand, IDisposable
+public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChanged
 {
     private string text, description;
     private bool enabled;
@@ -32,8 +33,6 @@ abstract class CommandBase : ICommand, IDisposable
     {
         Text = Name;
     }
-
-    public abstract string Name { get; }
 
     public string Text
     {
@@ -50,25 +49,33 @@ abstract class CommandBase : ICommand, IDisposable
     public bool Enabled
     {
         get => enabled;
-        protected set => SetProperty(ref enabled, value);
+        protected set
+        {
+            if (value != enabled)
+            {
+                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            SetProperty(ref enabled, value);
+        }
     }
+
+    public abstract string Name { get; }
 
     public virtual bool CanExecuteWithHotKey => true;
 
     protected CompositeDisposable Disposable { get; private set; } = new CompositeDisposable();
 
-    private void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)
-    {
-        if (!Equals(property, value))
-        {
-            property = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
     public event PropertyChangedEventHandler PropertyChanged;
 
+    public event EventHandler CanExecuteChanged;
+
     public abstract void Execute(object parameter = null);
+
+    public bool CanExecute(object parameter)
+    {
+        return Enabled;
+    }
 
     public void Dispose()
     {
@@ -76,6 +83,15 @@ abstract class CommandBase : ICommand, IDisposable
         {
             Disposable.Dispose();
             Disposable = null;
+        }
+    }
+
+    protected void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)
+    {
+        if (!Equals(property, value))
+        {
+            property = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
