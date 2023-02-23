@@ -32,7 +32,7 @@ sealed partial class Osd : IOsd, IDisposable
 
     private Subject<OsdData> dataSubject;
 
-    public Osd(ISystemEvents systemEvents, IImageSource imageSource)
+    public Osd(ISystemEvents systemEvents)
     {
         dataSubject = new Subject<OsdData>();
         dataSubject
@@ -54,7 +54,7 @@ sealed partial class Osd : IOsd, IDisposable
             })
             .DisposeWith(disposable);
 
-        form = new OsdForm(systemEvents, imageSource).DisposeWith(disposable);
+        form = new OsdForm(systemEvents).DisposeWith(disposable);
         SetCornerPreference(form.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
     }
 
@@ -71,24 +71,18 @@ sealed partial class Osd : IOsd, IDisposable
 
     private sealed class OsdForm : Form
     {
-        private const int ImageWidth = 48;
-        private const int ImageHeight = 48;
-        private const int ImagePadding = 12;
-
         private CompositeDisposable disposable = new CompositeDisposable();
         private IDisposable hideTimer;
         private OsdData data;
 
-        private IImageSource imageSource;
-
         private bool isDarkTheme;
-        private Brush textBrush;
-        private Pen accentPen, grayPen, lightGrayPen, darkGrayPen;
 
-        public OsdForm(ISystemEvents systemEvents, IImageSource imageSource)
+        private Brush textBrush;
+        private Pen accentPen, indicatorBackgroundPen, lightIndicatorBackgroundPen, darkIndicatorBackgroundPen;
+
+        public OsdForm(ISystemEvents systemEvents)
         {
-            this.imageSource = imageSource;
-            this.isDarkTheme = false;
+            isDarkTheme = false;
 
             FormBorderStyle = FormBorderStyle.None;
 
@@ -96,15 +90,14 @@ sealed partial class Osd : IOsd, IDisposable
             DoubleBuffered = true;
             TopMost = true;
 
-            Font = new Font("Segoe UI Light", 20, FontStyle.Bold);
+            Font = new Font("Segoe UI Light", DpiScaleValue(Parameters.TextValueHeight), FontStyle.Bold, GraphicsUnit.Pixel);
 
-            darkGrayPen = new Pen(Color.FromArgb(170, 170, 170), DpiScaleValue(6)).DisposeWith(disposable);
-            darkGrayPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
-            darkGrayPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
-
-            lightGrayPen = new Pen(Color.FromArgb(125, 125, 125), DpiScaleValue(6)).DisposeWith(disposable);
-            lightGrayPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
-            lightGrayPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+            darkIndicatorBackgroundPen = CreateIndicatorBackgroundPen(
+                Parameters.IndicatorDarkBackgroundColor,
+                DpiScaleValue(Parameters.IndicatorValueHeight)).DisposeWith(disposable);
+            lightIndicatorBackgroundPen = CreateIndicatorBackgroundPen(
+                Parameters.IndicatorLightBackgroundColor,
+                DpiScaleValue(Parameters.IndicatorValueHeight)).DisposeWith(disposable);
 
             UpdateTheme();
 
@@ -142,7 +135,7 @@ sealed partial class Osd : IOsd, IDisposable
             Visible = true;
 
             hideTimer = Observable
-                .Timer(DateTimeOffset.Now.AddMilliseconds(1500), TimeSpan.FromMilliseconds(500 / 16))
+                .Timer(DateTimeOffset.Now.AddMilliseconds(Parameters.Timeout), TimeSpan.FromMilliseconds(500 / 16))
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(t =>
                 {
@@ -180,18 +173,88 @@ sealed partial class Osd : IOsd, IDisposable
             base.OnPaint(e);
         }
 
+        private static Pen CreateIndicatorBackgroundPen(Color color, int width)
+        {
+            var pen = new Pen(color, width);
+            pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+            pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+
+            return pen;
+        }
+
+        private static string GetImage(OsdData data)
+        {
+            switch (data.ImageName)
+            {
+                case Images.HiRefreshRate:
+                case Images.LowRefreshRate:
+                    return "\ue7f4";
+                case Images.TouchPad:
+                    return "\uefa5";
+                case Images.BoostOn:
+                    return "\uec4a";
+                case Images.BoostOff:
+                    return "\uec48";
+                case Images.AC:
+                    return "\ue83e";
+                case Images.DC:
+                    return "\ue83f";
+                case Images.Mic:
+                    return "\ue720";
+                case Images.MicMuted:
+                    return "\uf781";
+                case Images.KeyboardBrightness:
+                    return "\ued39";
+                case Images.KeyboardLowerBrightness:
+                    return "\ued3a";
+
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private int DrawImage(Graphics g, int paddingLeft, int imageHeight, int separator)
+        {
+            var image = GetImage(data);
+
+            using var font = new Font("Segoe Fluent Icons", imageHeight, GraphicsUnit.Pixel);
+
+            var point = new Point(paddingLeft, (Height - imageHeight) / 2);
+
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            g.DrawString(image, font, textBrush, point);
+
+            var imageWidth = g.MeasureString(image, font).Width;
+
+            if (data.ImageName == Images.HiRefreshRate || data.ImageName == Images.LowRefreshRate)
+            {
+                using var textFont = new Font(
+                    "Segoe UI",
+                    DpiScaleValue(Parameters.TextImageHeight / 4f),
+                    GraphicsUnit.Pixel);
+
+                var text = data.ImageName == Images.HiRefreshRate ? "120Hz" : "60Hz";
+                var textSize = g.MeasureString(text, textFont);
+
+                var textPoint = new Point(
+                    paddingLeft + (int)((imageWidth - textSize.Width) / 2),
+                    Height / 2 - (int)(textSize.Height * 2 / 3) - DpiScaleValue(1));
+
+                g.DrawString(text, textFont, textBrush, textPoint);
+
+            }
+
+            return (int)imageWidth + separator;
+        }
+
         private void UpdateTheme()
         {
-            grayPen = IsDarkTheme ? darkGrayPen : lightGrayPen;
+            indicatorBackgroundPen = IsDarkTheme ? darkIndicatorBackgroundPen : lightIndicatorBackgroundPen;
             textBrush = IsDarkTheme ? Brushes.White : Brushes.Black;
 
-            BackColor = IsDarkTheme
-                ? Color.FromArgb(255, 44, 44, 44)
-                : Color.FromArgb(255, 249, 249, 249);
-
             var color = IsDarkTheme
-                ? Color.FromArgb(210, 44, 44, 44)
-                : Color.FromArgb(210, 249, 249, 249);
+                ? Parameters.DarkBackgroundColor
+                : Parameters.LightBackgroundColor;
 
             EnableAcrylic(this, color);
 
@@ -200,59 +263,44 @@ sealed partial class Osd : IOsd, IDisposable
 
         private void DrawText(Graphics g)
         {
+            var x = DpiScaleValue(Parameters.TextPadding.Left);
+
             if (data.HasImage)
             {
-                var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle), IsDarkTheme);
-
-                g.DrawImage(
-                    image,
-                    DpiScaleValue(ImagePadding),
-                    (Height - DpiScaleValue(ImageHeight)) / 2,
-                    DpiScaleValue(ImageWidth),
-                    DpiScaleValue(ImageHeight));
+                x += DrawImage(g, x, DpiScaleValue(Parameters.TextImageHeight), DpiScaleValue(Parameters.TextSeparator));
             }
 
-
-            var x = data.HasImage ? DpiScaleValue(ImagePadding * 2 + ImageWidth) : DpiScaleValue(ImagePadding * 2);
-            var txtSize = g.MeasureString(data.Text, Font);
+            var textSize = g.MeasureString(data.Text, Font);
 
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            g.DrawString(
-                data.Text,
-                Font,
-                textBrush,
-                x,
-                (Size.Height - txtSize.Height) / 2
-            );
+            g.DrawString(data.Text, Font, textBrush, x, (Size.Height - textSize.Height) / 2);
         }
 
         private void DrawIndicator(Graphics g)
         {
-            var image = imageSource.GetImage(data.ImageName, GetDpiForWindow(Handle), IsDarkTheme);
-            var barWidth = Width - image.Width * 4;
+            var x = DpiScaleValue(Parameters.InidicatorPadding.Left);
+            x += DrawImage(
+                g,
+                x,
+                DpiScaleValue(Parameters.IndicatorImageHeight),
+                DpiScaleValue(Parameters.IndicatorSeparator));
+
+            var barWidth = DpiScaleValue(Parameters.IndicatorValueWidth);
 
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
             g.DrawLine(
-                grayPen,
-                new PointF(image.Width * 3, Height / 2),
-                new PointF(image.Width * 3 + barWidth, Height / 2));
+                indicatorBackgroundPen,
+                new PointF(x, Height / 2),
+                new PointF(x + barWidth, Height / 2));
 
             var percent = (float)(data.Value ?? 0);
-
             if (percent > 0)
             {
                 g.DrawLine(
                     accentPen,
-                    new PointF(image.Width * 3, Height / 2),
-                    new PointF(image.Width * 3 + barWidth * percent, Height / 2));
+                    new PointF(x, Height / 2),
+                    new PointF(x + barWidth * percent, Height / 2));
             }
-
-            g.DrawImage(
-                image,
-                image.Width,
-                (Height - image.Height) / 2,
-                image.Width,
-                image.Height);
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -310,32 +358,100 @@ sealed partial class Osd : IOsd, IDisposable
                 return;
             }
 
+            var imageHeight = DpiScaleValue(data.IsIndicator ? Parameters.IndicatorImageHeight : Parameters.TextImageHeight);
+            var width = DpiScaleValue(data.IsIndicator ? Parameters.InidicatorPadding.Left : Parameters.TextPadding.Left);
+            var height = data.IsIndicator
+              ? DpiScaleValue(Parameters.InidicatorPadding.Top + Parameters.InidicatorPadding.Bottom + Parameters.IndicatorImageHeight)
+              : DpiScaleValue(Parameters.TextPadding.Top + Parameters.TextPadding.Bottom + Parameters.TextImageHeight);
+
+            if (data.IsIndicator || data.HasImage)
+            {
+                using var font = new Font("Segoe Fluent Icons", imageHeight, GraphicsUnit.Pixel);
+                using var g = Graphics.FromHwnd(Handle);
+
+                width += (int)g.MeasureString(GetImage(data), font).Width;
+                width += DpiScaleValue(data.IsIndicator ? Parameters.IndicatorSeparator : Parameters.TextSeparator);
+            }
+
             if (data.IsIndicator)
             {
-                Size = new Size(DpiScaleValue(200), DpiScaleValue(50));
+                width += DpiScaleValue(Parameters.IndicatorValueWidth + Parameters.InidicatorPadding.Right);
             }
             else
             {
-                var x = data.HasImage ? DpiScaleValue(ImageWidth + ImagePadding * 2) : DpiScaleValue(ImagePadding * 2);
+                using var g = Graphics.FromHwnd(Handle);
 
-                using (var g = Graphics.FromHwnd(Handle))
-                {
-                    var txtSize = g.MeasureString(data.Text, Font);
-                    Size = new Size(
-                        x + DpiScaleValue(ImagePadding * 2) + (int)txtSize.Width,
-                        DpiScaleValue(ImageHeight + ImagePadding * 2)
-                    );
-                }
+                width += (int)g.MeasureString(data.Text, Font).Width;
+                width += DpiScaleValue(Parameters.TextPadding.Right);
             }
 
-            Location = new Point(
-                (Screen.PrimaryScreen.WorkingArea.Width - Size.Width) / 2,
-                DpiScaleValue(32));
+            Size = new Size(width, height);
+            Location = new Point((Screen.PrimaryScreen.WorkingArea.Width - Size.Width) / 2, DpiScaleValue(Parameters.PositionX));
         }
 
         private int DpiScaleValue(float value)
         {
             return (int)Math.Round(value * GetDpiForWindow(Handle) / 96.0, 0, MidpointRounding.AwayFromZero);
         }
+    }
+
+    private static class Parameters
+    {
+        public static Padding TextPadding { get; } = new Padding(12, 12, 24, 12);
+
+        public static int TextImageHeight { get; } = 40;
+
+        public static int TextValueHeight { get; } = 26;
+
+        public static int TextSeparator { get; } = 6;
+
+        public static Padding InidicatorPadding { get; } = new Padding(16, 16, 24, 16);
+
+        public static int IndicatorImageHeight { get; } = 16;
+
+        public static int IndicatorValueWidth { get; } = 136;
+
+        public static int IndicatorValueHeight { get; } = 6;
+
+        public static int IndicatorSeparator { get; } = 16;
+
+        public static int Timeout = 1500;
+
+        public static int PositionX = 32;
+
+        public static Color IndicatorLightBackgroundColor { get; } = Color.FromArgb(125, 125, 125);
+
+        public static Color IndicatorDarkBackgroundColor { get; } = Color.FromArgb(170, 170, 170);
+
+        public static Color LightBackgroundColor { get; } = Color.FromArgb(210, 249, 249, 249);
+
+        public static Color DarkBackgroundColor { get; } = Color.FromArgb(210, 44, 44, 44);
+    }
+
+    private sealed class Padding
+    {
+        public Padding(int all)
+            : this(all, all, all, all)
+        { }
+
+        public Padding(int horizontal, int vertical)
+            : this(horizontal, vertical, horizontal, vertical)
+        { }
+
+        public Padding(int left, int top, int right, int bottom)
+        {
+            Left = left;
+            Top = top;
+            Right = right;
+            Bottom = bottom;
+        }
+
+        public int Left { get; }
+
+        public int Right { get; }
+
+        public int Top { get; }
+
+        public int Bottom { get; }
     }
 }

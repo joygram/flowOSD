@@ -68,7 +68,7 @@ sealed class App : IDisposable
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);
         atk = new Atk(messageQueue).DisposeWith(disposable);
         touchPad = new TouchPad(keyboard, messageQueue).DisposeWith(disposable);
-        osd = new Osd(systemEvents, imageSource).DisposeWith(disposable);
+        osd = new Osd(systemEvents).DisposeWith(disposable);
 
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
         audio = new Audio();
@@ -120,7 +120,9 @@ sealed class App : IDisposable
             .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => osd.Show(new OsdData(Images.Keyboard, keyboard.GetBacklight())))
+            .Subscribe(x => osd.Show(new OsdData(
+                x == AtkKey.BacklightDown ? Images.KeyboardLowerBrightness : Images.KeyboardBrightness,
+                keyboard.GetBacklight())))
             .DisposeWith(disposable);
 
         // Mic Status
@@ -250,7 +252,14 @@ sealed class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(Images.RefreshRate, isEnabled ? "High Refresh Rate is on" : "High Refresh Rate is off"));
+        if (isEnabled)
+        {
+            osd.Show(new OsdData(Images.HiRefreshRate, "High Refresh Rate"));
+        }
+        else
+        {
+            osd.Show(new OsdData(Images.LowRefreshRate, "Low Refresh Rate"));
+        }
     }
 
     private void ShowBoostNotification(bool isEnabled)
@@ -260,7 +269,14 @@ sealed class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(Images.Boost, isEnabled ? "Boost Mode is on" : "Boost Mode is off"));
+        if (isEnabled)
+        {
+            osd.Show(new OsdData(Images.BoostOn, "Boost Mode is on"));
+        }
+        else
+        {
+            osd.Show(new OsdData(Images.BoostOff, "Boost Mode is off"));
+        }
     }
 
     private void ShowTouchPadNotification(bool isEnabled)
