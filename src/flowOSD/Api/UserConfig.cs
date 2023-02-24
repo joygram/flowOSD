@@ -40,6 +40,8 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool showMicNotification;
     private bool showGpuNotification;
 
+    private bool showBatteryChargeRate;
+
     private string auraCommand, fanCommand, rogCommand, copyCommand, pasteCommand;
 
     public UserConfig()
@@ -57,6 +59,8 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         showDisplayRefreshRateNotification = true;
         showMicNotification = true;
         showGpuNotification = true;
+
+        showBatteryChargeRate = true;
 
         events = new Dictionary<PropertyChangedEventHandler, IDisposable>();
         propertyChangedSubject = new Subject<string>();
@@ -164,6 +168,12 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => showGpuNotification;
         set => SetProperty(ref showGpuNotification, value);
+    }
+
+    public bool ShowBatteryChargeRate
+    {
+        get => showBatteryChargeRate;
+        set => SetProperty(ref showBatteryChargeRate, value);
     }
 
     public string AuraCommand

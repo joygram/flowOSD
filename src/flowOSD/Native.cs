@@ -30,6 +30,32 @@ static class Native
     public const uint WM_DEVICECHANGE = 0x219;
 
 
+
+    [Flags]
+    public enum LocalMemoryFlags : uint
+    {
+        LMEM_FIXED = 0x0000,
+        LMEM_MOVEABLE = 0x0002,
+        LMEM_NOCOMPACT = 0x0010,
+        LMEM_NODISCARD = 0x0020,
+        LMEM_ZEROINIT = 0x0040,
+        LMEM_MODIFY = 0x0080,
+        LMEM_DISCARDABLE = 0x0F00,
+        LMEM_VALID_FLAGS = 0x0F72,
+        LMEM_INVALID_HANDLE = 0x8000,
+        LHND = (LMEM_MOVEABLE | LMEM_ZEROINIT),
+        LPTR = (LMEM_FIXED | LMEM_ZEROINIT),
+        NONZEROLHND = (LMEM_MOVEABLE),
+        NONZEROLPTR = (LMEM_FIXED)
+    }
+
+    [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)]
+    internal static extern IntPtr LocalAlloc(LocalMemoryFlags uFlags, ulong uBytes);
+
+    [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)]
+    internal static extern IntPtr LocalFree(IntPtr hMem);
+
+
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     public static extern UInt32 RegisterWindowMessage(string lpString);
 

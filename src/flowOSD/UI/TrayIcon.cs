@@ -43,8 +43,17 @@ sealed class TrayIcon : IDisposable
     private IConfig config;
     private IImageSource imageSource;
     private ISystemEvents systemEvents;
+    private IBattery battery;
 
-    public TrayIcon(NativeUI nativeUI, IConfig config, IImageSource imageSource, ICommandManager commandManager, ISystemEvents systemEvents)
+    private ToolStripItem batteryMenuItem, monitoringSeparator;
+
+    public TrayIcon(
+        NativeUI nativeUI,
+        IConfig config,
+        IImageSource imageSource,
+        ICommandManager commandManager,
+        ISystemEvents systemEvents,
+        IBattery battery)
     {
         this.nativeUI = nativeUI ?? throw new ArgumentNullException(nameof(nativeUI));
 
@@ -52,6 +61,7 @@ sealed class TrayIcon : IDisposable
         this.imageSource = imageSource ?? throw new ArgumentNullException(nameof(imageSource));
         this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
         this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
+        this.battery = battery ?? throw new ArgumentNullException(nameof(battery));
 
         Init();
 
@@ -69,8 +79,51 @@ sealed class TrayIcon : IDisposable
             .DisposeWith(disposable);
 
         systemEvents.SystemDarkMode
+            .ObserveOn(SynchronizationContext.Current)
             .Subscribe(isDarkMode => (notifyIcon?.ContextMenuStrip as Menu)?.UpdateBackground(isDarkMode))
             .DisposeWith(disposable);
+
+        config.UserConfig.PropertyChanged
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(propertyName =>
+            {
+                if (propertyName == nameof(UserConfig.ShowBatteryChargeRate))
+                {
+                    UpdateMonitorings();
+                }
+            })
+            .DisposeWith(disposable);
+
+        battery.Rate
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(rate => UpdateBattery(rate))
+            .DisposeWith(disposable);
+
+        Observable.Interval(TimeSpan.FromSeconds(1))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(_ =>
+            {
+                if (notifyIcon?.ContextMenuStrip?.Visible == true && batteryMenuItem?.Visible == true)
+                {
+                    battery.Update();
+                }
+            })
+            .DisposeWith(disposable);
+    }
+
+    private void UpdateMonitorings()
+    {
+        var isMonitoringEnabled = config.UserConfig.ShowBatteryChargeRate;
+
+        if (batteryMenuItem is MonitoringLabel label)
+        {
+            label.Visible = config.UserConfig.ShowBatteryChargeRate;
+        }
+
+        if (monitoringSeparator != null)
+        {
+            monitoringSeparator.Visible = isMonitoringEnabled;
+        }
     }
 
     void IDisposable.Dispose()
@@ -99,11 +152,14 @@ sealed class TrayIcon : IDisposable
         methodInfo.Invoke(notifyIcon, null);
     }
 
-    private ContextMenuStrip InitContextMenu()
+    private async Task<ContextMenuStrip> InitContextMenu()
     {
         var highRefreshRateMenuItem = default(ToolStripItem);
 
         var menu = Create<Menu>().Add(
+            CreateMonitoringItem("").LinkAs(ref batteryMenuItem).DisposeWith(disposable),
+            CreateSeparator().LinkAs(ref monitoringSeparator),
+
             CreateCommandMenuItem(commandManager.Resolve<ToggleRefreshRateCommand>()).DisposeWith(disposable).LinkAs(ref highRefreshRateMenuItem),
             CreateSeparator(highRefreshRateMenuItem).DisposeWith(disposable),
             CreateCommandMenuItem(commandManager.Resolve<ToggleTouchPadCommand>()).DisposeWith(disposable),
@@ -116,10 +172,23 @@ sealed class TrayIcon : IDisposable
             CreateCommandMenuItem(commandManager.Resolve<ExitCommand>()).DisposeWith(disposable)
             );
 
+        UpdateMonitorings();
+        UpdateBattery(await battery.Rate.FirstAsync());
+
         return menu;
     }
 
-    private ToolStripMenuItem CreateCommandMenuItem(CommandBase command, object commandParameter = null)
+    private ToolStripItem CreateMonitoringItem(string text)
+    {
+        var item = new MonitoringLabel();
+        item.Margin = new Padding(0);
+        item.Text = text;
+        item.Enabled = false;
+
+        return item;
+    }
+
+    private ToolStripItem CreateCommandMenuItem(CommandBase command, object commandParameter = null)
     {
         var item = new ToolStripMenuItem();
         item.Margin = new Padding(0, 8, 0, 8);
@@ -144,12 +213,23 @@ sealed class TrayIcon : IDisposable
         return separator;
     }
 
-    private void UpdateContextMenu(int dpi, bool isDarkMode)
+    private void UpdateBattery(int rate)
     {
-        notifyIcon.ContextMenuStrip?.Font?.Dispose();
-        notifyIcon.ContextMenuStrip?.Dispose();
+        if (batteryMenuItem != null)
+        {
+            batteryMenuItem.Text = $"Charge Rate: {rate / 1000f:N4} W";
+        }
+    }
 
-        notifyIcon.ContextMenuStrip = InitContextMenu();
+    private async void UpdateContextMenu(int dpi, bool isDarkMode)
+    {
+        if (notifyIcon.ContextMenuStrip != null)
+        {
+            notifyIcon.ContextMenuStrip.Font?.Dispose();
+            notifyIcon.ContextMenuStrip.Dispose();
+        }
+
+        notifyIcon.ContextMenuStrip = await InitContextMenu();
         notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI Light", 14 * (dpi / 96f), FontStyle.Bold, GraphicsUnit.Pixel);
 
         (notifyIcon.ContextMenuStrip as Menu).UpdateBackground(isDarkMode);
@@ -222,6 +302,12 @@ sealed class TrayIcon : IDisposable
         }
     }
 
+    private sealed class MonitoringLabel : ToolStripLabel
+    {
+        public bool Active { get; set; }
+
+    }
+
     private class MenuRenderer : ToolStripRenderer, IDisposable
     {
         private Brush selectedBrush, textBrush, selectedTextBrush;
@@ -257,19 +343,51 @@ sealed class TrayIcon : IDisposable
 
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            var textHeight = e.TextFont.GetHeight(e.Graphics);
-            var point = new PointF(
-                e.TextRectangle.X,
-                e.TextRectangle.Y + (e.TextRectangle.Height - textHeight) / 2);
-
             e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
-            e.Graphics.DrawString(
-                e.Text,
-                e.TextFont,
-                e.Item.Selected ? selectedTextBrush : textBrush,
-                point
-                );
+            if (e.Item is ToolStripMenuItem)
+            {
+                var textHeight = e.TextFont.GetHeight(e.Graphics);
+                var point = new PointF(
+                    e.TextRectangle.X,
+                    e.TextRectangle.Y + (e.TextRectangle.Height - textHeight) / 2);
+
+                e.Graphics.DrawString(
+                    e.Text,
+                    e.TextFont,
+                    e.Item.Selected ? selectedTextBrush : textBrush,
+                    point);
+            }
+            else
+            {
+                var t = e.Item.Text.Split(":");
+                var labelText = t[0] + ": ";
+                var labelValue = t[1];
+
+                using var font = new Font(
+                    "Segoe UI",
+                    e.TextFont.Size * 0.8f,
+                    GraphicsUnit.Pixel);
+
+                var textSize = e.Graphics.MeasureString(labelText, font);
+                var point = new PointF(
+                    e.TextRectangle.X,
+                    e.TextRectangle.Y + (e.TextRectangle.Height - textSize.Height) / 2);
+
+                e.Graphics.DrawString(
+                    labelText,
+                    font,
+                    Brushes.Gray,
+                    point);
+
+                point.X += textSize.Width;
+
+                e.Graphics.DrawString(
+                    labelValue,
+                    font,
+                    textBrush,
+                    point);
+            }
         }
 
         protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)

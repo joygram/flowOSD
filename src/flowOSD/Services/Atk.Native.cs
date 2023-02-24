@@ -28,7 +28,7 @@ using static Native;
 sealed partial class Atk
 {
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern IntPtr CreateFile(
+    public static extern IntPtr CreateFile(
         string lpFileName,
         uint dwDesiredAccess,
         uint dwShareMode,
@@ -39,7 +39,7 @@ sealed partial class Atk
     );
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool DeviceIoControl(
+    public static extern bool DeviceIoControl(
         IntPtr hDevice,
         uint dwIoControlCode,
         byte[] lpInBuffer,

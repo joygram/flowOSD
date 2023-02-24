@@ -56,7 +56,8 @@ sealed class ConfigUI : IDisposable
             instance = new Window(
                 new ConfigPages.GeneralConfigPage(config),
                 new ConfigPages.NotificationsConfigPage(config),
-                new ConfigPages.HotKeysConfigPage(config, commandManager));
+                new ConfigPages.HotKeysConfigPage(config, commandManager),
+                new ConfigPages.MonitoringConfigPage(config));
             instance.Show();
         }
     }

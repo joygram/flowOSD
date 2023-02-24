@@ -44,6 +44,7 @@ sealed class App : IDisposable
     private IOsd osd;
     private IAudio audio;
     private IGpu gpu;
+    private IBattery battery;
 
     private TrayIcon trayIcon;
     private NativeUI nativeUI;
@@ -73,7 +74,8 @@ sealed class App : IDisposable
 
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
         audio = new Audio();
-        gpu = new Gpu(atk);
+        gpu = new Gpu(atk).DisposeWith(disposable);
+        battery = new Battery().DisposeWith(disposable);
 
         systemEvents.AppException
             .Subscribe(ex =>
@@ -191,7 +193,8 @@ sealed class App : IDisposable
             config,
             imageSource,
             commandManager,
-            systemEvents).DisposeWith(disposable);
+            systemEvents,
+            battery).DisposeWith(disposable);
 
         // Hotkeys
 
