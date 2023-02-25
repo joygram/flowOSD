@@ -78,13 +78,6 @@ static class Extensions
         return control;
     }
 
-    public static T Add<T>(this T toolStrip, params ToolStripItem[] items) where T : ToolStrip
-    {
-        toolStrip.Items.AddRange(items);
-
-        return toolStrip;
-    }
-
     public static TableLayoutPanel Add<T>(this TableLayoutPanel panel, int column, int row, Action<T> initializator)
         where T : Control, new()
     {
