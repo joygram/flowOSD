@@ -192,9 +192,9 @@ sealed partial class Osd : IOsd, IDisposable
                 case Images.TouchPad:
                     return "\uefa5";
                 case Images.BoostOn:
-                    return "\uec4a";
+                    return "\ue945";
                 case Images.BoostOff:
-                    return "\uec48";
+                    return "\uec0a";
                 case Images.AC:
                     return "\ue83e";
                 case Images.DC:
@@ -208,7 +208,7 @@ sealed partial class Osd : IOsd, IDisposable
                 case Images.KeyboardLowerBrightness:
                     return "\ued3a";
                 case Images.Gpu:
-                    return "\uf211";
+                    return "\ue950";
 
                 default:
                     return string.Empty;

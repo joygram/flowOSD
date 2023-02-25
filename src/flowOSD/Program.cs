@@ -53,6 +53,8 @@ public static class Program
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+
             if (Environment.OSVersion.Version.Build < 22621)
             {
                 MessageBox.Show(
@@ -63,8 +65,6 @@ public static class Program
 
                 return;
             }
-
-            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
             var app = new App(config).DisposeWith(disposable);
 
