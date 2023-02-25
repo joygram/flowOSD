@@ -44,6 +44,6 @@ flowOSD shows the current charge (discharge) rate of the battery. Also it allows
 
 Also flowOSD disables the touchpad when the laptop becomes a tablet.
 
-Note:
+**Note:**
 
-If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.
+*If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.*
