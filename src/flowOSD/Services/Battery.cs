@@ -70,6 +70,12 @@ sealed partial class Battery : IDisposable, IBattery
 
     public void Update()
     {
+        if (!batteryHandle.IsInvalid || batteryHandle.IsClosed)
+        {
+            batteryHandle.Dispose();
+            Init();
+        }
+
         var batteryStatus = GetBatteryStatus(batteryHandle, batteryTag);
 
         rateSubject.OnNext(batteryStatus.Rate);

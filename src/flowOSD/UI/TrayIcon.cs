@@ -99,7 +99,7 @@ sealed class TrayIcon : IDisposable
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(_ =>
             {
-                if (notifyIcon?.ContextMenuStrip?.Visible == true && batteryMenuItem?.Visible == true)
+                if (notifyIcon?.ContextMenuStrip?.Visible == true && config.UserConfig.ShowBatteryChargeRate)
                 {
                     battery.Update();
                 }
@@ -109,16 +109,9 @@ sealed class TrayIcon : IDisposable
 
     private void UpdateMonitorings()
     {
-        var isMonitoringEnabled = config.UserConfig.ShowBatteryChargeRate;
-
         if (batteryMenuItem is ToolStripLabel label)
         {
             label.Visible = config.UserConfig.ShowBatteryChargeRate;
-        }
-
-        if (monitoringSeparator != null)
-        {
-            monitoringSeparator.Visible = isMonitoringEnabled;
         }
     }
 
@@ -153,8 +146,11 @@ sealed class TrayIcon : IDisposable
         var highRefreshRateMenuItem = default(ToolStripItem);
 
         var menu = new ContextMenu(systemEvents);
-        menu.AddMonitoringItem("").LinkAs(ref batteryMenuItem).DisposeWith(disposable);
-        menu.AddSeparator().LinkAs(ref monitoringSeparator);
+        menu.AddMonitoringItem("")
+            .LinkAs(ref batteryMenuItem)
+            .DisposeWith(disposable);
+
+        menu.AddSeparator(batteryMenuItem).LinkAs(ref monitoringSeparator);
 
         menu.AddMenuItem(commandManager.Resolve<ToggleRefreshRateCommand>())
             .DisposeWith(disposable)
@@ -185,7 +181,9 @@ sealed class TrayIcon : IDisposable
     {
         if (batteryMenuItem != null)
         {
-            batteryMenuItem.Text = $"Charge Rate: {rate / 1000f:N4} W";
+            batteryMenuItem.Text = $"{(rate < 0 ? "Discharge" : "Charge")} Rate: {rate / 1000f:N4} W";
+
+            batteryMenuItem.Visible = Math.Abs(rate) > 0.00009;
         }
     }
 
