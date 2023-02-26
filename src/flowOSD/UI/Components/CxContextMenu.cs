@@ -26,12 +26,12 @@ using static flowOSD.Native;
 
 namespace flowOSD.UI.Components;
 
-sealed class ContextMenu : ContextMenuStrip
+sealed class CxContextMenu : ContextMenuStrip
 {
     private CompositeDisposable disposable;
     private ISystemEvents systemEvents;
 
-    public ContextMenu(ISystemEvents systemEvents)
+    public CxContextMenu(ISystemEvents systemEvents)
     {
         this.systemEvents = systemEvents;
 
@@ -169,7 +169,8 @@ sealed class ContextMenu : ContextMenuStrip
 
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+            e.Graphics.TextRenderingHint = e.TextFont.Height < 25 ?
+                TextRenderingHint.ClearTypeGridFit: TextRenderingHint.AntiAliasGridFit;
 
             if (e.Item is ToolStripMenuItem)
             {
@@ -238,33 +239,9 @@ sealed class ContextMenu : ContextMenuStrip
                 var width = e.Item.ContentRectangle.Width - 8;
                 var height = e.Item.ContentRectangle.Height - 2;
 
-                var diameter = 4;
-                var path = GetRoundedRectPath(x, y, width, height, diameter);
-
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                e.Graphics.FillPath(selectedBrush, path);
+                e.Graphics.FillRoundedRectangle(selectedBrush, x, y, width, height, 4);
             }
-        }
-
-        private static GraphicsPath GetRoundedRectPath(int x, int y, int width, int height, int r)
-        {
-            var arc = new Rectangle(x, y, r * 2, r * 2);
-            var path = new GraphicsPath();
-
-            path.AddArc(arc, 180, 90);
-
-            arc.X = x + width - r * 2;
-            path.AddArc(arc, 270, 90);
-
-            arc.Y = y + height - r * 2;
-            path.AddArc(arc, 0, 90);
-
-            arc.X = x;
-            path.AddArc(arc, 90, 90);
-
-            path.CloseFigure();
-
-            return path;
         }
 
         private async void UpdateMode(bool? isDarkMode = null)

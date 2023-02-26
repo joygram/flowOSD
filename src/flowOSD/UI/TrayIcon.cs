@@ -40,6 +40,8 @@ sealed class TrayIcon : IDisposable
     private NotifyIcon notifyIcon;
 
     private NativeUI nativeUI;
+    private MainUI mainUI;
+
     private ICommandManager commandManager;
     private IConfig config;
     private IImageSource imageSource;
@@ -50,6 +52,7 @@ sealed class TrayIcon : IDisposable
 
     public TrayIcon(
         NativeUI nativeUI,
+        MainUI mainUI,
         IConfig config,
         IImageSource imageSource,
         ICommandManager commandManager,
@@ -57,6 +60,7 @@ sealed class TrayIcon : IDisposable
         IBattery battery)
     {
         this.nativeUI = nativeUI ?? throw new ArgumentNullException(nameof(nativeUI));
+        this.mainUI = mainUI ?? throw new ArgumentNullException(nameof(mainUI));
 
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.imageSource = imageSource ?? throw new ArgumentNullException(nameof(imageSource));
@@ -124,7 +128,13 @@ sealed class TrayIcon : IDisposable
     private void Init()
     {
         notifyIcon = Create<NotifyIcon>().DisposeWith(disposable);
-        notifyIcon.Click += (sender, e) => ShowMenu();
+       // notifyIcon.Click += (sender, e) => ShowMenu();
+        notifyIcon.MouseClick += (sender, e) => { 
+            if(e.Button == MouseButtons.Left)
+            {
+                ShowMenu();
+            }
+                }; 
 
         notifyIcon.Text = $"{config.AppFileInfo.ProductName} ({config.AppFileInfo.ProductVersion})";
 
@@ -137,15 +147,16 @@ sealed class TrayIcon : IDisposable
 
     private void ShowMenu()
     {
-        var methodInfo = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-        methodInfo.Invoke(notifyIcon, null);
+        mainUI.Show();
+        //var methodInfo = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
+        //methodInfo.Invoke(notifyIcon, null);
     }
 
     private async Task<ContextMenuStrip> InitContextMenu()
     {
         var highRefreshRateMenuItem = default(ToolStripItem);
 
-        var menu = new ContextMenu(systemEvents);
+        var menu = new CxContextMenu(systemEvents);
         menu.AddMonitoringItem("")
             .LinkAs(ref batteryMenuItem)
             .DisposeWith(disposable);

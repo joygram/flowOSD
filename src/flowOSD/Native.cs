@@ -49,6 +49,12 @@ static class Native
         NONZEROLPTR = (LMEM_FIXED)
     }
 
+    [DllImport("shlwapi.dll")]
+    public static extern int ColorHLSToRGB(int H, int L, int S);
+
+    [DllImport("shlwapi.dll")]
+    public static extern void ColorRGBToHLS(int RGB, out int H, out int L, out int S);
+
     [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)]
     internal static extern IntPtr LocalAlloc(LocalMemoryFlags uFlags, ulong uBytes);
 

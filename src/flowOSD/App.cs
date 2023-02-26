@@ -48,6 +48,7 @@ sealed class App : IDisposable
 
     private TrayIcon trayIcon;
     private NativeUI nativeUI;
+    private MainUI mainUI;
 
     private CommandManager commandManager;
     private HotKeyManager hotKeyManager;
@@ -76,6 +77,8 @@ sealed class App : IDisposable
         audio = new Audio();
         gpu = new Gpu(atk).DisposeWith(disposable);
         battery = new Battery().DisposeWith(disposable);
+
+        mainUI = new MainUI(config, systemEvents);
 
         systemEvents.AppException
             .Subscribe(ex =>
@@ -190,6 +193,7 @@ sealed class App : IDisposable
 
         trayIcon = new TrayIcon(
             nativeUI,
+            mainUI,
             config,
             imageSource,
             commandManager,
