@@ -47,7 +47,6 @@ sealed class App : IDisposable
     private IBattery battery;
 
     private TrayIcon trayIcon;
-    private NativeUI nativeUI;
     private MainUI mainUI;
 
     private CommandManager commandManager;
@@ -63,8 +62,6 @@ sealed class App : IDisposable
         messageQueue = new MessageQueue().DisposeWith(disposable);
         imageSource = new ImageSource().DisposeWith(disposable);
 
-        nativeUI = new NativeUI(messageQueue).DisposeWith(disposable);
-
         keyboard = new Keyboard();
         powerManagement = new PowerManagement().DisposeWith(disposable);
 
@@ -78,7 +75,7 @@ sealed class App : IDisposable
         gpu = new Gpu(atk).DisposeWith(disposable);
         battery = new Battery().DisposeWith(disposable);
 
-        mainUI = new MainUI(config, systemEvents);
+        mainUI = new MainUI(config, systemEvents, messageQueue);
 
         systemEvents.AppException
             .Subscribe(ex =>
@@ -192,13 +189,13 @@ sealed class App : IDisposable
         );
 
         trayIcon = new TrayIcon(
-            nativeUI,
             mainUI,
             config,
             imageSource,
             commandManager,
             systemEvents,
-            battery).DisposeWith(disposable);
+            battery,
+            messageQueue).DisposeWith(disposable);
 
         // Hotkeys
 

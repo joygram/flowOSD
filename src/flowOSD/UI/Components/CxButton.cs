@@ -1,393 +1,478 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+ *
+ *  This file is part of flowOSD.
+ *
+ *  flowOSD is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  flowOSD is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
+ *
+ */
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
+using System.Reactive.Disposables;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using flowOSD.Api;
+using System.Reactive.Linq;
+using static flowOSD.Native;
+using System.Windows.Input;
 
-namespace flowOSD.UI.Components
+namespace flowOSD.UI.Components;
+
+internal sealed class CxButton : Button
 {
-    internal class CxButton : ButtonBase
+    private const float BACKGROUND_HOVER = .2f;
+    private const float BACKGROUND_PRESSED = -.1f;
+    private const float BACKGROUND_DISABLED = -.05f;
+    private const float TEXT_HOVER = 0;
+    private const float TEXT_PRESSED = -.3f;
+    private const float TEXT_DISABLED = .1f;
+    private const float BORDER = -.2f;
+    private const int FOCUS_SPACE = 3;
+
+    private CompositeDisposable disposable;
+
+    private ButtonState state;
+    private CxTabListener tabListener;
+
+    private Pen focusPen;
+
+    private Color accentColor, textColor, textBrightColor;
+    private bool isToggle, isTransparent, isChecked;
+
+    private string symbol;
+    private Font symbolFont;
+
+    private CxContextMenu dropDownMenu;
+
+    public CxButton()
     {
-        private ButtonState state;
-        private CxTabListener tabListener;
-        private Color focusColor, accentColor;
-        private bool isToggle, isTransparent, isChecked;
+        disposable = new CompositeDisposable();
 
-        private string symbol;
-        private int symbolHeight;
+        isToggle = false;
+        isChecked = false;
+        isTransparent = false;
 
-        private object[] dropDownItems;
+        FocusColor = Color.White;
+        accentColor = Color.FromArgb(255, 25, 110, 191).Luminance(0.2f);
 
-        public CxButton()
+        textColor = Color.White;
+        textBrightColor = Color.Black;
+
+        state = 0;
+        tabListener = null;
+
+        symbol = string.Empty;
+        symbolFont = null;
+    }
+
+    public CxContextMenu DropDownMenu
+    {
+        get => dropDownMenu;
+        set
         {
-            isToggle = false;
-            isChecked = false;
-            isTransparent = false;
+            if (dropDownMenu == value)
+            {
+                return;
+            }
 
-            focusColor = Color.White;
-            accentColor = Color.FromArgb(255, 25, 110, 191);
-
-            state = 0;
-            tabListener = null;
-
-            symbol = string.Empty;
-            symbolHeight = Height / 2;
+            dropDownMenu = value;
+            IsToggle = IsToggle && value != null;
         }
+    }
 
-        public object[] DropDownItems
+    public Color AccentColor
+    {
+        get => accentColor;
+        set
         {
-            get => dropDownItems;
-            set
+            if (accentColor == value)
             {
-                if (value != null)
-                {
-                    IsToggle = false;
-                }
-
-                dropDownItems = value;
-                Invalidate();
-            }
-        }
-
-        public CxTabListener TabListener
-        {
-            get => tabListener;
-            set
-            {
-                if (tabListener == value)
-                {
-                    return;
-                }
-
-                if (tabListener != null)
-                {
-                    tabListener.ShowKeyboardFocusChanged -= OnShowKeyboardFocusChanged;
-                }
-
-                tabListener = value;
-
-                if (tabListener != null)
-                {
-                    tabListener.ShowKeyboardFocusChanged += OnShowKeyboardFocusChanged;
-                }
-
-                Invalidate();
-            }
-        }
-
-        public Color FocusColor
-        {
-            get => focusColor;
-            set
-            {
-                if (focusColor == value)
-                {
-                    return;
-                }
-
-                focusColor = value;
-                Invalidate();
-            }
-        }
-
-        public Color AccentColor
-        {
-            get => accentColor;
-            set
-            {
-                if (accentColor == value)
-                {
-                    return;
-                }
-
-                accentColor = value;
-                Invalidate();
-            }
-        }
-
-        public string Symbol
-        {
-            get => symbol;
-            set
-            {
-                if (symbol == value)
-                {
-                    return;
-                }
-
-                symbol = value;
-                Invalidate();
-            }
-        }
-
-        public int SymbolHeight
-        {
-            get => symbolHeight;
-            set
-            {
-                if (symbolHeight == value)
-                {
-                    return;
-                }
-
-                symbolHeight = value;
-                Invalidate();
-            }
-        }
-
-        public bool IsToggle
-        {
-            get => isToggle;
-            set
-            {
-                if (isToggle == value)
-                {
-                    return;
-                }
-
-                isToggle = value;
-
-                if (!IsToggle && IsChecked)
-                {
-                    IsChecked = false;
-                }
-                else
-                {
-                    Invalidate();
-                }
-            }
-        }
-
-        public bool IsTransparent
-        {
-            get => isTransparent;
-            set
-            {
-                if (isTransparent == value)
-                {
-                    return;
-                }
-
-                isTransparent = value;
-                Invalidate();
-            }
-        }
-
-        public bool IsChecked
-        {
-            get => isChecked;
-            set
-            {
-                if ((!IsToggle && value) || isChecked == value)
-                {
-                    return;
-                }
-
-                isChecked = value;
-                Invalidate();
-            }
-        }
-
-        private ButtonState State
-        {
-            get => state;
-            set
-            {
-                if (state == value)
-                {
-                    return;
-                }
-
-                state = value;
-                Invalidate();
-            }
-        }
-
-        protected override void OnMouseEnter(EventArgs e)
-        {
-            State |= ButtonState.MouseHover;
-
-            base.OnMouseEnter(e);
-        }
-
-        protected override void OnMouseLeave(EventArgs e)
-        {
-            State &= ~ButtonState.MouseHover;
-
-            base.OnMouseLeave(e);
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                State |= ButtonState.Pressed;
+                return;
             }
 
-            if (TabListener != null)
-            {
-                TabListener.ShowKeyboardFocus = false;
-            };
-
-            base.OnMouseDown(e);
-        }
-
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                State &= ~ButtonState.Pressed;
-            }
-
-            base.OnMouseUp(e);
-        }
-
-        protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
-        {
-            if (e.KeyCode == Keys.Tab && TabListener != null)
-            {
-                TabListener.ShowKeyboardFocus = true;
-            }
-
-            base.OnPreviewKeyDown(e);
-        }
-
-        public ISystemEvents SystemEvents { get; set; }
-
-        protected override void OnClick(EventArgs e)
-        {
-            if (dropDownItems != null)
-            {
-                var menu = new CxContextMenu(SystemEvents);
-                foreach (var i in dropDownItems)
-                {
-                    menu.Items.Add(i.ToString()).Margin = new Padding(0, 8, 0, 8);
-
-                }
-
-                menu.Show(this.PointToScreen(new Point(3, this.Height)));
-            }
-            else
-            {
-                IsChecked = !IsChecked;
-            }
-            base.OnClick(e);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            const int fs = 3;
-
-            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-
-            e.Graphics.Clear(Color.Transparent);
-
-            var baseColor = IsChecked ? AccentColor : BackColor;
-            var backgroundColor = GetBackgroundColor(baseColor);
-            var clientRect = new Rectangle(fs, fs, Width - 1 - fs * 2, Height - 1 - fs * 2);
-
-
-            if (backgroundColor != Color.Transparent)
-            {
-                using var brush = new SolidBrush(backgroundColor);
-                e.Graphics.FillRoundedRectangle(brush, clientRect, 8);
-
-                using var pen = new Pen(baseColor.Shade(0.2f), 1);
-                e.Graphics.DrawRoundedRectangle(pen, clientRect, 8);
-            }
-
-            using var symbolFont = new Font("Segoe Fluent Icons", SymbolHeight, GraphicsUnit.Pixel);
-            using var textBrush = new SolidBrush(GetTextColor(baseColor));
-
-            var symbolSize = e.Graphics.MeasureString(Symbol ?? string.Empty, symbolFont);
-            var textSize = e.Graphics.MeasureString(Text ?? string.Empty, Font);
-
-            var isDropDown = dropDownItems != null;
-
-            if (isDropDown)
-            {
-                var arrowSymbol = "\ue972";
-                var arrowSymbolSize = e.Graphics.MeasureString(Symbol ?? string.Empty, symbolFont);
-                var arrowSymbolPoint = new PointF(
-                    clientRect.X + clientRect.Width * 3 / 4 - (symbolSize.Width + textSize.Width) / 2,
-                    (Height - symbolSize.Height) / 2 + 2);
-
-                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                e.Graphics.DrawString(arrowSymbol, symbolFont, textBrush, arrowSymbolPoint);
-
-                clientRect.Width = (int)arrowSymbolPoint.X - clientRect.X;
-            }
-
-            var symbolPoint = new PointF(
-                clientRect.X + clientRect.Width / 2 - (symbolSize.Width + textSize.Width) / 2,
-                (Height - symbolSize.Height) / 2 + 2);
-
-            var textPoint = new PointF(
-                symbolPoint.X + symbolSize.Width,
-                (Height - textSize.Height) / 2);
-
-            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            e.Graphics.DrawString(Symbol, symbolFont, textBrush, symbolPoint);
-
-            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            e.Graphics.DrawString(Text, Font, textBrush, textPoint);
-
-            if (TabListener.ShowKeyboardFocus && Focused)
-            {
-                using var pen = new Pen(FocusColor, 2);
-                e.Graphics.DrawRoundedRectangle(pen, 0, 0, Width - 1, Height - 1, 8);
-            }
-        }
-
-        private Color GetTextColor(Color baseColor)
-        {
-            var isLight = baseColor.GetBrightness() > 0.3;
-
-            if ((State & ButtonState.Pressed) == ButtonState.Pressed)
-            {
-                return isLight ? Color.Black.Tint(0.3f) : Color.White.Shade(0.3f);
-            }
-            else
-            {
-                return isLight ? Color.Black : Color.White;
-            }
-        }
-
-        private Color GetBackgroundColor(Color color)
-        {
-            var isLight = color.GetBrightness() > 0.5;
-
-            if ((State & ButtonState.Pressed) == ButtonState.Pressed)
-            {
-                return color;
-            }
-            else if ((State & ButtonState.MouseHover) == ButtonState.MouseHover)
-            {
-                return isLight ? color.Shade(.10f) : color.Tint(.35f);
-            }
-            else if (IsTransparent)
-            {
-                return Color.Transparent;
-            }
-            else
-            {
-                return isLight ? color.Shade(.20f) : color.Tint(.25f);
-            }
-        }
-
-        private void OnShowKeyboardFocusChanged(object sender, EventArgs e)
-        {
+            accentColor = value;
             Invalidate();
         }
+    }
 
-        [Flags]
-        private enum ButtonState
+    public Color FocusColor
+    {
+        get => (focusPen?.Color) ?? Color.Empty;
+        set
         {
-            Default,
-            MouseHover,
-            Pressed,
+            if (focusPen?.Color == value)
+            {
+                return;
+            }
+
+            if (focusPen != null)
+            {
+                disposable.Remove(focusPen);
+                focusPen.Dispose();
+            }
+
+            focusPen = new Pen(value, 2);
+            Invalidate();
         }
+    }
+
+    public Color TextColor
+    {
+        get => textColor;
+        set
+        {
+            if (textColor == value)
+            {
+                return;
+            }
+
+            textColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color TextBrightColor
+    {
+        get => textBrightColor;
+        set
+        {
+            if (textBrightColor == value)
+            {
+                return;
+            }
+
+            textBrightColor = value;
+            Invalidate();
+        }
+    }
+
+    public CxTabListener TabListener
+    {
+        get => tabListener;
+        set
+        {
+            if (tabListener == value)
+            {
+                return;
+            }
+
+            if (tabListener != null)
+            {
+                tabListener.ShowKeyboardFocusChanged -= OnShowKeyboardFocusChanged;
+            }
+
+            tabListener = value;
+
+            if (tabListener != null)
+            {
+                tabListener.ShowKeyboardFocusChanged += OnShowKeyboardFocusChanged;
+            }
+
+            Invalidate();
+        }
+    }
+
+    public string Symbol
+    {
+        get => symbol;
+        set
+        {
+            if (symbol == value)
+            {
+                return;
+            }
+
+            symbol = value;
+            Invalidate();
+        }
+    }
+
+    public Font SymbolFont
+    {
+        get => symbolFont;
+        set
+        {
+            if (symbolFont == value)
+            {
+                return;
+            }
+
+            symbolFont = value;
+            Invalidate();
+        }
+    }
+
+    public bool IsToggle
+    {
+        get => isToggle;
+        set
+        {
+            if (isToggle == value)
+            {
+                return;
+            }
+
+            isToggle = value;
+
+            if (!IsToggle && IsChecked)
+            {
+                IsChecked = false;
+            }
+            else
+            {
+                Invalidate();
+            }
+        }
+    }
+
+    public bool IsTransparent
+    {
+        get => isTransparent;
+        set
+        {
+            if (isTransparent == value)
+            {
+                return;
+            }
+
+            isTransparent = value;
+            Invalidate();
+        }
+    }
+
+    public bool IsChecked
+    {
+        get => isChecked;
+        set
+        {
+            if ((!IsToggle && value) || isChecked == value)
+            {
+                return;
+            }
+
+            isChecked = value;
+            Invalidate();
+        }
+    }
+
+    private ButtonState State
+    {
+        get => state;
+        set
+        {
+            if (state == value)
+            {
+                return;
+            }
+
+            state = value;
+            Invalidate();
+        }
+    }
+
+    protected override void OnMouseEnter(EventArgs e)
+    {
+        State |= ButtonState.MouseHover;
+
+        base.OnMouseEnter(e);
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        State &= ~ButtonState.MouseHover;
+
+        base.OnMouseLeave(e);
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            State |= ButtonState.Pressed;
+        }
+
+        if (TabListener != null)
+        {
+            TabListener.ShowKeyboardFocus = false;
+        };
+
+        base.OnMouseDown(e);
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            State &= ~ButtonState.Pressed;
+        }
+
+        base.OnMouseUp(e);
+    }
+
+    protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
+    {
+        if (e.KeyCode == Keys.Tab && TabListener != null)
+        {
+            TabListener.ShowKeyboardFocus = true;
+        }
+
+        base.OnPreviewKeyDown(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            disposable?.Dispose();
+            disposable = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    protected override void OnClick(EventArgs e)
+    {
+        if (DropDownMenu != null)
+        {
+            DropDownMenu.Show(this.PointToScreen(new Point(FOCUS_SPACE, this.Height)));
+        }
+        else
+        {
+            IsChecked = !IsChecked;
+        }
+
+        base.OnClick(e);
+    }
+
+    private Rectangle GetClientRectangle()
+    {
+        return new Rectangle(
+            FOCUS_SPACE,
+            FOCUS_SPACE,
+            Width - 1 - FOCUS_SPACE * 2,
+            Height - 1 - FOCUS_SPACE * 2);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+
+        e.Graphics.Clear(Color.Transparent);
+
+        var baseColor = IsChecked ? AccentColor : BackColor;
+
+        var backgroundColor = GetBackgroundColor(baseColor);
+        var clientRect = GetClientRectangle();
+
+        if (backgroundColor != Color.Transparent)
+        {
+            using var brush = new SolidBrush(backgroundColor);
+            e.Graphics.FillRoundedRectangle(brush, clientRect, 8);
+
+            using var pen = new Pen(baseColor.Luminance(BORDER), 1);
+            e.Graphics.DrawRoundedRectangle(pen, clientRect, 8);
+        }
+
+        using var textBrush = new SolidBrush(GetTextColor(baseColor));
+
+        var symbolSize = SymbolFont == null
+            ? new Size(0, 0)
+            : e.Graphics.MeasureString(Symbol ?? string.Empty, SymbolFont);
+
+        var textSize = e.Graphics.MeasureString(Text ?? string.Empty, Font);
+
+        if (SymbolFont != null && DropDownMenu != null)
+        {
+            var arrowSymbol = "\ue972";
+            var arrowSymbolSize = e.Graphics.MeasureString(Symbol ?? string.Empty, SymbolFont);
+            var arrowSymbolPoint = new PointF(
+                clientRect.X + clientRect.Width * 3 / 4 - (symbolSize.Width + textSize.Width) / 2,
+                (Height - symbolSize.Height) / 2 + 2);
+
+            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            e.Graphics.DrawString(arrowSymbol, SymbolFont, textBrush, arrowSymbolPoint);
+
+            clientRect.Width = (int)arrowSymbolPoint.X - clientRect.X;
+        }
+
+        var symbolPoint = new PointF(
+            clientRect.X + clientRect.Width / 2 - (symbolSize.Width + textSize.Width) / 2,
+            (Height - symbolSize.Height) / 2 + 2);
+
+        var textPoint = new PointF(
+            symbolPoint.X + symbolSize.Width,
+            (Height - textSize.Height) / 2);
+
+        if (SymbolFont != null)
+        {
+            e.Graphics.TextRenderingHint = !string.IsNullOrEmpty(Text)
+                ? System.Drawing.Text.TextRenderingHint.ClearTypeGridFit
+                : System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            e.Graphics.DrawString(Symbol, SymbolFont, textBrush, symbolPoint);
+        }
+
+        e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+        e.Graphics.DrawString(Text, Font, textBrush, textPoint);
+
+        if (TabListener.ShowKeyboardFocus && Focused)
+        {
+            e.Graphics.DrawRoundedRectangle(focusPen, 0, 0, Width - 1, Height - 1, 8);
+        }
+    }
+
+    private Color GetTextColor(Color baseColor)
+    {
+        var isBright = baseColor.IsBright();
+
+        if ((State & ButtonState.Pressed) == ButtonState.Pressed)
+        {
+            return isBright ? TextBrightColor : TextColor.Luminance(TEXT_PRESSED);
+        }
+        else
+        {
+            return isBright ? TextBrightColor : TextColor;
+        }
+    }
+
+    private Color GetBackgroundColor(Color color)
+    {
+        if ((State & ButtonState.Pressed) == ButtonState.Pressed)
+        {
+            return color.Luminance(BACKGROUND_PRESSED);
+        }
+        else if ((State & ButtonState.MouseHover) == ButtonState.MouseHover)
+        {
+            return color.Luminance(BACKGROUND_HOVER);
+        }
+        else if (IsTransparent)
+        {
+            return Color.Transparent;
+        }
+        else
+        {
+            return color;
+        }
+    }
+
+    private void OnShowKeyboardFocusChanged(object sender, EventArgs e)
+    {
+        Invalidate();
+    }
+
+    [Flags]
+    private enum ButtonState
+    {
+        Default,
+        MouseHover,
+        Pressed,
     }
 }

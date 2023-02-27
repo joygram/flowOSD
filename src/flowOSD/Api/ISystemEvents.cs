@@ -30,7 +30,13 @@ public interface ISystemEvents
 
     IObservable<Screen> PrimaryScreen { get; }
 
+    IObservable<int> Dpi { get; }
+
     IObservable<bool> AppShutdown { get; }
 
     IObservable<Exception> AppException { get; }
+
+    IObservable<UIParameters> SystemUI { get; }
+
+    IObservable<UIParameters> AppUI { get; }
 }

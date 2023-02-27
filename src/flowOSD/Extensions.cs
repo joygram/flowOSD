@@ -112,6 +112,25 @@ static class Extensions
         return panel;
     }
 
+    public static int DpiScale(this Control control, int value)
+    {
+        return (int)Math.Round(value * (GetDpiForWindow(control.Handle) / 94f));
+    }
+
+    public static Size DpiScale(this Control control, Size size)
+    {
+        return new Size(DpiScale(control, size.Width), DpiScale(control, size.Height));
+    }
+
+    public static Padding DpiScale(this Control control, Padding padding)
+    {
+        return new Padding(
+            DpiScale(control, padding.Left),
+            DpiScale(control, padding.Top),
+            DpiScale(control, padding.Right),
+            DpiScale(control, padding.Bottom));
+    }
+
     #region Drawing
 
     public static void DrawRoundedRectangle(this Graphics g, Pen pen, Rectangle rect, int r)
@@ -159,26 +178,29 @@ static class Extensions
         return path;
     }
 
-    public static Color Shade(this Color color, float factor)
+    public static bool IsBright(this Color color)
     {
-        ColorRGBToHLS(
-            ColorTranslator.ToWin32(color),
-            out int h,
-            out int l,
-            out int s);
-
-        return ColorTranslator.FromWin32(ColorHLSToRGB(h, (int)Math.Round(l * (1 - factor)), s));
+        return color.GetBrightness() > 0.6;
     }
 
-    public static Color Tint(this Color color, float factor)
+    public static Color SetAlpha(this Color color, byte alpha)
+    {
+        return Color.FromArgb(alpha, color);
+    }
+
+    public static Color Luminance(this Color color, float factor)
     {
         ColorRGBToHLS(
             ColorTranslator.ToWin32(color),
-            out int h,
-            out int l,
-            out int s);
+            out int hue,
+            out int luminance,
+            out int saturation);
 
-        return ColorTranslator.FromWin32(ColorHLSToRGB(h, (int)Math.Round(l * (1 + factor)), s));
+        return ColorTranslator.FromWin32(
+            ColorHLSToRGB(
+                hue,
+                (int)Math.Round(luminance * (1 + factor)),
+                saturation));
     }
 
     #endregion

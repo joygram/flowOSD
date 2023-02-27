@@ -31,29 +31,46 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
     private const int WM_WININICHANGE = 0x001A;
     private const int WM_DISPLAYCHANGE = 0x7E;
     private const int WM_DEVICECHANGE = 0x219;
+    private const int WM_DPICHANGED = 0x02E0;
 
     private CompositeDisposable disposable = new CompositeDisposable();
+
+    private NativeUI nativeUI;
 
     private BehaviorSubject<bool> systemDarkModeSubject;
     private BehaviorSubject<bool> appsDarkModeSubject;
     private BehaviorSubject<Color> accentColorSubject;
     private BehaviorSubject<bool> tabletModeSubject;
     private BehaviorSubject<Screen> primaryScreenSubject;
+    private BehaviorSubject<int> dpiSubject;
+    private BehaviorSubject<UIParameters> systemUISubject, appUISubject;
 
     public SystemEvents(IMessageQueue messageQueue)
     {
+        nativeUI = new NativeUI(messageQueue).DisposeWith(disposable);
+
         systemDarkModeSubject = new BehaviorSubject<bool>(ShouldSystemUseDarkMode());
         appsDarkModeSubject = new BehaviorSubject<bool>(ShouldAppsUseDarkMode());
         accentColorSubject = new BehaviorSubject<Color>(GetAccentColor());
         tabletModeSubject = new BehaviorSubject<bool>(GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
 
         primaryScreenSubject = new BehaviorSubject<Screen>(Screen.PrimaryScreen);
+        dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(nativeUI.Handle));
+
+        systemUISubject = new BehaviorSubject<UIParameters>(
+            UIParameters.Create(accentColorSubject.Value, systemDarkModeSubject.Value));
+        appUISubject = new BehaviorSubject<UIParameters>(
+            UIParameters.Create(accentColorSubject.Value, appsDarkModeSubject.Value));
 
         SystemDarkMode = systemDarkModeSubject.AsObservable();
         AppsDarkMode = appsDarkModeSubject.AsObservable();
         AccentColor = accentColorSubject.AsObservable();
         TabletMode = tabletModeSubject.AsObservable();
         PrimaryScreen = primaryScreenSubject.AsObservable();
+        Dpi = dpiSubject.AsObservable();
+
+        SystemUI = systemUISubject.AsObservable();
+        AppUI = appUISubject.AsObservable();
 
         AppShutdown = Observable
             .FromEventPattern<EventHandler, EventArgs>(h => Application.ApplicationExit += h, h => Application.ApplicationExit -= h)
@@ -66,6 +83,7 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
 
         messageQueue.Subscribe(WM_WININICHANGE, ProcessMessage).DisposeWith(disposable);
         messageQueue.Subscribe(WM_DISPLAYCHANGE, ProcessMessage).DisposeWith(disposable);
+        messageQueue.Subscribe(WM_DPICHANGED, ProcessMessage).DisposeWith(disposable);
     }
 
     void IDisposable.Dispose()
@@ -83,6 +101,12 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
     public IObservable<bool> TabletMode { get; }
 
     public IObservable<Screen> PrimaryScreen { get; }
+
+    public IObservable<int> Dpi { get; }
+
+    public IObservable<UIParameters> SystemUI { get; }
+
+    public IObservable<UIParameters> AppUI { get; }
 
     public IObservable<bool> AppShutdown { get; }
 
@@ -105,6 +129,54 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
         if (messageId == WM_DISPLAYCHANGE)
         {
             primaryScreenSubject.OnNext(Screen.PrimaryScreen);
+        }
+
+        if (messageId == WM_DPICHANGED)
+        {
+            dpiSubject.OnNext((int)HiWord(wParam));
+        }
+    }
+
+    private sealed class NativeUI : NativeWindow, IDisposable
+    {
+        private IMessageQueue messageQueue;
+
+        private Form form;
+
+        public NativeUI(IMessageQueue messageQueue)
+        {
+            form = new Form();
+            var handle = form.Handle;
+
+            this.messageQueue = messageQueue;
+
+            AssignHandle(handle);
+        }
+
+        ~NativeUI()
+        {
+            Dispose(false);
+        }
+
+        void IDisposable.Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            form.Dispose();
+            form = null;
+
+            ReleaseHandle();
+        }
+
+        protected override void WndProc(ref Message message)
+        {
+            messageQueue.Push(ref message);
+
+            base.WndProc(ref message);
         }
     }
 }

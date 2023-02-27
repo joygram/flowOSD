@@ -1,30 +1,50 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+ *
+ *  This file is part of flowOSD.
+ *
+ *  flowOSD is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  flowOSD is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
+ *
+ */
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
+using System.Reactive.Disposables;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using flowOSD.Api;
+using System.Reactive.Linq;
+using static flowOSD.Native;
+using System.Windows.Input;
 
-namespace flowOSD.UI.Components
+namespace flowOSD.UI.Components;
+
+internal sealed class CxTabListener
 {
-    internal sealed class CxTabListener
+    private bool showKeyboardFocus = false;
+
+    public bool ShowKeyboardFocus
     {
-        private bool showKeyboardFocus = false;
-
-        public bool ShowKeyboardFocus
+        get => showKeyboardFocus;
+        set
         {
-            get => showKeyboardFocus;
-            set
+            if (showKeyboardFocus == value)
             {
-                if (showKeyboardFocus == value)
-                {
-                    return;
-                }
-
-                showKeyboardFocus = value;
-                ShowKeyboardFocusChanged?.Invoke(this, EventArgs.Empty);
+                return;
             }
-        }
 
-        public event EventHandler ShowKeyboardFocusChanged;
+            showKeyboardFocus = value;
+            ShowKeyboardFocusChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
+
+    public event EventHandler ShowKeyboardFocusChanged;
 }

@@ -16,23 +16,33 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
+namespace flowOSD.UI.Commands;
+
+using System;
+using System.ComponentModel;
 using System.Reactive.Disposables;
-using System.Linq;
-using flowOSD.Api;
-using System.Reactive.Linq;
-using static flowOSD.Native;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using flowOSD.Api;
 
-namespace flowOSD.UI.Components;
-
-internal sealed class CxLabel : Label
+sealed class RelayCommand : ICommand
 {
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+    private Action<object> action;
 
-        base.OnPaint(e);
+    public RelayCommand(Action<object> action)
+    {
+        this.action = action ?? throw new ArgumentNullException(nameof(action));
+    }
+
+    public event EventHandler CanExecuteChanged;
+
+    public bool CanExecute(object parameter)
+    {
+        return true;
+    }
+
+    public void Execute(object parameter)
+    {
+        action(parameter);
     }
 }

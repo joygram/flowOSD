@@ -50,10 +50,10 @@ static class Native
     }
 
     [DllImport("shlwapi.dll")]
-    public static extern int ColorHLSToRGB(int H, int L, int S);
+    public static extern int ColorHLSToRGB(int hue, int luminance, int saturation);
 
     [DllImport("shlwapi.dll")]
-    public static extern void ColorRGBToHLS(int RGB, out int H, out int L, out int S);
+    public static extern void ColorRGBToHLS(int rgb, out int hue, out int luminance, out int saturation);
 
     [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)]
     internal static extern IntPtr LocalAlloc(LocalMemoryFlags uFlags, ulong uBytes);

@@ -20,6 +20,7 @@ namespace flowOSD.UI;
 
 using System.Diagnostics;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Text;
@@ -34,16 +35,18 @@ sealed class MainUI : IDisposable
     private Window form;
     private IConfig config;
     private ISystemEvents systemEvents;
+    private IMessageQueue messageQueue;
 
 
-    public MainUI(IConfig config, ISystemEvents systemEvents)
+    public MainUI(IConfig config, ISystemEvents systemEvents, IMessageQueue messageQueue)
     {
         this.config = config;
         this.systemEvents = systemEvents;
-
-        form = new Window(this);
-        form.Visible = false;
+        this.systemEvents.Dpi.Subscribe(x => { form?.Dispose(); form = null; });
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern int SendMessage(IntPtr hWnd, int wMsg, IntPtr wParam, IntPtr lParam);
 
     void IDisposable.Dispose()
     {
@@ -56,7 +59,21 @@ sealed class MainUI : IDisposable
 
     public void Show()
     {
+        if(form == null)
+        {
+            form = new Window(this);
+            form.Visible = false;
+        }
+
+        var d = form.DpiScale(14);
+
+        form.Width = form.DpiScale(350);
+        form.Height = form.DpiScale(300);
+
+        form.Left = Screen.PrimaryScreen.WorkingArea.Width - form.Width - d;
+        form.Top = Screen.PrimaryScreen.WorkingArea.Height - form.Height - d;
         form.Show();
+
         form.Activate();
     }
 
@@ -68,7 +85,6 @@ sealed class MainUI : IDisposable
         public Window(MainUI owner)
         {
             this.owner = owner;
-
             FormBorderStyle = FormBorderStyle.None;
 
             ShowInTaskbar = false;
@@ -79,6 +95,7 @@ sealed class MainUI : IDisposable
 
             var xx = Create<TableLayoutPanel>(x =>
             {
+
                 x.BackColor = Color.Transparent;
                 x.Dock = DockStyle.Fill;
 
@@ -91,7 +108,7 @@ sealed class MainUI : IDisposable
 
             xx.Add<TableLayoutPanel>(0, 0, x =>
             {
-                x.Margin = new Padding(20, 20, 20, 10);
+                x.Margin = this.DpiScale(new Padding(14, 14, 14, 14));
 
                 x.Dock = DockStyle.None;
                 x.AutoSize = true;
@@ -113,8 +130,15 @@ sealed class MainUI : IDisposable
                 x.Add<CxButton>(1, 2, x =>
                 {
                     FillButton(x, "\uec49");
-                    x.SystemEvents = owner.systemEvents;
-                    x.DropDownItems = new string[] { "Silent", "Balanced", "Turbo" };
+                    x.DropDownMenu = new CxContextMenu();
+
+                    //x.DropDownMenu.BackgroundColor = uiParameters.MenuBackgroundColor;
+                    //x.DropDownMenu.BackgroundHoverColor = uiParameters.MenuBackgroundHoverColor;
+                    //x.DropDownMenu.TextColor = uiParameters.MenuTextColor;
+                    //x.DropDownMenu.TextBrightColor = uiParameters.MenuTextBrightColor;
+
+
+
                 });
                 x.Add<CxButton>(2, 2, x =>
                 {
@@ -133,7 +157,7 @@ sealed class MainUI : IDisposable
 
             xx.Add<TableLayoutPanel>(0, 1, x =>
             {
-                x.Margin = new Padding(5);
+                x.Margin = this.DpiScale(new Padding(3));
 
                 x.Dock = DockStyle.Fill;
                 x.AutoSize = true;
@@ -146,13 +170,13 @@ sealed class MainUI : IDisposable
 
                 x.Add<CxButton>(0, 0, button =>
                 {
-                    button.Margin = new Padding(5);
+                    button.Margin = this.DpiScale(new Padding(3));
 
-                    button.Size = new Size(128, 64);
-                    button.Font = new Font("Segoe UI Light", 16, FontStyle.Bold, GraphicsUnit.Pixel);
+                    button.Size = this.DpiScale(new Size(80, 40));
+                    button.Font = new Font("Segoe UI", this.DpiScale(10), GraphicsUnit.Pixel);
                     button.Text = "-12.3 W";
                     button.Symbol = "\ue83e";
-                    button.SymbolHeight = 26;
+                    button.SymbolFont = new Font("Segoe Fluent Icons", this.DpiScale(18), GraphicsUnit.Pixel);
                     button.ForeColor = Color.White;
                     button.IsToggle = false;
                     button.IsTransparent = true;
@@ -163,11 +187,11 @@ sealed class MainUI : IDisposable
 
                 x.Add<CxButton>(1, 0, button =>
                 {
-                    button.Margin = new Padding(5);
+                    button.Margin = this.DpiScale(new Padding(3));
 
-                    button.Size = new Size(64, 64);
+                    button.Size = this.DpiScale(new Size(40, 40));
                     button.Symbol = "\ue713";
-                    button.SymbolHeight = 24;
+                    button.SymbolFont = new Font("Segoe Fluent Icons", this.DpiScale(17), GraphicsUnit.Pixel);
                     button.ForeColor = Color.White;
                     button.IsToggle = false;
                     button.IsTransparent = true;
@@ -182,72 +206,6 @@ sealed class MainUI : IDisposable
 
             Controls.Add(xx);
 
-            //var tb = new CxButton
-            //{
-            //    Location = new Point(50, 50),
-            //    //Size = new Size(140, 70),
-            //    Size = new Size(64, 64),
-            //    Font = new Font("Segoe Fluent Icons", 25, GraphicsUnit.Pixel),
-            //    Text = "\ue713",
-            //    //Text = "\ue945",
-            //    ForeColor = Color.White,
-            //    IsToggle = false,
-            //    IsTransparent = true,
-            //    BackColor = Color.FromArgb(255, 60, 60, 60),
-
-            //    TabListener = tabListener
-            //};
-            //Controls.Add(tb);
-
-            /*  var tb2 = new CxButton
-              {
-                  Location = new Point(30, 30),
-                  Size = new Size(140, 70),
-                  Font = new Font("Segoe Fluent Icons", 25, GraphicsUnit.Pixel),
-                  Text = "\ue945",
-                  ForeColor = Color.White,
-                  IsToggle = true,
-                  IsTransparent = false,
-                  BackColor = Color.FromArgb(255, 70, 70, 70),
-                  AccentColor = Color.FromArgb(255, 0, 145, 248),
-
-                  TabListener = tabListener
-              };
-
-              var tb3 = new CxButton
-              {
-                  Location = new Point(30+140+20, 30),
-                  Size = new Size(140, 70),
-                  Font = new Font("Segoe Fluent Icons", 25, GraphicsUnit.Pixel),
-                  Text = "\ue7f4",
-                  ForeColor = Color.White,
-                  IsToggle = true,
-                  IsTransparent = false,
-                  BackColor = Color.FromArgb(255, 70, 70, 70),
-                  AccentColor = Color.FromArgb(255, 0, 145, 248),
-
-                  TabListener = tabListener
-              };
-
-              var tb4 = new CxButton
-              {
-                  Location = new Point(30+140+20+140+20, 30),
-                  Size = new Size(140, 70),
-                  Font = new Font("Segoe Fluent Icons", 25, GraphicsUnit.Pixel),
-                  Text = "\ue950",
-                  ForeColor = Color.White,
-                  IsToggle = true,
-                  IsTransparent = false,
-                  BackColor = Color.FromArgb(255, 70, 70, 70),
-                  AccentColor = Color.FromArgb(255, 0, 145, 248),
-
-                  TabListener = tabListener
-              };
-
-              Controls.Add(tb2);
-              Controls.Add(tb3);
-              Controls.Add(tb4);*/
-
             UpdateTheme();
         }
 
@@ -259,15 +217,6 @@ sealed class MainUI : IDisposable
         protected override void OnHandleCreated(EventArgs e)
         {
             SetCornerPreference(Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
-
-            var dX = 20;
-            var dY = 20;
-
-            Width = 540;
-            Height = 400;
-
-            Left = Screen.PrimaryScreen.WorkingArea.Width - Width - dX;
-            Top = Screen.PrimaryScreen.WorkingArea.Height - Height - dY;
 
             base.OnHandleCreated(e);
         }
@@ -319,27 +268,26 @@ sealed class MainUI : IDisposable
         {
             x.AutoSize = true;
             x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-            x.Margin = new Padding(0, 0, 0, 20);
+            x.Margin = this.DpiScale(new Padding(0, 0, 0, 14));
             x.TextAlign = ContentAlignment.MiddleCenter;
             x.ForeColor = Color.White;
             x.Dock = DockStyle.None;
             x.Text = v;
 
             x.Font = new Font(
-         "Segoe UI Light",
-         16,
+         "Segoe UI",
+         this.DpiScale(10),
          GraphicsUnit.Pixel);
 
         }
 
         private void FillButton(CxButton button, string symbol, string text = null)
         {
-            button.Margin = new Padding(15, 10, 15, 10);
+            button.Margin = this.DpiScale(new Padding(10, 8, 10, 8));
 
-            button.Size = new Size(140, 70);
-            button.Font = new Font("Segoe UI Light", 26, FontStyle.Bold, GraphicsUnit.Pixel);
+            button.Size = this.DpiScale(new Size(100, 50));
             button.Symbol = symbol;
-            button.SymbolHeight = 26;
+            button.SymbolFont = new Font("Segoe Fluent Icons", this.DpiScale( 16), GraphicsUnit.Pixel);
             button.Text = text;
             button.ForeColor = Color.White;
             button.IsToggle = true;

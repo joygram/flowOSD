@@ -23,39 +23,115 @@ using System.Linq;
 using flowOSD.Api;
 using System.Reactive.Linq;
 using static flowOSD.Native;
+using System.Windows.Input;
 
 namespace flowOSD.UI.Components;
 
 sealed class CxContextMenu : ContextMenuStrip
 {
     private CompositeDisposable disposable;
-    private ISystemEvents systemEvents;
+    private Color backgroundColor;
 
-    public CxContextMenu(ISystemEvents systemEvents)
+    public CxContextMenu()
     {
-        this.systemEvents = systemEvents;
-
         disposable = new CompositeDisposable();
 
-        Renderer = new MenuRenderer(systemEvents).DisposeWith(disposable);
-        BackColor = Color.Transparent;
+        base.Renderer = new MenuRenderer().DisposeWith(disposable);
+
+        BackgroundHoverColor = Color.FromArgb(255, 25, 110, 191);
+        SeparatorColor = Color.FromArgb(255, 96, 96, 96);
+        TextColor = Color.White;
+        TextBrightColor = Color.Black;
 
         SetCornerPreference(Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
-        UpdateMode();
-
-        this.systemEvents.SystemDarkMode
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(isDarkMode => UpdateMode(isDarkMode))
-            .DisposeWith(disposable);
     }
 
-    public static void EnableAcrylic(IWin32Window window, bool isDarkMode)
+    public Color BackgroundColor
     {
-        var color = isDarkMode
-            ? Color.FromArgb(210, 44, 44, 44)
-            : Color.FromArgb(210, 249, 249, 249);
+        get => backgroundColor;
+        set
+        {
+            if (backgroundColor == value)
+            {
+                return;
+            }
 
-        Native.EnableAcrylic(window, color);
+            backgroundColor = value;
+            EnableAcrylic(this, backgroundColor.SetAlpha(210));
+        }
+    }
+
+    public Color BackgroundHoverColor
+    {
+        get => Renderer.BackgroundHoverColor;
+        set
+        {
+            if (Renderer.BackgroundHoverColor == value)
+            {
+                return;
+            }
+
+            Renderer.BackgroundHoverColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color SeparatorColor
+    {
+        get => Renderer.SeparatorColor;
+        set
+        {
+            if (Renderer.SeparatorColor == value)
+            {
+                return;
+            }
+
+            Renderer.SeparatorColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color TextColor
+    {
+        get => Renderer.TextColor;
+        set
+        {
+            if (Renderer.TextColor == value)
+            {
+                return;
+            }
+
+            Renderer.TextColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color TextBrightColor
+    {
+        get => Renderer.TextBrightColor;
+        set
+        {
+            if (Renderer.TextBrightColor == value)
+            {
+                return;
+            }
+
+            Renderer.TextBrightColor = value;
+            Invalidate();
+        }
+    }
+
+    private new MenuRenderer Renderer => base.Renderer as MenuRenderer;
+
+    public static ToolStripMenuItem CreateMenuItem(string text, ICommand command, object commandParameter = null)
+    {
+        var item = new ToolStripMenuItem();
+        item.Margin = new Padding(0, 8, 0, 8);
+        item.Text = text;
+        item.Command = command;
+        item.CommandParameter = commandParameter;
+
+        return item;
     }
 
     public static ToolStripMenuItem CreateMenuItem(CommandBase command, object commandParameter = null)
@@ -104,6 +180,15 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
+    public ToolStripItem AddMenuItem(string text, ICommand command, object commandParameter = null)
+    {
+        var item = CreateMenuItem(text, command, commandParameter);
+
+        Items.Add(item);
+
+        return item;
+    }
+
     public ToolStripSeparator AddSeparator(ToolStripItem dependsOn = null)
     {
         var item = CreateSeparator(dependsOn);
@@ -129,48 +214,112 @@ sealed class CxContextMenu : ContextMenuStrip
         e.Graphics.Clear(Color.Transparent);
     }
 
-    private async void UpdateMode(bool? isDarkMode = null)
-    {
-        var isDark = isDarkMode ?? await systemEvents.SystemDarkMode.FirstAsync();
-
-        EnableAcrylic(this, isDark);
-    }
-
     private class MenuRenderer : ToolStripRenderer, IDisposable
     {
-        private Brush selectedBrush, textBrush, selectedTextBrush;
+        private SolidBrush textBrush, textBrightBrush, backgroundHoverBrush;
         private Pen separatorPen;
+
         private CompositeDisposable disposable;
 
-        private ISystemEvents systemEvents;
-
-        public MenuRenderer(ISystemEvents systemEvents)
+        public MenuRenderer()
         {
-            this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
-
             disposable = new CompositeDisposable();
-
-            separatorPen = new Pen(Color.FromArgb(255, 96, 96, 96), 1).DisposeWith(disposable);
-            selectedBrush = new SolidBrush(Color.FromArgb(255, 25, 110, 191)).DisposeWith(disposable);
-
-            UpdateMode();
-
-            this.systemEvents.SystemDarkMode
-                .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(isDarkMode => UpdateMode(isDarkMode))
-                .DisposeWith(disposable);
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             disposable?.Dispose();
             disposable = null;
         }
 
+        public Color BackgroundColor
+        {
+            get; set;
+        }
+
+        public Color BackgroundHoverColor
+        {
+            get => (backgroundHoverBrush?.Color)??Color.Empty;
+            set
+            {
+                if (backgroundHoverBrush?.Color == value)
+                {
+                    return;
+                }
+
+                if (backgroundHoverBrush != null)
+                {
+                    disposable.Remove(backgroundHoverBrush);
+                    backgroundHoverBrush.Dispose();
+                }
+
+                backgroundHoverBrush = new SolidBrush(value).DisposeWith(disposable);
+            }
+        }
+
+        public Color SeparatorColor
+        {
+            get => (separatorPen?.Color) ?? Color.Empty;
+            set
+            {
+                if (separatorPen?.Color == value)
+                {
+                    return;
+                }
+
+                if (separatorPen != null)
+                {
+                    disposable.Remove(separatorPen);
+                    separatorPen.Dispose();
+                }
+
+                separatorPen = new Pen(value, 1).DisposeWith(disposable);
+            }
+        }
+
+        public Color TextColor
+        {
+            get => (textBrush?.Color) ?? Color.Empty;
+            set
+            {
+                if (textBrush?.Color == value)
+                {
+                    return;
+                }
+
+                if (textBrush != null)
+                {
+                    disposable.Remove(textBrush);
+                    textBrush.Dispose();
+                }
+
+                textBrush = new SolidBrush(value).DisposeWith(disposable);
+            }
+        }
+
+        public Color TextBrightColor
+        {
+            get => (textBrightBrush?.Color) ?? Color.Empty;
+            set
+            {
+                if (textBrightBrush?.Color == value)
+                {
+                    return;
+                }
+
+                if (textBrightBrush != null)
+                {
+                    disposable.Remove(textBrightBrush);
+                    textBrightBrush.Dispose();
+                }
+
+                textBrightBrush = new SolidBrush(value).DisposeWith(disposable);
+            }
+        }
+
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            e.Graphics.TextRenderingHint = e.TextFont.Height < 25 ?
-                TextRenderingHint.ClearTypeGridFit: TextRenderingHint.AntiAliasGridFit;
+            e.Graphics.TextRenderingHint =  TextRenderingHint.AntiAliasGridFit;
 
             if (e.Item is ToolStripMenuItem)
             {
@@ -179,10 +328,12 @@ sealed class CxContextMenu : ContextMenuStrip
                     e.TextRectangle.X,
                     e.TextRectangle.Y + (e.TextRectangle.Height - textHeight) / 2);
 
+                var backgroundColor = e.Item.Selected ? BackgroundHoverColor : BackgroundColor;
+
                 e.Graphics.DrawString(
                     e.Text,
                     e.TextFont,
-                    e.Item.Selected ? selectedTextBrush : textBrush,
+                    backgroundColor.IsBright() ? textBrightBrush : textBrush,
                     point);
             }
             else
@@ -240,16 +391,8 @@ sealed class CxContextMenu : ContextMenuStrip
                 var height = e.Item.ContentRectangle.Height - 2;
 
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                e.Graphics.FillRoundedRectangle(selectedBrush, x, y, width, height, 4);
+                e.Graphics.FillRoundedRectangle(backgroundHoverBrush, x, y, width, height, 4);
             }
-        }
-
-        private async void UpdateMode(bool? isDarkMode = null)
-        {
-            var isDark = isDarkMode ?? await systemEvents.SystemDarkMode.FirstAsync();
-
-            textBrush = isDark ? Brushes.White : Brushes.Black;
-            selectedTextBrush = Brushes.White;
         }
     }
 }
