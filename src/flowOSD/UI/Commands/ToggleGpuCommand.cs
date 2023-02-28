@@ -34,7 +34,7 @@ sealed class ToggleGpuCommand : CommandBase
 
         this.gpu.IsEnabled
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => Text = x ? "Disable eGPU" : "Enable eGPU")
+            .Subscribe(Update)
             .DisposeWith(Disposable);
 
         Description = "Toggle eGPU";
@@ -69,5 +69,11 @@ sealed class ToggleGpuCommand : CommandBase
             "External GPU",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question);
+    }
+
+    private void Update(bool isEnabled)
+    {
+        IsChecked = isEnabled;
+        Text = IsChecked ? "Disable eGPU" : "Enable eGPU";
     }
 }

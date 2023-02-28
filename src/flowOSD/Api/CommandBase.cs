@@ -27,7 +27,7 @@ using System.Windows.Input;
 public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChanged
 {
     private string text, description;
-    private bool enabled;
+    private bool enabled, isChecked;
 
     protected CommandBase()
     {
@@ -57,6 +57,20 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
             }
 
             SetProperty(ref enabled, value);
+        }
+    }
+
+    public bool IsChecked
+    {
+        get => isChecked;
+        protected set
+        {
+            if (value != isChecked)
+            {
+                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            SetProperty(ref isChecked, value);
         }
     }
 

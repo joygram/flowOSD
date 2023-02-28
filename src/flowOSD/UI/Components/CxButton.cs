@@ -27,15 +27,15 @@ using System.Windows.Input;
 
 namespace flowOSD.UI.Components;
 
-internal sealed class CxButton : Button
+internal sealed class CxButton : ButtonBase
 {
-    private const float BACKGROUND_HOVER = .2f;
-    private const float BACKGROUND_PRESSED = -.1f;
+    private const float BACKGROUND_HOVER = -.1f;
+    private const float BACKGROUND_PRESSED = -.2f;
     private const float BACKGROUND_DISABLED = -.05f;
     private const float TEXT_HOVER = 0;
     private const float TEXT_PRESSED = -.3f;
     private const float TEXT_DISABLED = .1f;
-    private const float BORDER = -.2f;
+    private const float BORDER = -.1f;
     private const int FOCUS_SPACE = 3;
 
     private CompositeDisposable disposable;
@@ -48,8 +48,8 @@ internal sealed class CxButton : Button
     private Color accentColor, textColor, textBrightColor;
     private bool isToggle, isTransparent, isChecked;
 
-    private string symbol;
-    private Font symbolFont;
+    private string icon;
+    private Font iconFont;
 
     private CxContextMenu dropDownMenu;
 
@@ -70,8 +70,8 @@ internal sealed class CxButton : Button
         state = 0;
         tabListener = null;
 
-        symbol = string.Empty;
-        symbolFont = null;
+        icon = string.Empty;
+        iconFont = null;
     }
 
     public CxContextMenu DropDownMenu
@@ -181,32 +181,32 @@ internal sealed class CxButton : Button
         }
     }
 
-    public string Symbol
+    public string Icon
     {
-        get => symbol;
+        get => icon;
         set
         {
-            if (symbol == value)
+            if (icon == value)
             {
                 return;
             }
 
-            symbol = value;
+            icon = value;
             Invalidate();
         }
     }
 
-    public Font SymbolFont
+    public Font IconFont
     {
-        get => symbolFont;
+        get => iconFont;
         set
         {
-            if (symbolFont == value)
+            if (iconFont == value)
             {
                 return;
             }
 
-            symbolFont = value;
+            iconFont = value;
             Invalidate();
         }
     }
@@ -365,6 +365,7 @@ internal sealed class CxButton : Button
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+        e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
         e.Graphics.Clear(Color.Transparent);
 
@@ -384,22 +385,21 @@ internal sealed class CxButton : Button
 
         using var textBrush = new SolidBrush(GetTextColor(baseColor));
 
-        var symbolSize = SymbolFont == null
+        var symbolSize = IconFont == null
             ? new Size(0, 0)
-            : e.Graphics.MeasureString(Symbol ?? string.Empty, SymbolFont);
+            : e.Graphics.MeasureString(Icon ?? string.Empty, IconFont);
 
         var textSize = e.Graphics.MeasureString(Text ?? string.Empty, Font);
 
-        if (SymbolFont != null && DropDownMenu != null)
+        if (IconFont != null && DropDownMenu != null)
         {
             var arrowSymbol = "\ue972";
-            var arrowSymbolSize = e.Graphics.MeasureString(Symbol ?? string.Empty, SymbolFont);
+            var arrowSymbolSize = e.Graphics.MeasureString(Icon ?? string.Empty, IconFont);
             var arrowSymbolPoint = new PointF(
                 clientRect.X + clientRect.Width * 3 / 4 - (symbolSize.Width + textSize.Width) / 2,
                 (Height - symbolSize.Height) / 2 + 2);
 
-            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            e.Graphics.DrawString(arrowSymbol, SymbolFont, textBrush, arrowSymbolPoint);
+            e.Graphics.DrawString(arrowSymbol, IconFont, textBrush, arrowSymbolPoint);
 
             clientRect.Width = (int)arrowSymbolPoint.X - clientRect.X;
         }
@@ -412,15 +412,11 @@ internal sealed class CxButton : Button
             symbolPoint.X + symbolSize.Width,
             (Height - textSize.Height) / 2);
 
-        if (SymbolFont != null)
+        if (IconFont != null)
         {
-            e.Graphics.TextRenderingHint = !string.IsNullOrEmpty(Text)
-                ? System.Drawing.Text.TextRenderingHint.ClearTypeGridFit
-                : System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            e.Graphics.DrawString(Symbol, SymbolFont, textBrush, symbolPoint);
+            e.Graphics.DrawString(Icon, IconFont, textBrush, symbolPoint);
         }
 
-        e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
         e.Graphics.DrawString(Text, Font, textBrush, textPoint);
 
         if (TabListener.ShowKeyboardFocus && Focused)

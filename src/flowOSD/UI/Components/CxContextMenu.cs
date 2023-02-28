@@ -30,7 +30,6 @@ namespace flowOSD.UI.Components;
 sealed class CxContextMenu : ContextMenuStrip
 {
     private CompositeDisposable disposable;
-    private Color backgroundColor;
 
     public CxContextMenu()
     {
@@ -48,16 +47,16 @@ sealed class CxContextMenu : ContextMenuStrip
 
     public Color BackgroundColor
     {
-        get => backgroundColor;
+        get => Renderer.BackgroundColor;
         set
         {
-            if (backgroundColor == value)
+            if (Renderer.BackgroundColor == value)
             {
                 return;
             }
 
-            backgroundColor = value;
-            EnableAcrylic(this, backgroundColor.SetAlpha(210));
+            Renderer.BackgroundColor = value;
+            EnableAcrylic(this, Renderer.BackgroundColor.SetAlpha(210));
         }
     }
 

@@ -28,10 +28,7 @@ using static Native;
 sealed partial class SystemEvents : ISystemEvents, IDisposable
 {
     private const int SM_CONVERTIBLESLATEMODE = 0x2003;
-    private const int WM_WININICHANGE = 0x001A;
-    private const int WM_DISPLAYCHANGE = 0x7E;
-    private const int WM_DEVICECHANGE = 0x219;
-    private const int WM_DPICHANGED = 0x02E0;
+
 
     private CompositeDisposable disposable = new CompositeDisposable();
 
@@ -61,6 +58,18 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
             UIParameters.Create(accentColorSubject.Value, systemDarkModeSubject.Value));
         appUISubject = new BehaviorSubject<UIParameters>(
             UIParameters.Create(accentColorSubject.Value, appsDarkModeSubject.Value));
+
+        accentColorSubject
+            .CombineLatest(systemDarkModeSubject, (accentColor, isDarkMode) => new { accentColor, isDarkMode })
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => systemUISubject.OnNext(UIParameters.Create(x.accentColor, x.isDarkMode)))
+            .DisposeWith(disposable);
+
+        accentColorSubject
+            .CombineLatest(appsDarkModeSubject, (accentColor, isDarkMode) => new { accentColor, isDarkMode })
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => appUISubject.OnNext(UIParameters.Create(x.accentColor, x.isDarkMode)))
+            .DisposeWith(disposable);
 
         SystemDarkMode = systemDarkModeSubject.AsObservable();
         AppsDarkMode = appsDarkModeSubject.AsObservable();

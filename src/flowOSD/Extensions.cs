@@ -21,6 +21,7 @@ namespace flowOSD;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
+using flowOSD.Api;
 using static Native;
 
 static class Extensions
@@ -50,6 +51,13 @@ static class Extensions
     public static T LinkAs<T>(this T obj, ref T variable)
     {
         variable = obj;
+
+        return obj;
+    }
+
+    public static T To<T>(this T obj, ref IList<T> list)
+    {
+        list.Add(obj);
 
         return obj;
     }
@@ -111,6 +119,13 @@ static class Extensions
 
         return panel;
     }
+
+    public static IDisposable SubscribeToUpdateDpi(this IMessageQueue messageQueue, Control control)
+    {
+        return messageQueue
+            .Subscribe(WM_DPICHANGED, (x, w, l) => SendMessage(control.Handle, WM_DPICHANGED_BEFOREPARENT, w, l));
+    }
+
 
     public static int DpiScale(this Control control, int value)
     {

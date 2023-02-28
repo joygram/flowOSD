@@ -27,8 +27,11 @@ static class Native
 
     public const int ERROR_SUCCESS = 0x0;
 
-    public const uint WM_DEVICECHANGE = 0x219;
-
+    public const int WM_WININICHANGE = 0x001A;
+    public const int WM_DISPLAYCHANGE = 0x7E;
+    public const int WM_DEVICECHANGE = 0x219;
+    public const int WM_DPICHANGED = 0x02E0;
+    public const int WM_DPICHANGED_BEFOREPARENT = 0x02E2;
 
 
     [Flags]
@@ -61,6 +64,8 @@ static class Native
     [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)]
     internal static extern IntPtr LocalFree(IntPtr hMem);
 
+    [DllImport("user32.dll")]
+    public static extern int SendMessage(IntPtr hWnd, uint wMsg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     public static extern UInt32 RegisterWindowMessage(string lpString);

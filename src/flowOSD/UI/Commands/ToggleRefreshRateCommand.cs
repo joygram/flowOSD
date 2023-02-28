@@ -45,7 +45,7 @@ sealed class ToggleRefreshRateCommand : CommandBase
         display.IsHighRefreshRate
             .Throttle(TimeSpan.FromMilliseconds(200))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => Text = x ? "Disable High Refresh Rate" : "Enable High Refresh Rate")
+            .Subscribe(Update)
             .DisposeWith(Disposable);
 
         Description = "Toggle High Refresh Rate";
@@ -76,5 +76,11 @@ sealed class ToggleRefreshRateCommand : CommandBase
             Extensions.TraceException(ex, "Error is occurred while toggling display refresh rate (UI).");
             MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private void Update(bool isEnabled)
+    {
+        IsChecked = isEnabled;
+        Text = IsChecked ? "Disable High Refresh Rate" : "Enable High Refresh Rate";
     }
 }

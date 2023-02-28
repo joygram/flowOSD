@@ -27,13 +27,13 @@ using System.Text.Json.Serialization;
 
 public sealed class UIParameters
 {
+    public static string FontName => "Segoe UI";
+
+    public static string IconFontName => "Segoe Fluent Icons";
+
     public bool IsDarkMode { get; private set; }
 
     public Color AccentColor { get; private set; }
-
-    public string FontName { get; private set; }
-
-    public string IconFontName { get; private set; }
 
     public Color FocusColor { get; private set; }
 
@@ -68,8 +68,6 @@ public sealed class UIParameters
         {
             IsDarkMode = isDarkMode,
             AccentColor = accentColor,
-            FontName = "Segoe UI",
-            IconFontName = "Segoe Fluent Icons"
         };
 
         return isDarkMode
@@ -79,19 +77,35 @@ public sealed class UIParameters
 
     private static UIParameters InitDarkParameters(UIParameters p)
     {
-        p.BackgroundColor = Color.FromArgb(210, 44, 44, 44);
+        p.BackgroundColor = Color.FromArgb(255, 44, 44, 44);
+        p.TextColor = Color.White;
 
         p.MenuBackgroundColor = p.BackgroundColor;
         p.MenuBackgroundHoverColor = p.AccentColor;
         p.MenuTextColor = Color.White;
         p.MenuTextBrightColor = Color.Black;
 
+        p.ButtonBackgroundColor = Color.FromArgb(255, 62, 62, 62);
+        p.ButtonTextColor = Color.White;
+        p.ButtonTextBrightColor = Color.Black;
+
         return p;
     }
 
     private static UIParameters InitLightParameters(UIParameters p)
     {
-        p.BackgroundColor = Color.FromArgb(210, 249, 249, 249);
+        p.BackgroundColor = Color.FromArgb(255, 249, 249, 249);
+        p.TextColor = Color.Black;
+        p.FocusColor = Color.Black;
+
+        p.MenuBackgroundColor = p.BackgroundColor;
+        p.MenuBackgroundHoverColor = p.AccentColor;
+        p.MenuTextColor = Color.White;
+        p.MenuTextBrightColor = Color.Black;
+
+        p.ButtonBackgroundColor = Color.FromArgb(255, 251, 251, 251);
+        p.ButtonTextColor = Color.White;
+        p.ButtonTextBrightColor = Color.Black;
 
         return p;
     }

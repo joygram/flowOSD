@@ -34,7 +34,7 @@ sealed class ToggleBoostCommand : CommandBase
 
         this.powerManagement.IsBoost
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => Text = x ? "Disable Boost" : "Enable Boost")
+            .Subscribe(Update)
             .DisposeWith(Disposable);
 
         Description = "Toggle CPU Boost Mode";
@@ -53,5 +53,11 @@ sealed class ToggleBoostCommand : CommandBase
         {
             Extensions.TraceException(ex, "Error is occurred while toggling CPU boost mode (UI).");
         }
+    }
+
+    private void Update(bool isEnabled)
+    {
+        IsChecked = isEnabled;
+        Text = IsChecked ? "Disable Boost" : "Enable Boost";
     }
 }

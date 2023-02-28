@@ -68,10 +68,9 @@ sealed class TrayIcon : IDisposable
 
         Init();
 
-        systemEvents.Dpi
-            .CombineLatest(systemEvents.SystemDarkMode, (dpi, isDarkMode) => new { dpi, isDarkMode })
+        systemEvents.SystemUI
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => UpdateContextMenu(x.dpi, x.isDarkMode))
+            .Subscribe(x => UpdateContextMenu(x))
             .DisposeWith(disposable);
 
         systemEvents.TabletMode
@@ -108,16 +107,10 @@ sealed class TrayIcon : IDisposable
             })
             .DisposeWith(disposable);
 
-        const int WM_DPICHANGED = 0x02E0, WM_DPICHANGED_BEFOREPARENT = 0x02E2;
-
         messageQueue
-            .Subscribe(WM_DPICHANGED, (x, w, l) => SendMessage(notifyIcon.ContextMenuStrip.Handle, WM_DPICHANGED_BEFOREPARENT, w, l))
+            .SubscribeToUpdateDpi(notifyIcon.ContextMenuStrip)            
             .DisposeWith(disposable);
     }
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    public static extern int SendMessage(IntPtr hWnd, int wMsg, IntPtr wParam, IntPtr lParam);
-
 
     private void UpdateMonitorings()
     {
@@ -133,15 +126,14 @@ sealed class TrayIcon : IDisposable
         disposable = null;
     }
 
-    private async void Init()
+    private void Init()
     {
         notifyIcon = Create<NotifyIcon>().DisposeWith(disposable);
-        // notifyIcon.Click += (sender, e) => ShowMenu();
         notifyIcon.MouseClick += (sender, e) =>
         {
             if (e.Button == MouseButtons.Left)
             {
-                ShowMenu();
+                ShowMainUI();
             }
         };
 
@@ -151,30 +143,22 @@ sealed class TrayIcon : IDisposable
         notifyIcon.Text += " [DEBUG BUILD]";
 #endif
 
-        notifyIcon.ContextMenuStrip = await InitContextMenu();
+        notifyIcon.ContextMenuStrip = InitContextMenu();
         notifyIcon.Visible = true;
     }
 
-    private void ShowMenu()
+    private void ShowMainUI()
     {
         mainUI.Show();
-        //var methodInfo = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-        //methodInfo.Invoke(notifyIcon, null);
     }
 
-    private async Task<ContextMenuStrip> InitContextMenu()
+    private ContextMenuStrip InitContextMenu()
     {
-        var uiParameters = await systemEvents.SystemUI.FirstAsync();
-
         var highRefreshRateMenuItem = default(ToolStripItem);
 
         var menu = new CxContextMenu();
 
-        menu.BackgroundColor = uiParameters.MenuBackgroundColor;
-        menu.BackgroundHoverColor = uiParameters.MenuBackgroundHoverColor;
-        menu.TextColor = uiParameters.MenuTextColor;
-        menu.TextBrightColor = uiParameters.MenuTextBrightColor;
-        menu.Font = new Font(uiParameters.FontName, 20, GraphicsUnit.Pixel);
+        menu.Font = new Font(UIParameters.FontName, 20, GraphicsUnit.Pixel);
 
         menu.AddMonitoringItem("")
             .LinkAs(ref batteryMenuItem)
@@ -202,7 +186,7 @@ sealed class TrayIcon : IDisposable
         menu.AddMenuItem(commandManager.Resolve<ExitCommand>()).DisposeWith(disposable);
 
         UpdateMonitorings();
-        UpdateBattery(await battery.Rate.FirstAsync());
+        //UpdateBattery(await battery.Rate.FirstAsync());
 
         return menu;
     }
@@ -217,18 +201,15 @@ sealed class TrayIcon : IDisposable
         }
     }
 
-    private async void UpdateContextMenu(int dpi, bool isDarkMode)
+    private void UpdateContextMenu(UIParameters uiParameters)
     {
-        /*
-        if (notifyIcon.ContextMenuStrip != null)
+        if (notifyIcon?.ContextMenuStrip is CxContextMenu menu)
         {
-            notifyIcon.ContextMenuStrip.Font?.Dispose();
-            notifyIcon.ContextMenuStrip.Dispose();
+            menu.BackgroundColor = uiParameters.MenuBackgroundColor;
+            menu.BackgroundHoverColor = uiParameters.MenuBackgroundHoverColor;
+            menu.TextColor = uiParameters.MenuTextColor;
+            menu.TextBrightColor = uiParameters.MenuTextBrightColor;
         }
-
-        notifyIcon.ContextMenuStrip = await InitContextMenu();
-     //   notifyIcon.ContextMenuStrip.Font = new Font("Segoe UI Light", 14 * (dpi / 96f), FontStyle.Bold, GraphicsUnit.Pixel);
-    */
     }
 
     private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode, int dpi)

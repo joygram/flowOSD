@@ -34,7 +34,7 @@ sealed class ToggleTouchPadCommand : CommandBase
 
         this.touchPad.IsEnabled
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => Text = x ? "Disable TouchPad" : "Enable TouchPad")
+            .Subscribe(Update)
             .DisposeWith(Disposable);
 
         Description = "Toggle TouchPad";
@@ -53,5 +53,11 @@ sealed class ToggleTouchPadCommand : CommandBase
         {
             Extensions.TraceException(ex, "Error is occurred while toggling TouchPad state (UI).");
         }
+    }
+
+    private void Update(bool isEnabled)
+    {
+        IsChecked = isEnabled;
+        Text = IsChecked ? "Disable TouchPad" : "Enable TouchPad";
     }
 }

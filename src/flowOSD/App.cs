@@ -75,8 +75,6 @@ sealed class App : IDisposable
         gpu = new Gpu(atk).DisposeWith(disposable);
         battery = new Battery().DisposeWith(disposable);
 
-        mainUI = new MainUI(config, systemEvents, messageQueue);
-
         systemEvents.AppException
             .Subscribe(ex =>
             {
@@ -187,6 +185,8 @@ sealed class App : IDisposable
             new ClipboardCopyPlainTextCommand(keyboard),
             new ClipboardPastePlainTextCommand(keyboard)
         );
+
+        mainUI = new MainUI(config, systemEvents, commandManager);
 
         trayIcon = new TrayIcon(
             mainUI,

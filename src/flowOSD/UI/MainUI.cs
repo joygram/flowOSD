@@ -26,6 +26,7 @@ using System.Runtime.Versioning;
 using System.Text;
 using System.Windows.Forms;
 using flowOSD.Api;
+using flowOSD.UI.Commands;
 using flowOSD.UI.Components;
 using static Extensions;
 using static Native;
@@ -35,14 +36,16 @@ sealed class MainUI : IDisposable
     private Window form;
     private IConfig config;
     private ISystemEvents systemEvents;
-    private IMessageQueue messageQueue;
+    private ICommandManager commandManager;
 
 
-    public MainUI(IConfig config, ISystemEvents systemEvents, IMessageQueue messageQueue)
+    public MainUI(IConfig config, ISystemEvents systemEvents, ICommandManager commandManager)
     {
         this.config = config;
         this.systemEvents = systemEvents;
         this.systemEvents.Dpi.Subscribe(x => { form?.Dispose(); form = null; });
+
+        this.commandManager = commandManager;
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -59,19 +62,19 @@ sealed class MainUI : IDisposable
 
     public void Show()
     {
-        if(form == null)
+        if (form == null)
         {
             form = new Window(this);
             form.Visible = false;
         }
 
-        var d = form.DpiScale(14);
+        var offset = form.DpiScale(14);
 
         form.Width = form.DpiScale(350);
         form.Height = form.DpiScale(300);
 
-        form.Left = Screen.PrimaryScreen.WorkingArea.Width - form.Width - d;
-        form.Top = Screen.PrimaryScreen.WorkingArea.Height - form.Height - d;
+        form.Left = Screen.PrimaryScreen.WorkingArea.Width - form.Width - offset;
+        form.Top = Screen.PrimaryScreen.WorkingArea.Height - form.Height - offset;
         form.Show();
 
         form.Activate();
@@ -79,12 +82,25 @@ sealed class MainUI : IDisposable
 
     private sealed class Window : Form
     {
+        private CompositeDisposable disposable = new CompositeDisposable();
+
         private CxTabListener tabListener = new CxTabListener();
+        private IList<CxButton> buttonList = new List<CxButton>();
+        private IList<CxLabel> labelList = new List<CxLabel>();
+
         private MainUI owner;
+
+        private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton;
+        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel;
 
         public Window(MainUI owner)
         {
             this.owner = owner;
+            this.owner.systemEvents.SystemUI
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x => UpdateTheme(x))
+                .DisposeWith(disposable);
+
             FormBorderStyle = FormBorderStyle.None;
 
             ShowInTaskbar = false;
@@ -93,9 +109,13 @@ sealed class MainUI : IDisposable
 
             KeyPreview = true;
 
-            var xx = Create<TableLayoutPanel>(x =>
-            {
+            InitComponents();
+        }
 
+        private void InitComponents()
+        {
+            var layout = Create<TableLayoutPanel>(x =>
+            {
                 x.BackColor = Color.Transparent;
                 x.Dock = DockStyle.Fill;
 
@@ -106,7 +126,7 @@ sealed class MainUI : IDisposable
                 x.Padding = new Padding(0);
             });
 
-            xx.Add<TableLayoutPanel>(0, 0, x =>
+            layout.Add<TableLayoutPanel>(0, 0, x =>
             {
                 x.Margin = this.DpiScale(new Padding(14, 14, 14, 14));
 
@@ -114,48 +134,60 @@ sealed class MainUI : IDisposable
                 x.AutoSize = true;
                 x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-                x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3F));
-                x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3F));
-                x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3F));
+                x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100 / 3f));
+                x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100 / 3f));
+                x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100 / 3f));
 
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-                x.Add<CxButton>(0, 0, x => FillButton(x, "\ue945"));
-                x.Add<CxButton>(1, 0, x => FillButton(x, "\ue7f4"));
-                x.Add<CxButton>(2, 0, x => FillButton(x, "\ue950"));
-                x.Add<CxButton>(0, 2, x => FillButton(x, "\uefa5"));
-                x.Add<CxButton>(1, 2, x =>
-                {
-                    FillButton(x, "\uec49");
-                    x.DropDownMenu = new CxContextMenu();
+                var iconFont = new Font(UIParameters.IconFontName, this.DpiScale(16), GraphicsUnit.Pixel).DisposeWith(disposable);
 
-                    //x.DropDownMenu.BackgroundColor = uiParameters.MenuBackgroundColor;
-                    //x.DropDownMenu.BackgroundHoverColor = uiParameters.MenuBackgroundHoverColor;
-                    //x.DropDownMenu.TextColor = uiParameters.MenuTextColor;
-                    //x.DropDownMenu.TextBrightColor = uiParameters.MenuTextBrightColor;
+                boostButton = CreateButton(iconFont, 
+                    "\ue945",
+                    command: owner.commandManager.Resolve<ToggleBoostCommand>())
+                .To(ref buttonList).DisposeWith(disposable);
 
+                refreshRateButton = CreateButton(
+                    iconFont, 
+                    "\ue7f4",
+                    command: owner.commandManager.Resolve<ToggleRefreshRateCommand>())
+                .To(ref buttonList).DisposeWith(disposable);
+                
+                eGpuButton = CreateButton(
+                    iconFont, 
+                    "\ue950",
+                    command: owner.commandManager.Resolve<ToggleGpuCommand>())
+                .To(ref buttonList).DisposeWith(disposable);
+               
+                touchpadButton = CreateButton(
+                    iconFont, 
+                    "\uefa5",
+                    command: owner.commandManager.Resolve<ToggleTouchPadCommand>())
+                .To(ref buttonList).DisposeWith(disposable);
 
+                x.Add(0, 0, boostButton);
+                x.Add(1, 0, refreshRateButton);
+                x.Add(2, 0, eGpuButton);
+                x.Add(0, 2, touchpadButton);
 
-                });
-                x.Add<CxButton>(2, 2, x =>
-                {
-                    FillButton(x, "\ue9d9");
-                    x.IsToggle = false;
-                });
+                var textFont = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
 
-                x.Add<CxLabel>(0, 1, x => FillLabel(x, "CPU Boost"));
-                x.Add<CxLabel>(1, 1, x => FillLabel(x, "High Refesh Rate"));
-                x.Add<CxLabel>(2, 1, x => FillLabel(x, "eGPU"));
-                x.Add<CxLabel>(0, 3, x => FillLabel(x, "Touchpad"));
-                x.Add<CxLabel>(1, 3, x => FillLabel(x, "Balanced"));
-                x.Add<CxLabel>(2, 3, x => FillLabel(x, "Fan Profile"));
+                boostLabel = CreateLabel(textFont, "CPU Boost").To(ref labelList).DisposeWith(disposable);
+                refreshRateLabel = CreateLabel(textFont, "High Refesh Rate").To(ref labelList).DisposeWith(disposable);
+                eGpuLabel = CreateLabel(textFont, "eGPU").To(ref labelList).DisposeWith(disposable);
+                touchpadLabel = CreateLabel(textFont, "Touchpad").To(ref labelList).DisposeWith(disposable);
+
+                x.Add(0, 1, boostLabel);
+                x.Add(1, 1, refreshRateLabel);
+                x.Add(2, 1, eGpuLabel);
+                x.Add(0, 3, touchpadLabel);
 
             });
 
-            xx.Add<TableLayoutPanel>(0, 1, x =>
+            layout.Add<TableLayoutPanel>(0, 1, x =>
             {
                 x.Margin = this.DpiScale(new Padding(3));
 
@@ -173,16 +205,16 @@ sealed class MainUI : IDisposable
                     button.Margin = this.DpiScale(new Padding(3));
 
                     button.Size = this.DpiScale(new Size(80, 40));
-                    button.Font = new Font("Segoe UI", this.DpiScale(10), GraphicsUnit.Pixel);
+                    button.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
                     button.Text = "-12.3 W";
-                    button.Symbol = "\ue83e";
-                    button.SymbolFont = new Font("Segoe Fluent Icons", this.DpiScale(18), GraphicsUnit.Pixel);
-                    button.ForeColor = Color.White;
+                    button.Icon = "\ue83e";
+                    button.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(18), GraphicsUnit.Pixel).DisposeWith(disposable);
                     button.IsToggle = false;
                     button.IsTransparent = true;
-                    button.BackColor = Color.FromArgb(255, 60, 60, 60);
-
                     button.TabListener = tabListener;
+
+                    button.To(ref buttonList);
+                    button.DisposeWith(disposable);
                 });
 
                 x.Add<CxButton>(1, 0, button =>
@@ -190,28 +222,31 @@ sealed class MainUI : IDisposable
                     button.Margin = this.DpiScale(new Padding(3));
 
                     button.Size = this.DpiScale(new Size(40, 40));
-                    button.Symbol = "\ue713";
-                    button.SymbolFont = new Font("Segoe Fluent Icons", this.DpiScale(17), GraphicsUnit.Pixel);
-                    button.ForeColor = Color.White;
+                    button.Icon = "\ue713";
+                    button.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(17), GraphicsUnit.Pixel).DisposeWith(disposable);
                     button.IsToggle = false;
                     button.IsTransparent = true;
-                    button.BackColor = Color.FromArgb(255, 60, 60, 60);
-
                     button.TabListener = tabListener;
+
+                    button.To(ref buttonList);
+                    button.DisposeWith(disposable);
+
+                    button.Command = owner.commandManager.Resolve<SettingsCommand>();
                 });
-
-                x.Paint += X_Paint;
-
             });
 
-            Controls.Add(xx);
-
-            UpdateTheme();
+            Controls.Add(layout);
         }
 
-        private void X_Paint(object sender, PaintEventArgs e)
+        protected override void Dispose(bool disposing)
         {
-            e.Graphics.FillRectangle(Brushes.Black, e.ClipRectangle);
+            if (disposing)
+            {
+                disposable?.Dispose();
+                disposable = null;
+            }
+
+            base.Dispose(disposing);
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -253,48 +288,63 @@ sealed class MainUI : IDisposable
             base.OnVisibleChanged(e);
         }
 
-        private void UpdateTheme()
+        private CxLabel CreateLabel(Font textFont, string text = null)
         {
-            var color = true
-                ? Color.FromArgb(210, 44, 44, 44)
-                : Color.FromArgb(210, 249, 249, 249);
+            var x = new CxLabel();
 
-            EnableAcrylic(this, color);
-
-            Invalidate();
-        }
-
-        private void FillLabel(Label x, string v)
-        {
             x.AutoSize = true;
-            x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             x.Margin = this.DpiScale(new Padding(0, 0, 0, 14));
             x.TextAlign = ContentAlignment.MiddleCenter;
-            x.ForeColor = Color.White;
-            x.Dock = DockStyle.None;
-            x.Text = v;
+            x.Dock = DockStyle.Fill;
+            x.Text = text;
+            x.Font = textFont;
 
-            x.Font = new Font(
-         "Segoe UI",
-         this.DpiScale(10),
-         GraphicsUnit.Pixel);
-
+            return x;
         }
 
-        private void FillButton(CxButton button, string symbol, string text = null)
+        private CxButton CreateButton(Font iconFont, string icon, Font textFont = null, string text = null, CommandBase command = null)
         {
-            button.Margin = this.DpiScale(new Padding(10, 8, 10, 8));
+            var x = new CxButton();
 
-            button.Size = this.DpiScale(new Size(100, 50));
-            button.Symbol = symbol;
-            button.SymbolFont = new Font("Segoe Fluent Icons", this.DpiScale( 16), GraphicsUnit.Pixel);
-            button.Text = text;
-            button.ForeColor = Color.White;
-            button.IsToggle = true;
-            button.IsTransparent = false;
-            button.BackColor = Color.FromArgb(255, 60, 60, 60);
+            x.Margin = this.DpiScale(new Padding(10, 8, 10, 8));
+            x.Size = this.DpiScale(new Size(100, 50));
+            x.Icon = icon;
+            x.IconFont = iconFont;
+            x.Text = text;
+            x.Font = textFont;
+            x.IsToggle = true;
+            x.IsTransparent = false;
+            x.TabListener = tabListener;
 
-            button.TabListener = tabListener;
+            if (command != null)
+            {
+                x.Command = command;
+                x.DataBindings.Add("IsChecked", command, "IsChecked");
+            }
+
+            return x;
+        }
+
+        private void UpdateTheme(UIParameters parameters)
+        {
+            foreach (var button in buttonList)
+            {
+                button.AccentColor = parameters.AccentColor;
+                button.FocusColor = parameters.FocusColor;
+
+                button.BackColor = parameters.ButtonBackgroundColor;
+                button.TextColor = parameters.ButtonTextColor;
+                button.TextBrightColor = parameters.ButtonTextBrightColor;
+            }
+
+            foreach (var label in labelList)
+            {
+                label.ForeColor = parameters.TextColor;
+            }
+
+            EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(210));
+
+            Invalidate();
         }
     }
 }
