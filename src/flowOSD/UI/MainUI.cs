@@ -388,7 +388,7 @@ sealed class MainUI : IDisposable
         {
 
             batteryLabel.Icon = GetBatteryIcon(capacity, powerState);
-            batteryLabel.Text = rate < 0.1 ? "" : $"{rate / 1000f:N1} W";
+            batteryLabel.Text = Math.Abs(rate) < 0.1 ? "" : $"{rate / 1000f:N1} W";
         }
 
         private string GetBatteryIcon(uint capacity, BatteryPowerState powerState)
