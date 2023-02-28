@@ -1,4 +1,10 @@
-# flowOSD
+# flowOSD 2
+
+Preview 2 is available! See [releases page](https://github.com/albertakhmetov/flowOSD/releases) for downloads.
+
+*This preview version supports only Windows 11 22H2. Please, for Windows 10 and the previous release of Windows 11 use flowOSD 1.x*
+
+https://user-images.githubusercontent.com/5954460/221358776-af37bba0-5fdc-438a-9f22-3c2734a3a1f1.mp4
 
 ## Disclaimer
 
@@ -15,9 +21,12 @@ flowOSD shows the following OSDs:
 * Keyboard backlight level changing
 * TouchPad is disabled/enabled
 * Display refresh rate is changed
-* CPU Boost is disabled/enabled (see below)
+* CPU Boost is disabled/enabled
+* eGPU is disabled/enabled
 * Power source is changed (AC/DC)
 * Microphone state (muted/on air)
+
+Dark and Light system themes are supported.
 
 In addition, flowOSD provides customizable shortcuts for the following keys:
 
@@ -27,12 +36,14 @@ In addition, flowOSD provides customizable shortcuts for the following keys:
 * Fn+C
 * Fn+V
 
-flowOSD allows you to control the processor boost mode, display refresh rate (these parameters are set depending on the power source - AC / DC) and disable the touchpad when the laptop becomes a tablet.
+flowOSD shows the current charge (discharge) rate of the battery. Also it allows you to control the following parameters:
 
-Note:
+* Processor Boost Mode
+* Display Refresh Rate (these parameters are set depending on the power source - AC / DC)
+* eGPU (you can turn it off to save battery life)
 
-If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.
+Also flowOSD disables the touchpad when the laptop becomes a tablet.
 
-The OSD messages look like this (Windows 10 style):
+**Note:**
 
-![osd](https://user-images.githubusercontent.com/5954460/189478814-6c7d2c5b-e0a4-49f3-810e-6573565076b6.png)
+*If ASUS Armoury Crate is installed, please remove hotkeys to avoid conflict with the Armoury Crate.*
