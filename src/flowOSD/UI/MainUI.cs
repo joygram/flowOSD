@@ -126,6 +126,14 @@ sealed class MainUI : IDisposable
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState))
                 .DisposeWith(disposable);
+
+            owner.config.UserConfig.PropertyChanged
+                .Where(propertyName => propertyName == nameof(UserConfig.ShowBatteryChargeRate))
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(_ => UpdateBatteryVisiblity())
+                .DisposeWith(disposable);
+
+            UpdateBatteryVisiblity();
         }
 
         public DateTime LastHide { get; set; }
@@ -280,15 +288,18 @@ sealed class MainUI : IDisposable
 
         protected override void OnActivated(EventArgs e)
         {
-            batteryUpdate = Observable.Interval(TimeSpan.FromSeconds(1))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ =>
+            if (owner.config.UserConfig.ShowBatteryChargeRate)
             {
-                if (owner.config.UserConfig.ShowBatteryChargeRate)
+                batteryUpdate = Observable.Interval(TimeSpan.FromSeconds(1))
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(_ =>
                 {
-                    owner.battery.Update();
-                }
-            });
+                    if (owner.config.UserConfig.ShowBatteryChargeRate)
+                    {
+                        owner.battery.Update();
+                    }
+                });
+            }
 
             base.OnActivated(e);
         }
@@ -386,7 +397,6 @@ sealed class MainUI : IDisposable
 
         private void UpdateBattery(int rate, uint capacity, BatteryPowerState powerState)
         {
-
             batteryLabel.Icon = GetBatteryIcon(capacity, powerState);
             batteryLabel.Text = Math.Abs(rate) < 0.1 ? "" : $"{rate / 1000f:N1} W";
         }
@@ -399,6 +409,14 @@ sealed class MainUI : IDisposable
             var c = Math.Round((capacity * 10f) / owner.battery.FullChargedCapacity);
 
             return new string((char)(0xf5f2 + c + power), 1);
+        }
+
+        private void UpdateBatteryVisiblity()
+        {
+            if (batteryLabel != null)
+            {
+                batteryLabel.Visible = owner.config.UserConfig.ShowBatteryChargeRate;
+            }
         }
     }
 }
