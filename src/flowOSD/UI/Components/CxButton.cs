@@ -24,6 +24,7 @@ using flowOSD.Api;
 using System.Reactive.Linq;
 using static flowOSD.Native;
 using System.Windows.Input;
+using System.ComponentModel;
 
 namespace flowOSD.UI.Components;
 
@@ -211,6 +212,8 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
+    [Bindable(true)]
+    [DefaultValue(false)]
     public bool IsToggle
     {
         get => isToggle;
@@ -234,6 +237,8 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
+    [Bindable(true)]
+    [DefaultValue(false)]
     public bool IsTransparent
     {
         get => isTransparent;
@@ -249,6 +254,8 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
+    [Bindable(true)]
+    [DefaultValue(false)]
     public bool IsChecked
     {
         get => isChecked;

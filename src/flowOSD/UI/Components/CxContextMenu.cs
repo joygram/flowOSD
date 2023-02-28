@@ -335,36 +335,6 @@ sealed class CxContextMenu : ContextMenuStrip
                     backgroundColor.IsBright() ? textBrightBrush : textBrush,
                     point);
             }
-            else
-            {
-                var t = e.Item.Text.Split(":");
-                var labelText = t[0] + ": ";
-                var labelValue = t[1];
-
-                using var font = new Font(
-                    "Segoe UI",
-                    e.TextFont.Size * 0.8f,
-                    GraphicsUnit.Pixel);
-
-                var textSize = e.Graphics.MeasureString(labelText, font);
-                var point = new PointF(
-                    e.TextRectangle.X,
-                    e.TextRectangle.Y + (e.TextRectangle.Height - textSize.Height) / 2);
-
-                e.Graphics.DrawString(
-                    labelText,
-                    font,
-                    Brushes.Gray,
-                    point);
-
-                point.X += textSize.Width;
-
-                e.Graphics.DrawString(
-                    labelValue,
-                    font,
-                    textBrush,
-                    point);
-            }
         }
 
         protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)

@@ -39,32 +39,25 @@ sealed class TrayIcon : IDisposable
     private CompositeDisposable disposable = new CompositeDisposable();
     private NotifyIcon notifyIcon;
 
-    private MainUI mainUI;
-
     private ICommandManager commandManager;
     private IConfig config;
     private IImageSource imageSource;
-    private ISystemEvents systemEvents;
-    private IBattery battery;
-
-    private ToolStripItem batteryMenuItem, monitoringSeparator;
 
     public TrayIcon(
-        MainUI mainUI,
         IConfig config,
         IImageSource imageSource,
         ICommandManager commandManager,
         ISystemEvents systemEvents,
-        IBattery battery,
         IMessageQueue messageQueue)
     {
-        this.mainUI = mainUI ?? throw new ArgumentNullException(nameof(mainUI));
+        if (systemEvents == null)
+        {
+            throw new ArgumentNullException(nameof(systemEvents));
+        }
 
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.imageSource = imageSource ?? throw new ArgumentNullException(nameof(imageSource));
-        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
         this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
-        this.battery = battery ?? throw new ArgumentNullException(nameof(battery));
 
         Init();
 
@@ -80,44 +73,9 @@ sealed class TrayIcon : IDisposable
             .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
             .DisposeWith(disposable);
 
-        config.UserConfig.PropertyChanged
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(propertyName =>
-            {
-                if (propertyName == nameof(UserConfig.ShowBatteryChargeRate))
-                {
-                    UpdateMonitorings();
-                }
-            })
-            .DisposeWith(disposable);
-
-        battery.Rate
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(rate => UpdateBattery(rate))
-            .DisposeWith(disposable);
-
-        Observable.Interval(TimeSpan.FromSeconds(1))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ =>
-            {
-                if (notifyIcon?.ContextMenuStrip?.Visible == true && config.UserConfig.ShowBatteryChargeRate)
-                {
-                    battery.Update();
-                }
-            })
-            .DisposeWith(disposable);
-
         messageQueue
-            .SubscribeToUpdateDpi(notifyIcon.ContextMenuStrip)            
+            .SubscribeToUpdateDpi(notifyIcon.ContextMenuStrip)
             .DisposeWith(disposable);
-    }
-
-    private void UpdateMonitorings()
-    {
-        if (batteryMenuItem is ToolStripLabel label)
-        {
-            label.Visible = config.UserConfig.ShowBatteryChargeRate;
-        }
     }
 
     void IDisposable.Dispose()
@@ -133,7 +91,7 @@ sealed class TrayIcon : IDisposable
         {
             if (e.Button == MouseButtons.Left)
             {
-                ShowMainUI();
+                commandManager.Resolve<MainUICommand>()?.Execute();
             }
         };
 
@@ -147,34 +105,13 @@ sealed class TrayIcon : IDisposable
         notifyIcon.Visible = true;
     }
 
-    private void ShowMainUI()
-    {
-        mainUI.Show();
-    }
-
     private ContextMenuStrip InitContextMenu()
     {
-        var highRefreshRateMenuItem = default(ToolStripItem);
-
         var menu = new CxContextMenu();
 
         menu.Font = new Font(UIParameters.FontName, 20, GraphicsUnit.Pixel);
 
-        menu.AddMonitoringItem("")
-            .LinkAs(ref batteryMenuItem)
-            .DisposeWith(disposable);
-
-        menu.AddSeparator(batteryMenuItem).LinkAs(ref monitoringSeparator);
-
-        menu.AddMenuItem(commandManager.Resolve<ToggleRefreshRateCommand>())
-            .DisposeWith(disposable)
-            .LinkAs(ref highRefreshRateMenuItem);
-
-        menu.AddSeparator(highRefreshRateMenuItem).DisposeWith(disposable);
-
-        menu.AddMenuItem(commandManager.Resolve<ToggleTouchPadCommand>()).DisposeWith(disposable);
-        menu.AddMenuItem(commandManager.Resolve<ToggleBoostCommand>()).DisposeWith(disposable);
-        menu.AddMenuItem(commandManager.Resolve<ToggleGpuCommand>()).DisposeWith(disposable);
+        menu.AddMenuItem(commandManager.Resolve<MainUICommand>()).DisposeWith(disposable);
 
         menu.AddSeparator().DisposeWith(disposable);
 
@@ -185,20 +122,7 @@ sealed class TrayIcon : IDisposable
 
         menu.AddMenuItem(commandManager.Resolve<ExitCommand>()).DisposeWith(disposable);
 
-        UpdateMonitorings();
-        //UpdateBattery(await battery.Rate.FirstAsync());
-
         return menu;
-    }
-
-    private void UpdateBattery(int rate)
-    {
-        if (batteryMenuItem != null)
-        {
-            batteryMenuItem.Text = $"{(rate < 0 ? "Discharge" : "Charge")} Rate: {rate / 1000f:N4} W";
-
-            batteryMenuItem.Visible = Math.Abs(rate) > 0.00009;
-        }
     }
 
     private void UpdateContextMenu(UIParameters uiParameters)

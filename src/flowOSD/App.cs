@@ -183,18 +183,17 @@ sealed class App : IDisposable
             new ExitCommand(),
             new PrintScreenCommand(keyboard),
             new ClipboardCopyPlainTextCommand(keyboard),
-            new ClipboardPastePlainTextCommand(keyboard)
+            new ClipboardPastePlainTextCommand(keyboard)            
         );
 
-        mainUI = new MainUI(config, systemEvents, commandManager);
+        mainUI = new MainUI(config, systemEvents, commandManager, battery);
+        commandManager.Register(new MainUICommand(mainUI));
 
         trayIcon = new TrayIcon(
-            mainUI,
             config,
             imageSource,
             commandManager,
             systemEvents,
-            battery,
             messageQueue).DisposeWith(disposable);
 
         // Hotkeys

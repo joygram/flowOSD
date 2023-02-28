@@ -38,18 +38,17 @@ sealed class MainUI : IDisposable
     private ISystemEvents systemEvents;
     private ICommandManager commandManager;
 
+    private IBattery battery;
 
-    public MainUI(IConfig config, ISystemEvents systemEvents, ICommandManager commandManager)
+    public MainUI(IConfig config, ISystemEvents systemEvents, ICommandManager commandManager, IBattery battery)
     {
         this.config = config;
         this.systemEvents = systemEvents;
         this.systemEvents.Dpi.Subscribe(x => { form?.Dispose(); form = null; });
 
         this.commandManager = commandManager;
+        this.battery = battery;
     }
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    public static extern int SendMessage(IntPtr hWnd, int wMsg, IntPtr wParam, IntPtr lParam);
 
     void IDisposable.Dispose()
     {
@@ -68,6 +67,11 @@ sealed class MainUI : IDisposable
             form.Visible = false;
         }
 
+        if ((DateTime.Now - form.LastHide).TotalMilliseconds < 100)
+        {
+            return;
+        }
+
         var offset = form.DpiScale(14);
 
         form.Width = form.DpiScale(350);
@@ -84,6 +88,8 @@ sealed class MainUI : IDisposable
     {
         private CompositeDisposable disposable = new CompositeDisposable();
 
+        private IDisposable batteryUpdate;
+
         private CxTabListener tabListener = new CxTabListener();
         private IList<CxButton> buttonList = new List<CxButton>();
         private IList<CxLabel> labelList = new List<CxLabel>();
@@ -91,7 +97,7 @@ sealed class MainUI : IDisposable
         private MainUI owner;
 
         private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton;
-        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel;
+        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel, batteryLabel;
 
         public Window(MainUI owner)
         {
@@ -108,9 +114,21 @@ sealed class MainUI : IDisposable
             TopMost = true;
 
             KeyPreview = true;
+            LastHide = DateTime.MinValue;
 
             InitComponents();
+
+            owner.battery.Rate
+                .CombineLatest(
+                    owner.battery.Capacity,
+                    owner.battery.PowerState,
+                    (rate, capacity, powerState) => new { rate, capacity, powerState })
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState))
+                .DisposeWith(disposable);
         }
+
+        public DateTime LastHide { get; set; }
 
         private void InitComponents()
         {
@@ -145,25 +163,25 @@ sealed class MainUI : IDisposable
 
                 var iconFont = new Font(UIParameters.IconFontName, this.DpiScale(16), GraphicsUnit.Pixel).DisposeWith(disposable);
 
-                boostButton = CreateButton(iconFont, 
+                boostButton = CreateButton(iconFont,
                     "\ue945",
                     command: owner.commandManager.Resolve<ToggleBoostCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
                 refreshRateButton = CreateButton(
-                    iconFont, 
+                    iconFont,
                     "\ue7f4",
                     command: owner.commandManager.Resolve<ToggleRefreshRateCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
-                
+
                 eGpuButton = CreateButton(
-                    iconFont, 
+                    iconFont,
                     "\ue950",
                     command: owner.commandManager.Resolve<ToggleGpuCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
-               
+
                 touchpadButton = CreateButton(
-                    iconFont, 
+                    iconFont,
                     "\uefa5",
                     command: owner.commandManager.Resolve<ToggleTouchPadCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
@@ -200,21 +218,17 @@ sealed class MainUI : IDisposable
 
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-                x.Add<CxButton>(0, 0, button =>
+                x.Add<CxLabel>(0, 0, label =>
                 {
-                    button.Margin = this.DpiScale(new Padding(3));
+                    label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
+                    label.TextAlign = ContentAlignment.MiddleLeft;
+                    label.Size = this.DpiScale(new Size(80, 40));
+                    label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
+                    label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel).DisposeWith(disposable);
 
-                    button.Size = this.DpiScale(new Size(80, 40));
-                    button.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
-                    button.Text = "-12.3 W";
-                    button.Icon = "\ue83e";
-                    button.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(18), GraphicsUnit.Pixel).DisposeWith(disposable);
-                    button.IsToggle = false;
-                    button.IsTransparent = true;
-                    button.TabListener = tabListener;
-
-                    button.To(ref buttonList);
-                    button.DisposeWith(disposable);
+                    label.To(ref labelList);
+                    label.LinkAs(ref batteryLabel);
+                    label.DisposeWith(disposable);
                 });
 
                 x.Add<CxButton>(1, 0, button =>
@@ -244,6 +258,9 @@ sealed class MainUI : IDisposable
             {
                 disposable?.Dispose();
                 disposable = null;
+
+                batteryUpdate?.Dispose();
+                batteryUpdate = null;
             }
 
             base.Dispose(disposing);
@@ -261,8 +278,28 @@ sealed class MainUI : IDisposable
             e.Graphics.Clear(Color.Transparent);
         }
 
+        protected override void OnActivated(EventArgs e)
+        {
+            batteryUpdate = Observable.Interval(TimeSpan.FromSeconds(1))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(_ =>
+            {
+                if (owner.config.UserConfig.ShowBatteryChargeRate)
+                {
+                    owner.battery.Update();
+                }
+            });
+
+            base.OnActivated(e);
+        }
+
         protected override void OnDeactivate(EventArgs e)
         {
+            batteryUpdate?.Dispose();
+            batteryUpdate = null;
+
+            LastHide = DateTime.Now;
+
             Hide();
 
             base.OnDeactivate(e);
@@ -345,6 +382,23 @@ sealed class MainUI : IDisposable
             EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(210));
 
             Invalidate();
+        }
+
+        private void UpdateBattery(int rate, uint capacity, BatteryPowerState powerState)
+        {
+
+            batteryLabel.Icon = GetBatteryIcon(capacity, powerState);
+            batteryLabel.Text = rate < 0.1 ? "" : $"{rate / 1000f:N1} W";
+        }
+
+        private string GetBatteryIcon(uint capacity, BatteryPowerState powerState)
+        {
+            var power = (powerState & BatteryPowerState.PowerOnLine) == BatteryPowerState.PowerOnLine
+                ? 11
+                : 0;
+            var c = Math.Round((capacity * 10f) / owner.battery.FullChargedCapacity);
+
+            return new string((char)(0xf5f2 + c + power), 1);
         }
     }
 }

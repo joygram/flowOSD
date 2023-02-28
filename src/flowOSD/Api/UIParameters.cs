@@ -79,6 +79,7 @@ public sealed class UIParameters
     {
         p.BackgroundColor = Color.FromArgb(255, 44, 44, 44);
         p.TextColor = Color.White;
+        p.FocusColor = Color.White;
 
         p.MenuBackgroundColor = p.BackgroundColor;
         p.MenuBackgroundHoverColor = p.AccentColor;

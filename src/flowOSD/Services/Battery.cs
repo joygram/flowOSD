@@ -34,6 +34,7 @@ sealed partial class Battery : IDisposable, IBattery
 
     private BehaviorSubject<int> rateSubject;
     private BehaviorSubject<uint> capacitySubject;
+    private BehaviorSubject<BatteryPowerState> powerStateSubject;
 
     public Battery()
     {
@@ -46,9 +47,11 @@ sealed partial class Battery : IDisposable, IBattery
 
         rateSubject = new BehaviorSubject<int>(batteryStatus.Rate);
         capacitySubject = new BehaviorSubject<uint>(batteryStatus.Capacity);
+        powerStateSubject = new BehaviorSubject<BatteryPowerState>((BatteryPowerState)batteryStatus.PowerState);
 
         Rate = rateSubject.AsObservable();
         Capacity = capacitySubject.AsObservable();
+        PowerState = powerStateSubject.AsObservable();
     }
 
     void IDisposable.Dispose()
@@ -64,9 +67,17 @@ sealed partial class Battery : IDisposable, IBattery
 
     public string ManufactureName { get; private set; }
 
+    public uint DesignedCapacity { get; private set; }
+
+    public uint FullChargedCapacity { get; private set; }
+
+    public uint CycleCount { get; private set; }
+
     public IObservable<int> Rate { get; }
 
     public IObservable<uint> Capacity { get; }
+
+    public IObservable<BatteryPowerState> PowerState { get; }
 
     public void Update()
     {
@@ -80,6 +91,7 @@ sealed partial class Battery : IDisposable, IBattery
 
         rateSubject.OnNext(batteryStatus.Rate);
         capacitySubject.OnNext(batteryStatus.Capacity);
+        powerStateSubject.OnNext((BatteryPowerState)batteryStatus.PowerState);
     }
 
     private bool Init()
@@ -103,7 +115,6 @@ sealed partial class Battery : IDisposable, IBattery
 
                 if (!battery.IsInvalid)
                 {
-
                     var batteryTag = GetBatteryTag(battery);
                     var batteryInformation = GetBatteryInformation(battery, batteryTag);
 
@@ -111,6 +122,9 @@ sealed partial class Battery : IDisposable, IBattery
                     {
                         Name = GetDeviceName(battery, batteryTag, BATTERY_QUERY_INFORMATION_LEVEL.BatteryDeviceName);
                         ManufactureName = GetDeviceName(battery, batteryTag, BATTERY_QUERY_INFORMATION_LEVEL.BatteryManufactureName);
+                        DesignedCapacity = batteryInformation.DesignedCapacity;
+                        FullChargedCapacity = batteryInformation.FullChargedCapacity;
+                        CycleCount = batteryInformation.CycleCount;
 
                         if (Name == "ASUS Battery" && ManufactureName == "ASUSTeK")
                         {

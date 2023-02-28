@@ -121,8 +121,12 @@ sealed partial class Osd : IOsd, IDisposable
             }
         }
 
+        protected override bool ShowWithoutActivation => false;
+
         public void Show(OsdData data)
         {
+            const int SW_SHOWNOACTIVATE = 4;
+
             this.data = data;
 
             hideTimer?.Dispose();
@@ -132,7 +136,7 @@ sealed partial class Osd : IOsd, IDisposable
 
             Opacity = 1;
             Invalidate();
-            Visible = true;
+            ShowWindow(Handle, SW_SHOWNOACTIVATE);
 
             hideTimer = Observable
                 .Timer(DateTimeOffset.Now.AddMilliseconds(Parameters.Timeout), TimeSpan.FromMilliseconds(500 / 16))
@@ -147,6 +151,20 @@ sealed partial class Osd : IOsd, IDisposable
                         Visible = false;
                     }
                 });
+        }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                const int WS_EX_NOACTIVATE = 0x08000000;
+                const int WS_EX_TOOLWINDOW = 0x00000080;
+
+                var p = base.CreateParams;
+                p.ExStyle |= (int)(WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
+
+                return p;
+            }
         }
 
         protected override void OnHandleCreated(EventArgs e)

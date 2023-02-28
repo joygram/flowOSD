@@ -29,19 +29,70 @@ namespace flowOSD.UI.Components;
 
 internal sealed class CxLabel : Label
 {
+    private string icon;
+    private Font iconFont;
+
     public CxLabel()
     {
+        icon = string.Empty;
+        iconFont = null;
+    }
+
+    public string Icon
+    {
+        get => icon;
+        set
+        {
+            if (icon == value)
+            {
+                return;
+            }
+
+            icon = value;
+            Invalidate();
+        }
+    }
+
+    public Font IconFont
+    {
+        get => iconFont;
+        set
+        {
+            if (iconFont == value)
+            {
+                return;
+            }
+
+            iconFont = value;
+            Invalidate();
+        }
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-        e.Graphics.Clear(Color.Transparent);
 
+        var symbolSize = IconFont == null
+            ? new SizeF(0, 0)
+            : e.Graphics.MeasureString(Icon ?? string.Empty, IconFont);
         var textSize = e.Graphics.MeasureString(Text, Font);
+        var totalSize = new SizeF(
+            symbolSize.Width + textSize.Width,
+            Math.Max(symbolSize.Height, textSize.Height));
+
+        var dY = (symbolSize.Height - textSize.Height)/2;
 
         using var brush = new SolidBrush(ForeColor);
-        e.Graphics.DrawString(Text, Font, brush, GetX(textSize), GetY(textSize));
+
+        var x = GetX(totalSize);
+        var y = GetY(totalSize);
+
+        if (IconFont != null)
+        {
+            e.Graphics.DrawString(Icon, IconFont, brush, x, y + Math.Max(0, -dY));
+        }
+
+        e.Graphics.DrawString(Text, Font, brush, x + symbolSize.Width, y + Math.Max(0, dY));
     }
 
     private float GetX(SizeF textSize)
@@ -79,12 +130,12 @@ internal sealed class CxLabel : Label
 
             case ContentAlignment.MiddleCenter:
             case ContentAlignment.MiddleRight:
+            case ContentAlignment.MiddleLeft:
                 return (Height - textSize.Height) / 2;
 
             case ContentAlignment.BottomRight:
             case ContentAlignment.BottomCenter:
             case ContentAlignment.BottomLeft:
-            case ContentAlignment.MiddleLeft:
                 return Height - textSize.Height - Padding.Bottom;
 
             default:

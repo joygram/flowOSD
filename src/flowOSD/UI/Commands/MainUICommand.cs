@@ -16,26 +16,31 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
+namespace flowOSD.UI.Commands;
 
-namespace flowOSD.Api;
+using System.ComponentModel;
+using System.Reactive.Disposables;
+using System.Runtime.CompilerServices;
+using flowOSD.Api;
 
-public interface IBattery
+sealed class MainUICommand : CommandBase
 {
-    string Name { get; }
+    private MainUI mainUI;
 
-    string ManufactureName { get; }
+    public MainUICommand(MainUI mainUI)
+    {
+        this.mainUI = mainUI ?? throw new ArgumentNullException(nameof(mainUI));
 
-    uint DesignedCapacity { get; }
+        Text = Application.ProductName;
+        Enabled = true;
+    }
 
-    uint FullChargedCapacity { get; }
+    public override string Name => nameof(MainUICommand);
 
-    uint CycleCount { get; }
+    public override bool CanExecuteWithHotKey => true;
 
-    IObservable<int> Rate { get; }
-
-    IObservable<uint> Capacity { get; }
-
-    IObservable<BatteryPowerState> PowerState { get; }
-
-    void Update();
+    public override void Execute(object parameter = null)
+    {
+        mainUI.Show();
+    }
 }
