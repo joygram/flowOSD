@@ -94,4 +94,37 @@ partial class PowerManagement
         ref Guid SubGroupOfPowerSettingGuid,
         ref Guid PowerSettingGuid,
         uint AcValueIndex);
+
+    private enum EFFECTIVE_POWER_MODE
+    {
+        EffectivePowerModeBatterySaver,
+        EffectivePowerModeBetterBattery,
+        EffectivePowerModeBalanced,
+        EffectivePowerModeHighPerformance,
+        EffectivePowerModeMaxPerformance,
+        EffectivePowerModeGameMode,
+        EffectivePowerModeMixedReality
+    };
+
+    private delegate void EFFECTIVE_POWER_MODE_CALLBACK(EFFECTIVE_POWER_MODE Mode, IntPtr Context);
+
+    [DllImport("powrprof.dll", SetLastError = true)]
+    private static extern int PowerRegisterForEffectivePowerModeNotifications(
+        uint Version, 
+        EFFECTIVE_POWER_MODE_CALLBACK Callback, 
+        IntPtr Context, 
+        out IntPtr RegistrationHandle);
+
+    [DllImport("powrprof.dll", SetLastError = true)]
+    private static extern int PowerUnregisterFromEffectivePowerModeNotifications(IntPtr registrationHandle);
+
+    [DllImport("powrprof.dll", EntryPoint = "PowerSetActiveOverlayScheme", SetLastError = true)]
+    public static extern uint PowerSetActiveOverlayScheme(Guid OverlaySchemeGuid);
+
+    [DllImport("powrprof.dll", EntryPoint = "PowerGetActualOverlayScheme", SetLastError = true)]
+    private static extern uint PowerGetActualOverlayScheme(out Guid actualOverlayGuid);
+
+    [DllImport("powrprof.dll", EntryPoint = "PowerGetEffectiveOverlayScheme", SetLastError = true)]
+    private static extern uint PowerGetEffectiveOverlayScheme(out Guid effectiveOverlayGuid);
+
 }

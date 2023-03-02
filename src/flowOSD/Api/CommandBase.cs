@@ -51,12 +51,13 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
         get => enabled;
         protected set
         {
-            if (value != enabled)
+            if (value == enabled)
             {
-                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+                return;
             }
 
             SetProperty(ref enabled, value);
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -65,12 +66,13 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
         get => isChecked;
         protected set
         {
-            if (value != isChecked)
+            if (value == isChecked)
             {
-                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+                return;
             }
 
             SetProperty(ref isChecked, value);
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

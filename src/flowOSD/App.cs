@@ -178,15 +178,16 @@ sealed class App : IDisposable
             new ToggleTouchPadCommand(touchPad),
             new ToggleBoostCommand(powerManagement),
             new ToggleGpuCommand(gpu),
+            new PowerModeCommand(powerManagement),
             new SettingsCommand(config, commandManager),
             new AboutCommand(config),
             new ExitCommand(),
             new PrintScreenCommand(keyboard),
             new ClipboardCopyPlainTextCommand(keyboard),
-            new ClipboardPastePlainTextCommand(keyboard)            
+            new ClipboardPastePlainTextCommand(keyboard)
         );
 
-        mainUI = new MainUI(config, systemEvents, commandManager, battery);
+        mainUI = new MainUI(config, systemEvents, commandManager, battery, powerManagement);
         commandManager.Register(new MainUICommand(mainUI));
 
         trayIcon = new TrayIcon(

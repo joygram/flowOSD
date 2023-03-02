@@ -351,6 +351,7 @@ internal sealed class CxButton : ButtonBase
         if (DropDownMenu != null)
         {
             DropDownMenu.Show(this.PointToScreen(new Point(FOCUS_SPACE, this.Height)));
+            return;
         }
         else
         {

@@ -37,10 +37,16 @@ sealed class MainUI : IDisposable
     private IConfig config;
     private ISystemEvents systemEvents;
     private ICommandManager commandManager;
+    private IPowerManagement powerManagement;
 
     private IBattery battery;
 
-    public MainUI(IConfig config, ISystemEvents systemEvents, ICommandManager commandManager, IBattery battery)
+    public MainUI(
+        IConfig config,
+        ISystemEvents systemEvents,
+        ICommandManager commandManager,
+        IBattery battery,
+        IPowerManagement powerManagement)
     {
         this.config = config;
         this.systemEvents = systemEvents;
@@ -48,6 +54,7 @@ sealed class MainUI : IDisposable
 
         this.commandManager = commandManager;
         this.battery = battery;
+        this.powerManagement = powerManagement;
     }
 
     void IDisposable.Dispose()
@@ -96,15 +103,16 @@ sealed class MainUI : IDisposable
 
         private MainUI owner;
 
-        private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton;
-        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel, batteryLabel;
+        private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton, powerModeButton;
+        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel, batteryLabel, powerModeLabel;
+        private CxContextMenu powerModeMenu;
 
         public Window(MainUI owner)
         {
             this.owner = owner;
             this.owner.systemEvents.SystemUI
                 .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => UpdateTheme(x))
+                .Subscribe(UpdateTheme)
                 .DisposeWith(disposable);
 
             FormBorderStyle = FormBorderStyle.None;
@@ -133,7 +141,52 @@ sealed class MainUI : IDisposable
                 .Subscribe(_ => UpdateBatteryVisiblity())
                 .DisposeWith(disposable);
 
+            owner.powerManagement.PowerMode
+                .CombineLatest(
+                    owner.powerManagement.IsBatterySaver,
+                    (powerMode, isBatterySaver) => new { powerMode, isBatterySaver })
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x => UpdatePowerMode(x.powerMode, x.isBatterySaver))
+                .DisposeWith(disposable);
+
             UpdateBatteryVisiblity();
+        }
+
+        private void UpdatePowerMode(PowerMode powerMode, bool isBatterySaver)
+        {
+            powerModeButton.Enabled = !isBatterySaver;
+
+            if (isBatterySaver)
+            {
+                powerModeButton.DropDownMenu = null;
+                powerModeButton.Icon = "\uebc0";
+                powerModeLabel.Text = "Battery Saver is on";
+            }
+            else
+            {
+                powerModeButton.DropDownMenu = powerModeMenu;
+                switch (powerMode)
+                {
+                    case PowerMode.BestPowerEfficiency:
+                        {
+                            powerModeButton.Icon = "\uec48";
+                            powerModeLabel.Text = powerMode.ToString();
+                            break;
+                        }
+                    case PowerMode.Balanced:
+                        {
+                            powerModeButton.Icon = "\uec49";
+                            powerModeLabel.Text = powerMode.ToString();
+                            break;
+                        }
+                    case PowerMode.BestPerformance:
+                        {
+                            powerModeButton.Icon = "\uec4a";
+                            powerModeLabel.Text = powerMode.ToString();
+                            break;
+                        }
+                }
+            }
         }
 
         public DateTime LastHide { get; set; }
@@ -168,6 +221,8 @@ sealed class MainUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
                 var iconFont = new Font(UIParameters.IconFontName, this.DpiScale(16), GraphicsUnit.Pixel).DisposeWith(disposable);
 
@@ -194,22 +249,48 @@ sealed class MainUI : IDisposable
                     command: owner.commandManager.Resolve<ToggleTouchPadCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
+                powerModeButton = CreateButton(
+                    iconFont,
+                    "",
+                    command: owner.commandManager.Resolve<PowerModeCommand>())
+                    .To(ref buttonList).DisposeWith(disposable);
+
+                powerModeMenu = new CxContextMenu();
+                powerModeMenu.AddMenuItem(
+                    "Best Power Effeciency",
+                    owner.commandManager.Resolve<PowerModeCommand>(),
+                    PowerMode.BestPowerEfficiency);
+                powerModeMenu.AddMenuItem(
+                    "Balanced",
+                    owner.commandManager.Resolve<PowerModeCommand>(),
+                    PowerMode.Balanced);
+                powerModeMenu.AddMenuItem(
+                    "Best Performance",
+                    owner.commandManager.Resolve<PowerModeCommand>(),
+                    PowerMode.BestPerformance);
+                powerModeButton.DropDownMenu = powerModeMenu;
+
                 x.Add(0, 0, boostButton);
                 x.Add(1, 0, refreshRateButton);
                 x.Add(2, 0, eGpuButton);
                 x.Add(0, 2, touchpadButton);
+                x.Add(2, 2, powerModeButton);
 
-                var textFont = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
+                var textFont = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel).DisposeWith(disposable);
 
                 boostLabel = CreateLabel(textFont, "CPU Boost").To(ref labelList).DisposeWith(disposable);
                 refreshRateLabel = CreateLabel(textFont, "High Refesh Rate").To(ref labelList).DisposeWith(disposable);
                 eGpuLabel = CreateLabel(textFont, "eGPU").To(ref labelList).DisposeWith(disposable);
                 touchpadLabel = CreateLabel(textFont, "Touchpad").To(ref labelList).DisposeWith(disposable);
 
+                powerModeLabel = CreateLabel(textFont, "<power mode>").To(ref labelList).DisposeWith(disposable);
+
                 x.Add(0, 1, boostLabel);
                 x.Add(1, 1, refreshRateLabel);
                 x.Add(2, 1, eGpuLabel);
                 x.Add(0, 3, touchpadLabel);
+
+                x.Add(2, 3, powerModeLabel);
 
             });
 
@@ -388,6 +469,14 @@ sealed class MainUI : IDisposable
             foreach (var label in labelList)
             {
                 label.ForeColor = parameters.TextColor;
+            }
+
+            if (powerModeMenu != null)
+            {
+                powerModeMenu.BackgroundColor = parameters.MenuBackgroundColor;
+                powerModeMenu.BackgroundHoverColor = parameters.MenuBackgroundHoverColor;
+                powerModeMenu.TextColor = parameters.MenuTextColor;
+                powerModeMenu.TextBrightColor = powerModeMenu.TextBrightColor;
             }
 
             EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(210));
