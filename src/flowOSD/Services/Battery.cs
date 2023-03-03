@@ -34,6 +34,7 @@ sealed partial class Battery : IDisposable, IBattery
 
     private BehaviorSubject<int> rateSubject;
     private BehaviorSubject<uint> capacitySubject;
+    private BehaviorSubject<uint> estimatedTimeSubject;
     private BehaviorSubject<BatteryPowerState> powerStateSubject;
 
     public Battery()
@@ -47,10 +48,12 @@ sealed partial class Battery : IDisposable, IBattery
 
         rateSubject = new BehaviorSubject<int>(batteryStatus.Rate);
         capacitySubject = new BehaviorSubject<uint>(batteryStatus.Capacity);
+        estimatedTimeSubject = new BehaviorSubject<uint>(GetEstimatedTime(batteryHandle, batteryTag));
         powerStateSubject = new BehaviorSubject<BatteryPowerState>((BatteryPowerState)batteryStatus.PowerState);
 
         Rate = rateSubject.AsObservable();
         Capacity = capacitySubject.AsObservable();
+        EstimatedTime = estimatedTimeSubject.AsObservable();
         PowerState = powerStateSubject.AsObservable();
     }
 
@@ -77,6 +80,8 @@ sealed partial class Battery : IDisposable, IBattery
 
     public IObservable<uint> Capacity { get; }
 
+    public IObservable<uint> EstimatedTime { get; }
+
     public IObservable<BatteryPowerState> PowerState { get; }
 
     public void Update()
@@ -92,6 +97,9 @@ sealed partial class Battery : IDisposable, IBattery
         rateSubject.OnNext(batteryStatus.Rate);
         capacitySubject.OnNext(batteryStatus.Capacity);
         powerStateSubject.OnNext((BatteryPowerState)batteryStatus.PowerState);
+
+        var estimatedTime = GetEstimatedTime(batteryHandle, batteryTag);
+        estimatedTimeSubject.OnNext(estimatedTime);
     }
 
     private bool Init()
@@ -309,6 +317,41 @@ sealed partial class Battery : IDisposable, IBattery
                     maxLoadString);
 
                 return Marshal.PtrToStringUni(outBuffer);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(outBuffer);
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(inBuffer);
+        }
+    }
+
+    private static uint GetEstimatedTime(SafeFileHandle batteryHandle, uint batteryTag)
+    {
+        BATTERY_QUERY_INFORMATION query = default;
+        query.BatteryTag = batteryTag;
+        query.InformationLevel = BATTERY_QUERY_INFORMATION_LEVEL.BatteryEstimatedTime;
+
+        var inBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(query));
+        try
+        {
+            var outBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(BATTERY_INFORMATION)));
+            try
+            {
+                Marshal.StructureToPtr(query, inBuffer, false);
+
+                DeviceIoControl(
+                    batteryHandle,
+                    IOCTL_BATTERY_QUERY_INFORMATION,
+                    inBuffer,
+                    Marshal.SizeOf(query),
+                    outBuffer,
+                    Marshal.SizeOf(typeof(uint)));
+
+                return Marshal.PtrToStructure<uint>(outBuffer);
             }
             finally
             {

@@ -103,6 +103,8 @@ sealed class MainUI : IDisposable
 
         private MainUI owner;
 
+        private ToolTip toolTip;
+
         private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton, powerModeButton;
         private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel, batteryLabel, powerModeLabel;
         private CxContextMenu powerModeMenu;
@@ -133,6 +135,14 @@ sealed class MainUI : IDisposable
                     (rate, capacity, powerState) => new { rate, capacity, powerState })
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState))
+                .DisposeWith(disposable);
+
+            owner.battery.EstimatedTime
+                .CombineLatest(
+                    owner.battery.Capacity,
+                    (estimatedTime, capacity) => new { estimatedTime, capacity })
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(x => UpdateBatteryEstimatedTime(x.estimatedTime, x.capacity))
                 .DisposeWith(disposable);
 
             owner.config.UserConfig.PropertyChanged
@@ -193,6 +203,8 @@ sealed class MainUI : IDisposable
 
         private void InitComponents()
         {
+            toolTip = new ToolTip().DisposeWith(disposable);
+           
             var layout = Create<TableLayoutPanel>(x =>
             {
                 x.BackColor = Color.Transparent;
@@ -251,8 +263,7 @@ sealed class MainUI : IDisposable
 
                 powerModeButton = CreateButton(
                     iconFont,
-                    "",
-                    command: owner.commandManager.Resolve<PowerModeCommand>())
+                    "")
                     .To(ref buttonList).DisposeWith(disposable);
 
                 powerModeMenu = new CxContextMenu();
@@ -479,7 +490,7 @@ sealed class MainUI : IDisposable
                 powerModeMenu.TextBrightColor = powerModeMenu.TextBrightColor;
             }
 
-            EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(210));
+            EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(230));
 
             Invalidate();
         }
@@ -488,6 +499,27 @@ sealed class MainUI : IDisposable
         {
             batteryLabel.Icon = GetBatteryIcon(capacity, powerState);
             batteryLabel.Text = Math.Abs(rate) < 0.1 ? "" : $"{rate / 1000f:N1} W";
+        }
+
+        private void UpdateBatteryEstimatedTime(uint estimatedTime, uint capacity)
+        {
+            var time = TimeSpan.FromSeconds(estimatedTime);
+            var builder = new StringBuilder();
+            builder.Append($"{capacity * 100f / owner.battery.FullChargedCapacity:N0}% remaining");
+
+            if (time.TotalMinutes > 1)
+            {
+                builder.AppendLine();
+
+                if (time.Hours > 0)
+                {
+                    builder.Append($"{time.Hours}h ");
+                }
+
+                builder.Append($"{time.Minutes.ToString().PadLeft(2, '0')}min");
+            }
+
+            toolTip.SetToolTip(batteryLabel, builder.ToString());
         }
 
         private string GetBatteryIcon(uint capacity, BatteryPowerState powerState)

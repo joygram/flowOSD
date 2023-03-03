@@ -35,6 +35,8 @@ public interface IBattery
 
     IObservable<uint> Capacity { get; }
 
+    IObservable<uint> EstimatedTime { get; }
+
     IObservable<BatteryPowerState> PowerState { get; }
 
     void Update();

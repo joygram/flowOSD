@@ -32,11 +32,11 @@ internal sealed class CxButton : ButtonBase
 {
     private const float BACKGROUND_HOVER = -.1f;
     private const float BACKGROUND_PRESSED = -.2f;
-    private const float BACKGROUND_DISABLED = -.05f;
+    private const float BACKGROUND_DISABLED = .4f;
     private const float TEXT_HOVER = 0;
     private const float TEXT_PRESSED = -.3f;
-    private const float TEXT_DISABLED = .1f;
-    private const float BORDER = -.1f;
+    private const float TEXT_DISABLED = -.3f;
+    private const float BORDER = .2f;
     private const int FOCUS_SPACE = 3;
 
     private CompositeDisposable disposable;
@@ -325,9 +325,36 @@ internal sealed class CxButton : ButtonBase
         base.OnMouseUp(e);
     }
 
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Space || (Command != null && e.KeyCode == Keys.Enter))
+        {
+            State |= ButtonState.Pressed;
+        }
+
+        base.OnKeyDown(e);
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Space || (Command != null && e.KeyCode == Keys.Enter))
+        {
+            State &= ~ButtonState.Pressed;
+        }
+
+        if (e.KeyCode == Keys.Enter)
+        {
+            Command?.Execute(CommandParameter);
+
+            return;
+        }
+
+        base.OnKeyUp(e);
+    }
+
     protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
     {
-        if (e.KeyCode == Keys.Tab && TabListener != null)
+        if ((e.KeyCode == Keys.Tab || e.KeyCode == Keys.Space) && TabListener != null)
         {
             TabListener.ShowKeyboardFocus = true;
         }
@@ -351,6 +378,11 @@ internal sealed class CxButton : ButtonBase
         if (DropDownMenu != null)
         {
             DropDownMenu.Show(this.PointToScreen(new Point(FOCUS_SPACE, this.Height)));
+
+            if (TabListener?.ShowKeyboardFocus == true && DropDownMenu.Items.Count > 0)
+            {
+                DropDownMenu.Items[0].Select();
+            }
             return;
         }
         else
@@ -437,9 +469,13 @@ internal sealed class CxButton : ButtonBase
     {
         var isBright = baseColor.IsBright();
 
-        if ((State & ButtonState.Pressed) == ButtonState.Pressed)
+        if (!Enabled)
         {
-            return isBright ? TextBrightColor : TextColor.Luminance(TEXT_PRESSED);
+            return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED * 2) : TextColor.Luminance(TEXT_DISABLED);
+        }
+        else if ((State & ButtonState.Pressed) == ButtonState.Pressed)
+        {
+            return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED * 2) : TextColor.Luminance(TEXT_PRESSED);
         }
         else
         {
@@ -449,7 +485,13 @@ internal sealed class CxButton : ButtonBase
 
     private Color GetBackgroundColor(Color color)
     {
-        if ((State & ButtonState.Pressed) == ButtonState.Pressed)
+        if (!Enabled)
+        {
+            return color.IsBright()
+                ? color.Luminance(-BACKGROUND_DISABLED / 2)
+                : color.Luminance(BACKGROUND_DISABLED);
+        }
+        else if ((State & ButtonState.Pressed) == ButtonState.Pressed)
         {
             return color.Luminance(BACKGROUND_PRESSED);
         }

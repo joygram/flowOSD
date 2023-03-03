@@ -126,7 +126,6 @@ static class Extensions
             .Subscribe(WM_DPICHANGED, (x, w, l) => SendMessage(control.Handle, WM_DPICHANGED_BEFOREPARENT, w, l));
     }
 
-
     public static int DpiScale(this Control control, int value)
     {
         return (int)Math.Round(value * (GetDpiForWindow(control.Handle) / 94f));
