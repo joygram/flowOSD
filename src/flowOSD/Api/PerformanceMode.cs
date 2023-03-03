@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -18,15 +18,9 @@
  */
 namespace flowOSD.Api;
 
-public interface IAtk
+public enum PerformanceMode
 {
-    IObservable<AtkKey> KeyPressed { get; }
-
-    IObservable<PerformanceMode> PerformanceMode { get; }
-
-    int Get(uint deviceId);
-
-    void Set(uint deviceId, uint status);
-
-    void SetPerformanceMode(PerformanceMode performanceMode);
+    Silent,
+    Balanced,
+    Turbo
 }

@@ -178,6 +178,7 @@ sealed class App : IDisposable
             new ToggleTouchPadCommand(touchPad),
             new ToggleBoostCommand(powerManagement),
             new ToggleGpuCommand(gpu),
+            new PerformanceModeCommand(atk),
             new PowerModeCommand(powerManagement),
             new SettingsCommand(config, commandManager),
             new AboutCommand(config),
@@ -187,7 +188,7 @@ sealed class App : IDisposable
             new ClipboardPastePlainTextCommand(keyboard)
         );
 
-        mainUI = new MainUI(config, systemEvents, commandManager, battery, powerManagement);
+        mainUI = new MainUI(config, systemEvents, commandManager, battery, powerManagement, atk);
         commandManager.Register(new MainUICommand(mainUI));
 
         trayIcon = new TrayIcon(

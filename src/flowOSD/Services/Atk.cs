@@ -45,11 +45,14 @@ sealed partial class Atk : IAtk, IDisposable
     const uint DSTS = 0x53545344;
     const uint DEVS = 0x53564544;
 
+    const uint DEVID_THROTTLE_THERMAL_POLICY = 0x00120075;
+
     public const uint CPU_Fan = 0x00110013;
     public const uint GPU_Fan = 0x00110014;
 
     private readonly Dictionary<int, AtkKey> codeToKey;
     private readonly Subject<AtkKey> keyPressedSubject;
+    private readonly BehaviorSubject<PerformanceMode> performanceModeSubject;
 
     private IntPtr handle;
 
@@ -85,10 +88,14 @@ sealed partial class Atk : IAtk, IDisposable
         codeToKey[AK_FN_V] = AtkKey.Paste;
 
         keyPressedSubject = new Subject<AtkKey>();
+        performanceModeSubject = new BehaviorSubject<PerformanceMode>(Api.PerformanceMode.Balanced);
 
         KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
+        PerformanceMode = performanceModeSubject.AsObservable();
 
         messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
+
+        SetPerformanceMode(Api.PerformanceMode.Balanced);
     }
 
     ~Atk()
@@ -107,6 +114,11 @@ sealed partial class Atk : IAtk, IDisposable
         get;
     }
 
+    public IObservable<PerformanceMode> PerformanceMode
+    {
+        get;
+    }
+
     public int Get(uint deviceId)
     {
         var args = new byte[8];
@@ -120,8 +132,34 @@ sealed partial class Atk : IAtk, IDisposable
         var args = new byte[8];
         BitConverter.GetBytes(deviceId).CopyTo(args, 0);
         BitConverter.GetBytes(status).CopyTo(args, 4);
-        
+
         Invoke(DEVS, args);
+    }
+
+    public void SetPerformanceMode(PerformanceMode performanceMode)
+    {
+        switch (performanceMode)
+        {
+            case Api.PerformanceMode.Balanced:
+                {
+                    Set(DEVID_THROTTLE_THERMAL_POLICY, 0);
+                    break;
+                }
+
+            case Api.PerformanceMode.Turbo:
+                {
+                    Set(DEVID_THROTTLE_THERMAL_POLICY, 1);
+                    break;
+                }
+
+            case Api.PerformanceMode.Silent:
+                {
+                    Set(DEVID_THROTTLE_THERMAL_POLICY, 2);
+                    break;
+                }
+        }
+
+        performanceModeSubject.OnNext(performanceMode);
     }
 
     private void Dispose(bool disposing)

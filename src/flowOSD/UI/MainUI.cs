@@ -25,6 +25,7 @@ using System.Reflection;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Windows.Forms;
+using System.Windows.Input;
 using flowOSD.Api;
 using flowOSD.UI.Commands;
 using flowOSD.UI.Components;
@@ -38,6 +39,7 @@ sealed class MainUI : IDisposable
     private ISystemEvents systemEvents;
     private ICommandManager commandManager;
     private IPowerManagement powerManagement;
+    private IAtk atk;
 
     private IBattery battery;
 
@@ -46,7 +48,8 @@ sealed class MainUI : IDisposable
         ISystemEvents systemEvents,
         ICommandManager commandManager,
         IBattery battery,
-        IPowerManagement powerManagement)
+        IPowerManagement powerManagement,
+        IAtk atk)
     {
         this.config = config;
         this.systemEvents = systemEvents;
@@ -55,6 +58,7 @@ sealed class MainUI : IDisposable
         this.commandManager = commandManager;
         this.battery = battery;
         this.powerManagement = powerManagement;
+        this.atk = atk;
     }
 
     void IDisposable.Dispose()
@@ -105,9 +109,10 @@ sealed class MainUI : IDisposable
 
         private ToolTip toolTip;
 
-        private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton, powerModeButton;
-        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel, batteryLabel, powerModeLabel;
-        private CxContextMenu powerModeMenu;
+        private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton, performanceModeButton, powerModeButton;
+        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel, batteryLabel, performanceModeLabel, powerModeLabel;
+        private CxContextMenu performanceModeMenu, powerModeMenu;
+        private ICommand performanceMenuItemCommand;
 
         public Window(MainUI owner)
         {
@@ -149,6 +154,18 @@ sealed class MainUI : IDisposable
                 .Where(propertyName => propertyName == nameof(UserConfig.ShowBatteryChargeRate))
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(_ => UpdateBatteryVisiblity())
+                .DisposeWith(disposable);
+
+            owner.config.UserConfig.PropertyChanged
+                .Where(propertyName => propertyName == nameof(UserConfig.PerformanceModeOverride))
+                .CombineLatest(owner.atk.PerformanceMode, (_, performanceMode) => performanceMode)
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(UpdatePerformanceModeOverride)
+                .DisposeWith(disposable);
+
+            owner.atk.PerformanceMode
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(UpdatePerformanceModeOverride)
                 .DisposeWith(disposable);
 
             owner.powerManagement.PowerMode
@@ -204,7 +221,7 @@ sealed class MainUI : IDisposable
         private void InitComponents()
         {
             toolTip = new ToolTip().DisposeWith(disposable);
-           
+
             var layout = Create<TableLayoutPanel>(x =>
             {
                 x.BackColor = Color.Transparent;
@@ -261,6 +278,34 @@ sealed class MainUI : IDisposable
                     command: owner.commandManager.Resolve<ToggleTouchPadCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
+                performanceModeButton = CreateButton(
+                    iconFont,
+                    "",
+                    command: owner.commandManager.Resolve<PerformanceModeCommand>(),
+                    commandParameter: owner.config.UserConfig.PerformanceModeOverride)
+                    .To(ref buttonList).DisposeWith(disposable);
+                performanceModeButton.IsToggle = true;
+
+                performanceMenuItemCommand = new RelayCommand(x =>
+                {
+                    if (x is PerformanceMode performanceMode)
+                    {
+                        owner.commandManager.Resolve<PerformanceModeCommand>()?.Execute(x);
+                        owner.config.UserConfig.PerformanceModeOverride = performanceMode;
+                    }
+                });
+
+                performanceModeMenu = new CxContextMenu();
+                performanceModeMenu.AddMenuItem(
+                    "Slient",
+                    performanceMenuItemCommand,
+                    PerformanceMode.Silent);
+                performanceModeMenu.AddMenuItem(
+                    "Turbo",
+                    performanceMenuItemCommand,
+                    PerformanceMode.Turbo);
+                performanceModeButton.DropDownMenu = performanceModeMenu;
+
                 powerModeButton = CreateButton(
                     iconFont,
                     "")
@@ -285,6 +330,7 @@ sealed class MainUI : IDisposable
                 x.Add(1, 0, refreshRateButton);
                 x.Add(2, 0, eGpuButton);
                 x.Add(0, 2, touchpadButton);
+                x.Add(1, 2, performanceModeButton);
                 x.Add(2, 2, powerModeButton);
 
                 var textFont = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel).DisposeWith(disposable);
@@ -293,14 +339,14 @@ sealed class MainUI : IDisposable
                 refreshRateLabel = CreateLabel(textFont, "High Refesh Rate").To(ref labelList).DisposeWith(disposable);
                 eGpuLabel = CreateLabel(textFont, "eGPU").To(ref labelList).DisposeWith(disposable);
                 touchpadLabel = CreateLabel(textFont, "Touchpad").To(ref labelList).DisposeWith(disposable);
-
+                performanceModeLabel = CreateLabel(textFont, "<performance mode>").To(ref labelList).DisposeWith(disposable);
                 powerModeLabel = CreateLabel(textFont, "<power mode>").To(ref labelList).DisposeWith(disposable);
 
                 x.Add(0, 1, boostLabel);
                 x.Add(1, 1, refreshRateLabel);
                 x.Add(2, 1, eGpuLabel);
                 x.Add(0, 3, touchpadLabel);
-
+                x.Add(1, 3, performanceModeLabel);
                 x.Add(2, 3, powerModeLabel);
 
             });
@@ -442,7 +488,13 @@ sealed class MainUI : IDisposable
             return x;
         }
 
-        private CxButton CreateButton(Font iconFont, string icon, Font textFont = null, string text = null, CommandBase command = null)
+        private CxButton CreateButton(
+            Font iconFont,
+            string icon,
+            Font textFont = null,
+            string text = null,
+            CommandBase command = null,
+            object commandParameter = null)
         {
             var x = new CxButton();
 
@@ -459,6 +511,7 @@ sealed class MainUI : IDisposable
             if (command != null)
             {
                 x.Command = command;
+                x.CommandParameter = commandParameter;
                 x.DataBindings.Add("IsChecked", command, "IsChecked");
             }
 
@@ -538,6 +591,32 @@ sealed class MainUI : IDisposable
             {
                 batteryLabel.Visible = owner.config.UserConfig.ShowBatteryChargeRate;
             }
+        }
+
+        private void UpdatePerformanceModeOverride(PerformanceMode performanceMode)
+        {
+            switch (owner.config.UserConfig.PerformanceModeOverride)
+            {
+                case PerformanceMode.Silent:
+                    {
+                        performanceModeButton.Icon = "\uec0a";
+                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Balanced
+                            ? PerformanceMode.Silent
+                            : PerformanceMode.Balanced;
+                        break;
+                    }
+
+                case PerformanceMode.Turbo:
+                    {
+                        performanceModeButton.Icon = "\ue945";
+                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Balanced
+                            ? PerformanceMode.Turbo
+                            : PerformanceMode.Balanced;
+                        break;
+                    }
+            }
+
+            performanceModeLabel.Text = performanceMode.ToString();
         }
     }
 }

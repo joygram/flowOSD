@@ -377,15 +377,31 @@ internal sealed class CxButton : ButtonBase
     {
         if (DropDownMenu != null)
         {
-            DropDownMenu.Show(this.PointToScreen(new Point(FOCUS_SPACE, this.Height)));
-
-            if (TabListener?.ShowKeyboardFocus == true && DropDownMenu.Items.Count > 0)
+            var clientRect = GetClientRectangle();
+            if (IsToggle)
             {
-                DropDownMenu.Items[0].Select();
+                clientRect = new Rectangle(
+                    clientRect.X + clientRect.Width / 2,
+                    clientRect.Y,
+                    clientRect.Width / 2,
+                    clientRect.Bottom);
             }
-            return;
+
+            if (clientRect.Contains(PointToClient(MousePosition)))
+            {
+                DropDownMenu.Show(this.PointToScreen(new Point(FOCUS_SPACE, this.Height)));
+
+                if (TabListener?.ShowKeyboardFocus == true && DropDownMenu.Items.Count > 0)
+                {
+                    DropDownMenu.Items[0].Select();
+                }
+
+                return;
+            }
         }
-        else
+
+
+        if (Command == null && IsToggle)
         {
             IsChecked = !IsChecked;
         }
@@ -420,6 +436,15 @@ internal sealed class CxButton : ButtonBase
             e.Graphics.FillRoundedRectangle(brush, clientRect, 8);
 
             using var pen = new Pen(baseColor.Luminance(BORDER), 1);
+            if (IsToggle && DropDownMenu != null)
+            {
+                e.Graphics.DrawLine(pen,
+                    clientRect.X + clientRect.Width / 2,
+                    clientRect.Y,
+                    clientRect.X + clientRect.Width / 2,
+                    clientRect.Bottom);
+            }
+
             e.Graphics.DrawRoundedRectangle(pen, clientRect, 8);
         }
 
@@ -441,7 +466,9 @@ internal sealed class CxButton : ButtonBase
 
             e.Graphics.DrawString(arrowSymbol, IconFont, textBrush, arrowSymbolPoint);
 
-            clientRect.Width = (int)arrowSymbolPoint.X - clientRect.X;
+            clientRect.Width = IsToggle
+                ? clientRect.Width / 2
+                : (int)arrowSymbolPoint.X - clientRect.X;
         }
 
         var symbolPoint = new PointF(
