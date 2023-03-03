@@ -85,6 +85,22 @@ sealed class App : IDisposable
 
         // Notifications
 
+        atk.PerformanceMode
+            .Skip(1)
+            .DistinctUntilChanged()
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => ShowPerformanceModeNotification(x))
+            .DisposeWith(disposable);
+
+        powerManagement.PowerMode
+            .Skip(1)
+            .DistinctUntilChanged()
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => ShowPowerModeNotification(x))
+            .DisposeWith(disposable);
+
         powerManagement.IsDC
             .Skip(1)
             .DistinctUntilChanged()
@@ -131,7 +147,7 @@ sealed class App : IDisposable
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => osd.Show(new OsdData(
-                x == AtkKey.BacklightDown ? Images.KeyboardLowerBrightness : Images.KeyboardBrightness,
+                x == AtkKey.BacklightDown ? UIImages.Hardware_KeyboardLightDown : UIImages.Hardware_KeyboardLightUp,
                 keyboard.GetBacklight())))
             .DisposeWith(disposable);
 
@@ -152,7 +168,7 @@ sealed class App : IDisposable
                 {
                     var isMuted = audio.IsMicMuted();
                     osd.Show(new OsdData(
-                        isMuted ? Images.MicMuted : Images.Mic,
+                        isMuted ? UIImages.Hardware_MicMuted : UIImages.Hardware_Mic,
                         isMuted ? "Muted" : "On air"));
                 }
                 catch (Exception ex)
@@ -241,7 +257,6 @@ sealed class App : IDisposable
             .DisposeWith(disposable);
     }
 
-
     private void RegisterHotKeys()
     {
         hotKeyManager.Register(AtkKey.Aura, config.UserConfig.AuraCommand);
@@ -251,6 +266,64 @@ sealed class App : IDisposable
         hotKeyManager.Register(AtkKey.Paste, config.UserConfig.PasteCommand);
     }
 
+    private void ShowPerformanceModeNotification(PerformanceMode performanceMode)
+    {
+        if (!config.UserConfig.ShowPerformanceModeNotification)
+        {
+            return;
+        }
+
+        switch (performanceMode)
+        {
+            case PerformanceMode.Default:
+                {
+                    osd.Show(new OsdData(UIImages.Performance_Default, $"{performanceMode.ToText()} performance mode"));
+                    break;
+                }
+
+            case PerformanceMode.Turbo:
+                {
+                    osd.Show(new OsdData(UIImages.Performance_Turbo, $"{performanceMode.ToText()} performance mode"));
+                    break;
+                }
+
+            case PerformanceMode.Silent:
+                {
+                    osd.Show(new OsdData(UIImages.Performance_Silent, $"{performanceMode.ToText()} performance mode"));
+                    break;
+                }
+        }
+    }
+
+    private void ShowPowerModeNotification(PowerMode powerMode)
+    {
+        if (!config.UserConfig.ShowPowerModeNotification)
+        {
+            return;
+        }
+
+        switch (powerMode)
+        {
+            case PowerMode.BestPowerEfficiency:
+                {
+                    osd.Show(new OsdData(UIImages.Power_BestPowerEfficiency, $"{powerMode.ToText()} power mode"));
+                    break;
+                }
+
+            case PowerMode.Balanced:
+                {
+                    osd.Show(new OsdData(UIImages.Power_Balanced, $"{powerMode.ToText()} power mode"));
+                    break;
+                }
+
+            case PowerMode.BestPerformance:
+                {
+                    osd.Show(new OsdData(UIImages.Power_BestPerformance, $"{powerMode.ToText()} power mode"));
+                    break;
+                }
+        }
+    }
+
     private void ShowPowerSourceNotification(bool isBattery)
     {
         if (!config.UserConfig.ShowPowerSourceNotification)
@@ -258,7 +331,7 @@ sealed class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(isBattery ? Images.DC : Images.AC, isBattery ? "On Battery" : "Plugged In"));
+        osd.Show(new OsdData(isBattery ? UIImages.Hardware_DC : UIImages.Hardware_AC, isBattery ? "On Battery" : "Plugged In"));
     }
 
     private void ShowDisplayRefreshRateNotification(bool isEnabled)
@@ -268,14 +341,7 @@ sealed class App : IDisposable
             return;
         }
 
-        if (isEnabled)
-        {
-            osd.Show(new OsdData(Images.HiRefreshRate, "High Refresh Rate"));
-        }
-        else
-        {
-            osd.Show(new OsdData(Images.LowRefreshRate, "Low Refresh Rate"));
-        }
+        osd.Show(new OsdData(UIImages.Hardware_Screen, isEnabled ? "High Refresh Rate" : "Low Refresh Rate"));
     }
 
     private void ShowBoostNotification(bool isEnabled)
@@ -285,14 +351,7 @@ sealed class App : IDisposable
             return;
         }
 
-        if (isEnabled)
-        {
-            osd.Show(new OsdData(Images.BoostOn, "Boost Mode is on"));
-        }
-        else
-        {
-            osd.Show(new OsdData(Images.BoostOff, "Boost Mode is off"));
-        }
+        osd.Show(new OsdData(UIImages.Hardware_Cpu, isEnabled ? "Boost Mode is on" : "Boost Mode is off"));
     }
 
     private void ShowTouchPadNotification(bool isEnabled)
@@ -302,7 +361,7 @@ sealed class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(Images.TouchPad, isEnabled ? "TouchPad is on" : "TouchPad is off"));
+        osd.Show(new OsdData(UIImages.Hardware_TouchPad, isEnabled ? "TouchPad is on" : "TouchPad is off"));
     }
 
     private void ShowGpuNotification(bool isEnabled)
@@ -312,7 +371,7 @@ sealed class App : IDisposable
             return;
         }
 
-        osd.Show(new OsdData(Images.Gpu, isEnabled ? "eGPU is on" : "eGPU is off"));
+        osd.Show(new OsdData(UIImages.Hardware_Gpu, isEnabled ? "eGPU is on" : "eGPU is off"));
     }
 
     void IDisposable.Dispose()

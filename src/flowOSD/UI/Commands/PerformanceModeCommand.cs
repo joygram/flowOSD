@@ -34,7 +34,7 @@ public class PerformanceModeCommand : CommandBase
 
         this.atk.PerformanceMode
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(performanceMode => IsChecked = performanceMode != PerformanceMode.Balanced)
+            .Subscribe(performanceMode => IsChecked = performanceMode != PerformanceMode.Default)
             .DisposeWith(Disposable);
 
         Description = "Toggle Performance Mode";
@@ -72,8 +72,8 @@ public class PerformanceModeCommand : CommandBase
         switch (powerMode)
         {
             case PerformanceMode.Silent:
-                return PerformanceMode.Balanced;
-            case PerformanceMode.Balanced:
+                return PerformanceMode.Default;
+            case PerformanceMode.Default:
                 return PerformanceMode.Turbo;
             case PerformanceMode.Turbo:
                 return PerformanceMode.Silent;

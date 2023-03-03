@@ -31,6 +31,11 @@ internal class MonitoringConfigPage : TableLayoutPanel
 
     public MonitoringConfigPage(IConfig config)
     {
+        Dock = DockStyle.Top;
+        AutoScroll = false;
+        AutoSize = true;
+        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
         this.config = config;
 
         Text = "Monitoring";

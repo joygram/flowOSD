@@ -318,6 +318,7 @@ sealed class CxContextMenu : ContextMenuStrip
 
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
+            e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
             e.Graphics.TextRenderingHint =  TextRenderingHint.AntiAliasGridFit;
 
             if (e.Item is ToolStripMenuItem)
@@ -339,9 +340,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
         protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
         {
+            e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+
             var y = e.Item.ContentRectangle.Y + e.Item.ContentRectangle.Height / 2;
 
-            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
             e.Graphics.DrawLine(
                 separatorPen,
                 e.Item.ContentRectangle.X,
@@ -352,6 +355,8 @@ sealed class CxContextMenu : ContextMenuStrip
 
         protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
         {
+            e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+
             if (e.Item.Selected)
             {
                 var x = e.Item.ContentRectangle.X + 4;

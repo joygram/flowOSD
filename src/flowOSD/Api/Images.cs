@@ -24,16 +24,4 @@ public static class Images
     public const string TabletWhite = "tablet-white";
     public const string Notebook = "notebook";
     public const string NotebookWhite = "notebook-white";
-    public const string KeyboardBrightness = "keyboard-brightness";
-    public const string KeyboardLowerBrightness = "Keyboard-lower-brightness";
-    public const string AC = "ac";
-    public const string DC = "dc";
-    public const string BoostOn = "boost-on";
-    public const string BoostOff = "boost-off";
-    public const string HiRefreshRate = "hi-refresh-rate";
-    public const string LowRefreshRate = "low-refresh-rate";
-    public const string TouchPad = "touchpad";
-    public const string Mic = "mic";
-    public const string MicMuted = "mic-muted";
-    public const string Gpu = "gpu";
 }

@@ -200,69 +200,18 @@ sealed partial class Osd : IOsd, IDisposable
             return pen;
         }
 
-        private static string GetImage(OsdData data)
-        {
-            switch (data.ImageName)
-            {
-                case Images.HiRefreshRate:
-                case Images.LowRefreshRate:
-                    return "\ue7f4";
-                case Images.TouchPad:
-                    return "\uefa5";
-                case Images.BoostOn:
-                    return "\ue945";
-                case Images.BoostOff:
-                    return "\uec0a";
-                case Images.AC:
-                    return "\ue83e";
-                case Images.DC:
-                    return "\ue83f";
-                case Images.Mic:
-                    return "\ue720";
-                case Images.MicMuted:
-                    return "\uf781";
-                case Images.KeyboardBrightness:
-                    return "\ued39";
-                case Images.KeyboardLowerBrightness:
-                    return "\ued3a";
-                case Images.Gpu:
-                    return "\ue950";
-
-                default:
-                    return string.Empty;
-            }
-        }
-
         private int DrawImage(Graphics g, int paddingLeft, int imageHeight, int separator)
         {
-            var image = GetImage(data);
-
-            using var font = new Font("Segoe Fluent Icons", imageHeight, GraphicsUnit.Pixel);
+            using var font = new Font(UIParameters.IconFontName, imageHeight, GraphicsUnit.Pixel);
 
             var point = new Point(paddingLeft, (Height - imageHeight) / 2);
 
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            g.DrawString(image, font, textBrush, point);
+            g.DrawString(data.Icon, font, textBrush, point);
 
-            var imageWidth = g.MeasureString(image, font).Width;
+            var imageWidth = g.MeasureString(data.Icon, font).Width;
 
-            if (data.ImageName == Images.HiRefreshRate || data.ImageName == Images.LowRefreshRate)
-            {
-                using var textFont = new Font(
-                    "Segoe UI",
-                    DpiScaleValue(Parameters.TextImageHeight / 4f),
-                    GraphicsUnit.Pixel);
 
-                var text = data.ImageName == Images.HiRefreshRate ? "120Hz" : "60Hz";
-                var textSize = g.MeasureString(text, textFont);
-
-                var textPoint = new Point(
-                    paddingLeft + (int)((imageWidth - textSize.Width) / 2),
-                    Height / 2 - (int)(textSize.Height * 2 / 3) - DpiScaleValue(1));
-
-                g.DrawString(text, textFont, textBrush, textPoint);
-
-            }
 
             return (int)imageWidth + separator;
         }
@@ -285,7 +234,7 @@ sealed partial class Osd : IOsd, IDisposable
         {
             var x = DpiScaleValue(Parameters.TextPadding.Left);
 
-            if (data.HasImage)
+            if (data.HasIcon)
             {
                 x += DrawImage(g, x, DpiScaleValue(Parameters.TextImageHeight), DpiScaleValue(Parameters.TextSeparator));
             }
@@ -384,12 +333,12 @@ sealed partial class Osd : IOsd, IDisposable
               ? DpiScaleValue(Parameters.InidicatorPadding.Top + Parameters.InidicatorPadding.Bottom + Parameters.IndicatorImageHeight)
               : DpiScaleValue(Parameters.TextPadding.Top + Parameters.TextPadding.Bottom + Parameters.TextImageHeight);
 
-            if (data.IsIndicator || data.HasImage)
+            if (data.IsIndicator || data.HasIcon)
             {
                 using var font = new Font("Segoe Fluent Icons", imageHeight, GraphicsUnit.Pixel);
                 using var g = Graphics.FromHwnd(Handle);
 
-                width += (int)g.MeasureString(GetImage(data), font).Width;
+                width += (int)g.MeasureString(data.Icon, font).Width;
                 width += DpiScaleValue(data.IsIndicator ? Parameters.IndicatorSeparator : Parameters.TextSeparator);
             }
 

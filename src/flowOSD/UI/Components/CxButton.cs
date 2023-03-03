@@ -286,6 +286,8 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
+    private bool IsDropDownToggle => DropDownMenu != null && IsToggle;
+
     protected override void OnMouseEnter(EventArgs e)
     {
         State |= ButtonState.MouseHover;
@@ -298,6 +300,23 @@ internal sealed class CxButton : ButtonBase
         State &= ~ButtonState.MouseHover;
 
         base.OnMouseLeave(e);
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        if (ClientRectangle.Contains(e.Location))
+        {
+            if (IsDropDownToggle && e.Location.X > Width / 2)
+            {
+                State |= ButtonState.DropDownHover;
+            }
+            else
+            {
+                State &= ~ButtonState.DropDownHover;
+            }
+        }
+
+        base.OnMouseMove(e);
     }
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -377,7 +396,7 @@ internal sealed class CxButton : ButtonBase
     {
         if (DropDownMenu != null)
         {
-            var clientRect = GetClientRectangle();
+            var clientRect = ClientRectangle;
             if (IsToggle)
             {
                 clientRect = new Rectangle(
@@ -400,7 +419,6 @@ internal sealed class CxButton : ButtonBase
             }
         }
 
-
         if (Command == null && IsToggle)
         {
             IsChecked = !IsChecked;
@@ -409,46 +427,48 @@ internal sealed class CxButton : ButtonBase
         base.OnClick(e);
     }
 
-    private Rectangle GetClientRectangle()
-    {
-        return new Rectangle(
-            FOCUS_SPACE,
-            FOCUS_SPACE,
-            Width - 1 - FOCUS_SPACE * 2,
-            Height - 1 - FOCUS_SPACE * 2);
-    }
-
     protected override void OnPaint(PaintEventArgs e)
     {
-        e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
         e.Graphics.Clear(Color.Transparent);
 
         var baseColor = IsChecked ? AccentColor : BackColor;
+        var backgroundColor = GetBackgroundColor(baseColor, !IsDropDownToggle);
 
-        var backgroundColor = GetBackgroundColor(baseColor);
-        var clientRect = GetClientRectangle();
+        var drawingAreaRect = new Rectangle(
+                FOCUS_SPACE,
+                FOCUS_SPACE,
+                Width - 1 - FOCUS_SPACE * 2,
+                Height - 1 - FOCUS_SPACE * 2);
 
-        if (backgroundColor != Color.Transparent)
+        if (backgroundColor != Color.Transparent || (State & ButtonState.MouseHover) == ButtonState.MouseHover)
         {
             using var brush = new SolidBrush(backgroundColor);
-            e.Graphics.FillRoundedRectangle(brush, clientRect, 8);
+            e.Graphics.FillRoundedRectangle(brush, drawingAreaRect, 8);
 
-            using var pen = new Pen(baseColor.Luminance(BORDER), 1);
+            DrawDropDownHover(e, baseColor, drawingAreaRect);
+
+            using var pen = new Pen(GetBorderColor(baseColor), 1);
             if (IsToggle && DropDownMenu != null)
             {
                 e.Graphics.DrawLine(pen,
-                    clientRect.X + clientRect.Width / 2,
-                    clientRect.Y,
-                    clientRect.X + clientRect.Width / 2,
-                    clientRect.Bottom);
+                    drawingAreaRect.X + drawingAreaRect.Width / 2,
+                    drawingAreaRect.Y,
+                    drawingAreaRect.X + drawingAreaRect.Width / 2,
+                    drawingAreaRect.Bottom);
             }
 
-            e.Graphics.DrawRoundedRectangle(pen, clientRect, 8);
+            e.Graphics.DrawRoundedRectangle(pen, drawingAreaRect, 8);
         }
 
-        using var textBrush = new SolidBrush(GetTextColor(baseColor));
+        if (TabListener.ShowKeyboardFocus && Focused)
+        {
+            e.Graphics.DrawRoundedRectangle(focusPen, 0, 0, Width - 1, Height - 1, 8);
+        }
+
+        using var textBrush = new SolidBrush(GetTextColor(baseColor, (State & ButtonState.DropDownHover) == 0));
 
         var symbolSize = IconFont == null
             ? new Size(0, 0)
@@ -456,23 +476,10 @@ internal sealed class CxButton : ButtonBase
 
         var textSize = e.Graphics.MeasureString(Text ?? string.Empty, Font);
 
-        if (IconFont != null && DropDownMenu != null)
-        {
-            var arrowSymbol = "\ue972";
-            var arrowSymbolSize = e.Graphics.MeasureString(Icon ?? string.Empty, IconFont);
-            var arrowSymbolPoint = new PointF(
-                clientRect.X + clientRect.Width * 3 / 4 - (symbolSize.Width + textSize.Width) / 2,
-                (Height - symbolSize.Height) / 2 + 2);
-
-            e.Graphics.DrawString(arrowSymbol, IconFont, textBrush, arrowSymbolPoint);
-
-            clientRect.Width = IsToggle
-                ? clientRect.Width / 2
-                : (int)arrowSymbolPoint.X - clientRect.X;
-        }
+        drawingAreaRect = DrawDropDownArrow(e, baseColor, drawingAreaRect, symbolSize, textSize);
 
         var symbolPoint = new PointF(
-            clientRect.X + clientRect.Width / 2 - (symbolSize.Width + textSize.Width) / 2,
+            drawingAreaRect.X + drawingAreaRect.Width / 2 - (symbolSize.Width + textSize.Width) / 2,
             (Height - symbolSize.Height) / 2 + 2);
 
         var textPoint = new PointF(
@@ -485,14 +492,72 @@ internal sealed class CxButton : ButtonBase
         }
 
         e.Graphics.DrawString(Text, Font, textBrush, textPoint);
+    }
 
-        if (TabListener.ShowKeyboardFocus && Focused)
+    private Rectangle DrawDropDownArrow(PaintEventArgs e, Color baseColor, Rectangle drawingAreaRect, SizeF symbolSize, SizeF textSize)
+    {
+        if (IconFont != null && DropDownMenu != null)
         {
-            e.Graphics.DrawRoundedRectangle(focusPen, 0, 0, Width - 1, Height - 1, 8);
+            using var arrowBrush = new SolidBrush(
+                GetTextColor(baseColor, !IsDropDownToggle || (State & ButtonState.DropDownHover) == ButtonState.DropDownHover));
+
+            var arrowSymbol = "\ue972";
+            var arrowSymbolSize = e.Graphics.MeasureString(Icon ?? string.Empty, IconFont);
+            var arrowSymbolPoint = new PointF(
+                drawingAreaRect.X + drawingAreaRect.Width * 3 / 4 - (symbolSize.Width + textSize.Width) / 2,
+                (Height - symbolSize.Height) / 2 + 2);
+
+            e.Graphics.DrawString(arrowSymbol, IconFont, arrowBrush, arrowSymbolPoint);
+
+            drawingAreaRect.Width = IsToggle
+                ? drawingAreaRect.Width / 2
+                : (int)arrowSymbolPoint.X - drawingAreaRect.X;
+        }
+
+        return drawingAreaRect;
+    }
+
+    private void DrawDropDownHover(PaintEventArgs e, Color baseColor, Rectangle drawingAreaRect)
+    {
+        if (!IsDropDownToggle)
+        {
+            return;
+        }
+
+        using var hoveredBrush = new SolidBrush(GetBackgroundColor(baseColor, true));
+
+        if ((State & ButtonState.DropDownHover) == ButtonState.DropDownHover)
+        {
+            e.Graphics.FillRoundedRectangle(
+                hoveredBrush,
+                new Rectangle(
+                    drawingAreaRect.X + drawingAreaRect.Width / 2,
+                    drawingAreaRect.Y,
+                    drawingAreaRect.Width / 2,
+                    drawingAreaRect.Height),
+                8,
+                Extensions.Corners.BottomRight | Extensions.Corners.TopRight);
+        }
+        else
+        {
+            e.Graphics.FillRoundedRectangle(
+                hoveredBrush,
+                new Rectangle(
+                    drawingAreaRect.X,
+                    drawingAreaRect.Y,
+                    drawingAreaRect.Width / 2,
+                    drawingAreaRect.Height),
+                8,
+                Extensions.Corners.BottomLeft | Extensions.Corners.TopLeft);
         }
     }
 
-    private Color GetTextColor(Color baseColor)
+    private Color GetBorderColor(Color baseColor)
+    {
+        return baseColor.IsBright() ? baseColor.Luminance(-BORDER) : baseColor.Luminance(BORDER);
+    }
+
+    private Color GetTextColor(Color baseColor, bool isHoveredPart)
     {
         var isBright = baseColor.IsBright();
 
@@ -500,7 +565,7 @@ internal sealed class CxButton : ButtonBase
         {
             return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED * 2) : TextColor.Luminance(TEXT_DISABLED);
         }
-        else if ((State & ButtonState.Pressed) == ButtonState.Pressed)
+        else if (isHoveredPart && (State & ButtonState.Pressed) == ButtonState.Pressed)
         {
             return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED * 2) : TextColor.Luminance(TEXT_PRESSED);
         }
@@ -510,7 +575,7 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
-    private Color GetBackgroundColor(Color color)
+    private Color GetBackgroundColor(Color color, bool isHoveredPart)
     {
         if (!Enabled)
         {
@@ -518,11 +583,11 @@ internal sealed class CxButton : ButtonBase
                 ? color.Luminance(-BACKGROUND_DISABLED / 2)
                 : color.Luminance(BACKGROUND_DISABLED);
         }
-        else if ((State & ButtonState.Pressed) == ButtonState.Pressed)
+        else if (isHoveredPart && (State & ButtonState.Pressed) == ButtonState.Pressed)
         {
             return color.Luminance(BACKGROUND_PRESSED);
         }
-        else if ((State & ButtonState.MouseHover) == ButtonState.MouseHover)
+        else if (isHoveredPart && (State & ButtonState.MouseHover) == ButtonState.MouseHover)
         {
             return color.Luminance(BACKGROUND_HOVER);
         }
@@ -544,8 +609,9 @@ internal sealed class CxButton : ButtonBase
     [Flags]
     private enum ButtonState
     {
-        Default,
-        MouseHover,
-        Pressed,
+        Default = 1,
+        MouseHover = 2,
+        Pressed = 4,
+        DropDownHover = 8
     }
 }

@@ -88,14 +88,14 @@ sealed partial class Atk : IAtk, IDisposable
         codeToKey[AK_FN_V] = AtkKey.Paste;
 
         keyPressedSubject = new Subject<AtkKey>();
-        performanceModeSubject = new BehaviorSubject<PerformanceMode>(Api.PerformanceMode.Balanced);
+        performanceModeSubject = new BehaviorSubject<PerformanceMode>(Api.PerformanceMode.Default);
 
         KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
         PerformanceMode = performanceModeSubject.AsObservable();
 
         messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
 
-        SetPerformanceMode(Api.PerformanceMode.Balanced);
+        SetPerformanceMode(Api.PerformanceMode.Default);
     }
 
     ~Atk()
@@ -138,26 +138,7 @@ sealed partial class Atk : IAtk, IDisposable
 
     public void SetPerformanceMode(PerformanceMode performanceMode)
     {
-        switch (performanceMode)
-        {
-            case Api.PerformanceMode.Balanced:
-                {
-                    Set(DEVID_THROTTLE_THERMAL_POLICY, 0);
-                    break;
-                }
-
-            case Api.PerformanceMode.Turbo:
-                {
-                    Set(DEVID_THROTTLE_THERMAL_POLICY, 1);
-                    break;
-                }
-
-            case Api.PerformanceMode.Silent:
-                {
-                    Set(DEVID_THROTTLE_THERMAL_POLICY, 2);
-                    break;
-                }
-        }
+        Set(DEVID_THROTTLE_THERMAL_POLICY, (uint)performanceMode);
 
         performanceModeSubject.OnNext(performanceMode);
     }

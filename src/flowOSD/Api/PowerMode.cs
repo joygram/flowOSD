@@ -20,7 +20,6 @@ namespace flowOSD.Api;
 
 public enum PowerMode
 {
-    BatterySaver,
     BestPowerEfficiency,
     Balanced,
     BestPerformance

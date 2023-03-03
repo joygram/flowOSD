@@ -69,6 +69,7 @@ sealed class ConfigUI : IDisposable
         private Control currentPage;
 
         private TableLayoutPanel layout;
+        private Panel pageContainer;
 
         public Window(params Control[] pages)
         {
@@ -86,15 +87,14 @@ sealed class ConfigUI : IDisposable
             {
                 if (currentPage != null)
                 {
-                    layout.Controls.Remove(currentPage);
+                    pageContainer.Controls.Remove(currentPage);
                 }
 
                 currentPage = value;
-                currentPage.Dock = DockStyle.Fill;
 
                 if (currentPage != null)
                 {
-                    layout.Add(1, 0, currentPage);
+                    pageContainer.Controls.Add(currentPage);
                 }
             }
         }
@@ -144,6 +144,15 @@ sealed class ConfigUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
             }).DisposeWith(disposable);
 
+            layout.Add<Panel>(1, 0, x =>
+            {
+                x.Dock = DockStyle.Fill;
+                x.AutoScroll = true;
+                x.AutoSize = false;
+
+                x.LinkAs(ref pageContainer);
+            });
+
             layout.Add<ListBox>(0, 0, x =>
             {
                 var scale = GetDpiForWindow(Handle) / 96f;
@@ -155,7 +164,7 @@ sealed class ConfigUI : IDisposable
 
                 x.DataSource = pages;
                 x.DisplayMember = nameof(Control.Text);
-             
+
                 x.SelectedIndexChanged += (_, _) =>
                 {
                     CurrentPage = x.SelectedIndex < 0 ? null : pages[x.SelectedIndex];
@@ -235,7 +244,7 @@ sealed class ConfigUI : IDisposable
 
             var scale = GetDpiForWindow(Handle) / 96f;
             this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
-            UpdateSize(GetDpiForWindow(Handle));            
+            UpdateSize(GetDpiForWindow(Handle));
 
             StartPosition = FormStartPosition.CenterScreen;
         }

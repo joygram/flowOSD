@@ -75,7 +75,7 @@ sealed class MainUI : IDisposable
         if (form == null)
         {
             form = new Window(this);
-            form.Visible = false;
+            form.Visible = false;            
         }
 
         if ((DateTime.Now - form.LastHide).TotalMilliseconds < 100)
@@ -109,8 +109,8 @@ sealed class MainUI : IDisposable
 
         private ToolTip toolTip;
 
-        private CxButton boostButton, refreshRateButton, eGpuButton, touchpadButton, performanceModeButton, powerModeButton;
-        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchpadLabel, batteryLabel, performanceModeLabel, powerModeLabel;
+        private CxButton boostButton, refreshRateButton, eGpuButton, touchPadButton, performanceModeButton, powerModeButton;
+        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchPadLabel, batteryLabel, performanceModeLabel, powerModeLabel;
         private CxContextMenu performanceModeMenu, powerModeMenu;
         private ICommand performanceMenuItemCommand;
 
@@ -179,43 +179,6 @@ sealed class MainUI : IDisposable
             UpdateBatteryVisiblity();
         }
 
-        private void UpdatePowerMode(PowerMode powerMode, bool isBatterySaver)
-        {
-            powerModeButton.Enabled = !isBatterySaver;
-
-            if (isBatterySaver)
-            {
-                powerModeButton.DropDownMenu = null;
-                powerModeButton.Icon = "\uebc0";
-                powerModeLabel.Text = "Battery Saver is on";
-            }
-            else
-            {
-                powerModeButton.DropDownMenu = powerModeMenu;
-                switch (powerMode)
-                {
-                    case PowerMode.BestPowerEfficiency:
-                        {
-                            powerModeButton.Icon = "\uec48";
-                            powerModeLabel.Text = powerMode.ToString();
-                            break;
-                        }
-                    case PowerMode.Balanced:
-                        {
-                            powerModeButton.Icon = "\uec49";
-                            powerModeLabel.Text = powerMode.ToString();
-                            break;
-                        }
-                    case PowerMode.BestPerformance:
-                        {
-                            powerModeButton.Icon = "\uec4a";
-                            powerModeLabel.Text = powerMode.ToString();
-                            break;
-                        }
-                }
-            }
-        }
-
         public DateTime LastHide { get; set; }
 
         private void InitComponents()
@@ -250,31 +213,29 @@ sealed class MainUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
                 var iconFont = new Font(UIParameters.IconFontName, this.DpiScale(16), GraphicsUnit.Pixel).DisposeWith(disposable);
 
                 boostButton = CreateButton(iconFont,
-                    "\ue945",
+                    UIImages.Hardware_Cpu,
                     command: owner.commandManager.Resolve<ToggleBoostCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
                 refreshRateButton = CreateButton(
                     iconFont,
-                    "\ue7f4",
+                    UIImages.Hardware_Screen,
                     command: owner.commandManager.Resolve<ToggleRefreshRateCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
                 eGpuButton = CreateButton(
                     iconFont,
-                    "\ue950",
+                    UIImages.Hardware_Gpu,
                     command: owner.commandManager.Resolve<ToggleGpuCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
-                touchpadButton = CreateButton(
+                touchPadButton = CreateButton(
                     iconFont,
-                    "\uefa5",
+                    UIImages.Hardware_TouchPad,
                     command: owner.commandManager.Resolve<ToggleTouchPadCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
@@ -284,7 +245,6 @@ sealed class MainUI : IDisposable
                     command: owner.commandManager.Resolve<PerformanceModeCommand>(),
                     commandParameter: owner.config.UserConfig.PerformanceModeOverride)
                     .To(ref buttonList).DisposeWith(disposable);
-                performanceModeButton.IsToggle = true;
 
                 performanceMenuItemCommand = new RelayCommand(x =>
                 {
@@ -297,11 +257,11 @@ sealed class MainUI : IDisposable
 
                 performanceModeMenu = new CxContextMenu();
                 performanceModeMenu.AddMenuItem(
-                    "Slient",
+                    PerformanceMode.Silent.ToText(),
                     performanceMenuItemCommand,
                     PerformanceMode.Silent);
                 performanceModeMenu.AddMenuItem(
-                    "Turbo",
+                    PerformanceMode.Turbo.ToText(),
                     performanceMenuItemCommand,
                     PerformanceMode.Turbo);
                 performanceModeButton.DropDownMenu = performanceModeMenu;
@@ -310,44 +270,45 @@ sealed class MainUI : IDisposable
                     iconFont,
                     "")
                     .To(ref buttonList).DisposeWith(disposable);
+                powerModeButton.IsToggle = false;
 
                 powerModeMenu = new CxContextMenu();
                 powerModeMenu.AddMenuItem(
-                    "Best Power Effeciency",
+                    PowerMode.BestPowerEfficiency.ToText(),
                     owner.commandManager.Resolve<PowerModeCommand>(),
                     PowerMode.BestPowerEfficiency);
                 powerModeMenu.AddMenuItem(
-                    "Balanced",
+                    PowerMode.Balanced.ToText(),
                     owner.commandManager.Resolve<PowerModeCommand>(),
                     PowerMode.Balanced);
                 powerModeMenu.AddMenuItem(
-                    "Best Performance",
+                    PowerMode.BestPerformance.ToText(),
                     owner.commandManager.Resolve<PowerModeCommand>(),
                     PowerMode.BestPerformance);
                 powerModeButton.DropDownMenu = powerModeMenu;
 
                 x.Add(0, 0, boostButton);
-                x.Add(1, 0, refreshRateButton);
-                x.Add(2, 0, eGpuButton);
-                x.Add(0, 2, touchpadButton);
-                x.Add(1, 2, performanceModeButton);
-                x.Add(2, 2, powerModeButton);
+                x.Add(1, 0, performanceModeButton);
+                x.Add(2, 0, powerModeButton);
+                x.Add(0, 2, refreshRateButton);
+                x.Add(1, 2, eGpuButton);
+                x.Add(2, 2, touchPadButton);
 
                 var textFont = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel).DisposeWith(disposable);
 
-                boostLabel = CreateLabel(textFont, "CPU Boost").To(ref labelList).DisposeWith(disposable);
-                refreshRateLabel = CreateLabel(textFont, "High Refesh Rate").To(ref labelList).DisposeWith(disposable);
-                eGpuLabel = CreateLabel(textFont, "eGPU").To(ref labelList).DisposeWith(disposable);
-                touchpadLabel = CreateLabel(textFont, "Touchpad").To(ref labelList).DisposeWith(disposable);
+                boostLabel = CreateLabel(textFont, UIText.MainUI_CpuBoost).To(ref labelList).DisposeWith(disposable);
+                refreshRateLabel = CreateLabel(textFont, UIText.MainUI_HighRefreshRate).To(ref labelList).DisposeWith(disposable);
+                eGpuLabel = CreateLabel(textFont,UIText.MainUI_Gpu).To(ref labelList).DisposeWith(disposable);
+                touchPadLabel = CreateLabel(textFont, UIText.MainUI_TouchPad).To(ref labelList).DisposeWith(disposable);
                 performanceModeLabel = CreateLabel(textFont, "<performance mode>").To(ref labelList).DisposeWith(disposable);
                 powerModeLabel = CreateLabel(textFont, "<power mode>").To(ref labelList).DisposeWith(disposable);
 
                 x.Add(0, 1, boostLabel);
-                x.Add(1, 1, refreshRateLabel);
-                x.Add(2, 1, eGpuLabel);
-                x.Add(0, 3, touchpadLabel);
-                x.Add(1, 3, performanceModeLabel);
-                x.Add(2, 3, powerModeLabel);
+                x.Add(1, 1, performanceModeLabel);
+                x.Add(2, 1, powerModeLabel);
+                x.Add(0, 3, refreshRateLabel);
+                x.Add(1, 3, eGpuLabel);
+                x.Add(2, 3, touchPadLabel);
 
             });
 
@@ -382,7 +343,7 @@ sealed class MainUI : IDisposable
                     button.Margin = this.DpiScale(new Padding(3));
 
                     button.Size = this.DpiScale(new Size(40, 40));
-                    button.Icon = "\ue713";
+                    button.Icon = UIImages.Settings;
                     button.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(17), GraphicsUnit.Pixel).DisposeWith(disposable);
                     button.IsToggle = false;
                     button.IsTransparent = true;
@@ -543,6 +504,15 @@ sealed class MainUI : IDisposable
                 powerModeMenu.TextBrightColor = powerModeMenu.TextBrightColor;
             }
 
+            if (performanceModeMenu != null)
+            {
+                performanceModeMenu.BackgroundColor = parameters.MenuBackgroundColor;
+                performanceModeMenu.BackgroundHoverColor = parameters.MenuBackgroundHoverColor;
+                performanceModeMenu.TextColor = parameters.MenuTextColor;
+                performanceModeMenu.TextBrightColor = powerModeMenu.TextBrightColor;
+            }
+
+            BackColor = parameters.BackgroundColor;
             EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(230));
 
             Invalidate();
@@ -599,24 +569,61 @@ sealed class MainUI : IDisposable
             {
                 case PerformanceMode.Silent:
                     {
-                        performanceModeButton.Icon = "\uec0a";
-                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Balanced
+                        performanceModeButton.Icon = UIImages.Performance_Silent;
+                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Default
                             ? PerformanceMode.Silent
-                            : PerformanceMode.Balanced;
+                            : PerformanceMode.Default;
                         break;
                     }
 
                 case PerformanceMode.Turbo:
                     {
-                        performanceModeButton.Icon = "\ue945";
-                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Balanced
+                        performanceModeButton.Icon = UIImages.Performance_Turbo;
+                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Default
                             ? PerformanceMode.Turbo
-                            : PerformanceMode.Balanced;
+                            : PerformanceMode.Default;
                         break;
                     }
             }
 
-            performanceModeLabel.Text = performanceMode.ToString();
+            performanceModeLabel.Text = owner.config.UserConfig.PerformanceModeOverride.ToText();
+        }
+
+        private void UpdatePowerMode(PowerMode powerMode, bool isBatterySaver)
+        {
+            powerModeButton.Enabled = !isBatterySaver;
+
+            if (isBatterySaver)
+            {
+                powerModeButton.DropDownMenu = null;
+                powerModeButton.Icon = UIImages.Power_BatterySaver;
+                powerModeLabel.Text = UIText.Power_BatterySaver;
+            }
+            else
+            {
+                powerModeButton.DropDownMenu = powerModeMenu;
+                switch (powerMode)
+                {
+                    case PowerMode.BestPowerEfficiency:
+                        {
+                            powerModeButton.Icon = UIImages.Power_BestPowerEfficiency;
+                            powerModeLabel.Text = powerMode.ToText();
+                            break;
+                        }
+                    case PowerMode.Balanced:
+                        {
+                            powerModeButton.Icon = UIImages.Power_Balanced;
+                            powerModeLabel.Text = powerMode.ToText();
+                            break;
+                        }
+                    case PowerMode.BestPerformance:
+                        {
+                            powerModeButton.Icon = UIImages.Power_BestPerformance;
+                            powerModeLabel.Text = powerMode.ToText();
+                            break;
+                        }
+                }
+            }
         }
     }
 }

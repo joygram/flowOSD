@@ -24,7 +24,7 @@ using System.Reactive.Disposables;
 using flowOSD.Api;
 using static Native;
 
-static class Extensions
+static partial class Extensions
 {
     public static T Create<T>(Action<T> initializator) where T : new()
     {
@@ -144,78 +144,4 @@ static class Extensions
             DpiScale(control, padding.Right),
             DpiScale(control, padding.Bottom));
     }
-
-    #region Drawing
-
-    public static void DrawRoundedRectangle(this Graphics g, Pen pen, Rectangle rect, int r)
-    {
-        DrawRoundedRectangle(g, pen, rect.X, rect.Y, rect.Width, rect.Height, r);
-    }
-
-    public static void DrawRoundedRectangle(this Graphics g, Pen pen, int x, int y, int width, int height, int r)
-    {
-        using var path = GetRoundedRectPath(x, y, width, height, r);
-
-        g.DrawPath(pen, path);
-    }
-
-    public static void FillRoundedRectangle(this Graphics g, Brush brush, Rectangle rect, int r)
-    {
-        FillRoundedRectangle(g, brush, rect.X, rect.Y, rect.Width, rect.Height, r);
-    }
-
-    public static void FillRoundedRectangle(this Graphics g, Brush brush, int x, int y, int width, int height, int r)
-    {
-        using var path = GetRoundedRectPath(x, y, width, height, r);
-
-        g.FillPath(brush, path);
-    }
-
-    public static GraphicsPath GetRoundedRectPath(int x, int y, int width, int height, int r)
-    {
-        var arc = new Rectangle(x, y, r * 2, r * 2);
-        var path = new GraphicsPath();
-
-        path.AddArc(arc, 180, 90);
-
-        arc.X = x + width - r * 2;
-        path.AddArc(arc, 270, 90);
-
-        arc.Y = y + height - r * 2;
-        path.AddArc(arc, 0, 90);
-
-        arc.X = x;
-        path.AddArc(arc, 90, 90);
-
-        path.CloseFigure();
-
-        return path;
-    }
-
-    public static bool IsBright(this Color color)
-    {
-        return color.GetBrightness() > 0.6;
-    }
-
-    public static Color SetAlpha(this Color color, byte alpha)
-    {
-        return Color.FromArgb(alpha, color);
-    }
-
-    public static Color Luminance(this Color color, float factor)
-    {
-        ColorRGBToHLS(
-            ColorTranslator.ToWin32(color),
-            out int hue,
-            out int luminance,
-            out int saturation);
-
-        return ColorTranslator.FromWin32(
-            ColorHLSToRGB(
-                hue,
-                (int)Math.Round(luminance * (1 + factor)),
-                saturation));
-    }
-
-    #endregion
 }

@@ -33,6 +33,8 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool controlDisplayRefreshRate;
     private bool highDisplayRefreshRateAC, highDisplayRefreshRateDC;
 
+    private bool showPerformanceModeNotification;
+    private bool showPowerModeNotification;
     private bool showPowerSourceNotification;
     private bool showBoostNotification;
     private bool showTouchPadNotification;
@@ -55,6 +57,8 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         highDisplayRefreshRateDC = false;
         disableTouchPadInTabletMode = true;
 
+        showPerformanceModeNotification = true;
+        showPowerModeNotification = true;
         showPowerSourceNotification = true;
         showBoostNotification = true;
         showTouchPadNotification = true;
@@ -138,6 +142,18 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         set => SetProperty(ref highDisplayRefreshRateDC, value);
     }
 
+    public bool ShowPerformanceModeNotification
+    {
+        get => showPerformanceModeNotification;
+        set => SetProperty(ref showPerformanceModeNotification, value);
+    }
+
+    public bool ShowPowerModeNotification
+    {
+        get => showPowerModeNotification;
+        set => SetProperty(ref showPowerModeNotification, value);
+    }
+
     public bool ShowPowerSourceNotification
     {
         get => showPowerSourceNotification;
@@ -188,7 +204,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
 
     public string FanCommand
     {
-        get => fanCommand ;
+        get => fanCommand;
         set => SetProperty(ref fanCommand, value);
     }
 

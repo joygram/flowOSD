@@ -31,6 +31,11 @@ internal class NotificationsConfigPage : TableLayoutPanel
 
     public NotificationsConfigPage(IConfig config)
     {
+        Dock = DockStyle.Top;
+        AutoScroll = false;
+        AutoSize = true;
+        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
         this.config = config;
 
         Text = "Notifications";
@@ -44,6 +49,14 @@ internal class NotificationsConfigPage : TableLayoutPanel
             "Show CPU boost mode notifications",
             "Indicates whether notification shows when CPU boost mode is disabled or enabled.",
             nameof(UserConfig.ShowBoostNotification));
+        AddConfig(
+            "Show performance mode notifications",
+            "Indicates whether notification shows when performance override mode changes.",
+            nameof(UserConfig.ShowPerformanceModeNotification));
+        AddConfig(
+            "Show power mode notifications",
+            "Indicates whether notification shows when power mode changes.",
+            nameof(UserConfig.ShowPowerModeNotification));
         AddConfig(
             "Show TouchPad notifications",
             "Indicates whether notification shows when TochPad is disabled or enabled.",

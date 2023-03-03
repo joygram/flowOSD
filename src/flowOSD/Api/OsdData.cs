@@ -22,32 +22,32 @@ public class OsdData
 {
     public OsdData(string text)
     {
-        ImageName = null;
+        Icon = null;
         Text = text;
         Value = null;
     }
 
-    public OsdData(string imageName, string text)
+    public OsdData(string icon, string text)
     {
-        ImageName = imageName;
+        Icon = icon;
         Text = text;
         Value = null;
     }
 
-    public OsdData(string imageName, double value)
+    public OsdData(string icon, double value)
     {
-        ImageName = imageName;
+        Icon = icon;
         Text = null;
         Value = value;
     }
 
-    public string ImageName { get; }
+    public string Icon { get; }
 
     public string Text { get; }
 
     public double? Value { get; }
 
-    public bool HasImage => !string.IsNullOrEmpty(ImageName);
+    public bool HasIcon => !string.IsNullOrEmpty(Icon);
 
     public bool IsIndicator => Value != null;
 }

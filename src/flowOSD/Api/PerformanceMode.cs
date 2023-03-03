@@ -20,7 +20,7 @@ namespace flowOSD.Api;
 
 public enum PerformanceMode
 {
-    Silent,
-    Balanced,
-    Turbo
+    Default = 0,
+    Turbo = 1,
+    Silent = 2
 }

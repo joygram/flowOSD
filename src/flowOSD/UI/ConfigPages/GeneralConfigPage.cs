@@ -28,6 +28,11 @@ internal class GeneralConfigPage : TableLayoutPanel
 
     public GeneralConfigPage(IConfig config)
     {
+        Dock = DockStyle.Top;
+        AutoScroll = false;
+        AutoSize = true;
+        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
         Text = "General";
 
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));

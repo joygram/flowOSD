@@ -70,6 +70,7 @@ internal sealed class CxLabel : Label
 
     protected override void OnPaint(PaintEventArgs e)
     {
+        e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
         e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
         var symbolSize = IconFont == null

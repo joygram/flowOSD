@@ -33,6 +33,11 @@ internal class HotKeysConfigPage : TableLayoutPanel
 
     public HotKeysConfigPage(IConfig config, ICommandManager commandManager)
     {
+        Dock = DockStyle.Top;
+        AutoScroll = false;
+        AutoSize = true;
+        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
 
