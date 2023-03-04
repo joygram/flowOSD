@@ -75,7 +75,7 @@ sealed class MainUI : IDisposable
         if (form == null)
         {
             form = new Window(this);
-            form.Visible = false;            
+            form.Visible = false;
         }
 
         if ((DateTime.Now - form.LastHide).TotalMilliseconds < 100)
@@ -137,17 +137,10 @@ sealed class MainUI : IDisposable
                 .CombineLatest(
                     owner.battery.Capacity,
                     owner.battery.PowerState,
-                    (rate, capacity, powerState) => new { rate, capacity, powerState })
+                    owner.battery.EstimatedTime,
+                    (rate, capacity, powerState, estimatedTime) => new { rate, capacity, powerState, estimatedTime })
                 .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState))
-                .DisposeWith(disposable);
-
-            owner.battery.EstimatedTime
-                .CombineLatest(
-                    owner.battery.Capacity,
-                    (estimatedTime, capacity) => new { estimatedTime, capacity })
-                .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => UpdateBatteryEstimatedTime(x.estimatedTime, x.capacity))
+                .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState, x.estimatedTime))
                 .DisposeWith(disposable);
 
             owner.config.UserConfig.PropertyChanged
@@ -299,7 +292,7 @@ sealed class MainUI : IDisposable
 
                 boostLabel = CreateLabel(textFont, UIText.MainUI_CpuBoost).To(ref labelList).DisposeWith(disposable);
                 refreshRateLabel = CreateLabel(textFont, UIText.MainUI_HighRefreshRate).To(ref labelList).DisposeWith(disposable);
-                eGpuLabel = CreateLabel(textFont,UIText.MainUI_Gpu).To(ref labelList).DisposeWith(disposable);
+                eGpuLabel = CreateLabel(textFont, UIText.MainUI_Gpu).To(ref labelList).DisposeWith(disposable);
                 touchPadLabel = CreateLabel(textFont, UIText.MainUI_TouchPad).To(ref labelList).DisposeWith(disposable);
                 performanceModeLabel = CreateLabel(textFont, "<performance mode>").To(ref labelList).DisposeWith(disposable);
                 powerModeLabel = CreateLabel(textFont, "<power mode>").To(ref labelList).DisposeWith(disposable);
@@ -519,19 +512,30 @@ sealed class MainUI : IDisposable
             Invalidate();
         }
 
-        private void UpdateBattery(int rate, uint capacity, BatteryPowerState powerState)
+        private void UpdateBattery(int rate, uint capacity, BatteryPowerState powerState, uint estimatedTime)
         {
             batteryLabel.Icon = GetBatteryIcon(capacity, powerState);
             batteryLabel.Text = Math.Abs(rate) < 0.1 ? "" : $"{rate / 1000f:N1} W";
-        }
 
-        private void UpdateBatteryEstimatedTime(uint estimatedTime, uint capacity)
-        {
             var time = TimeSpan.FromSeconds(estimatedTime);
             var builder = new StringBuilder();
-            builder.Append($"{capacity * 100f / owner.battery.FullChargedCapacity:N0}% remaining");
+            builder.Append($"{capacity * 100f / owner.battery.FullChargedCapacity:N0}%");
 
-            if (time.TotalMinutes > 1)
+            if ((powerState & BatteryPowerState.Discharging) == BatteryPowerState.Discharging)
+            {
+                builder.Append(" remaining");
+            }
+            else if ((powerState & BatteryPowerState.Charging) == BatteryPowerState.Charging)
+            {
+                builder.Append(" available");
+            }
+
+            if ((powerState & BatteryPowerState.PowerOnLine) == BatteryPowerState.PowerOnLine)
+            {
+                builder.Append(" (plugged in)");
+            }
+
+            if ((powerState & BatteryPowerState.Discharging) == BatteryPowerState.Discharging && time.TotalMinutes > 1)
             {
                 builder.AppendLine();
 
