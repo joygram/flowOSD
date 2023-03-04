@@ -66,7 +66,12 @@ sealed class App : IDisposable
         powerManagement = new PowerManagement().DisposeWith(disposable);
 
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);
-        atk = new Atk(messageQueue).DisposeWith(disposable);
+
+        var performanceMode = this.config.UserConfig.PerformanceModeOverrideEnabled
+            ? this.config.UserConfig.PerformanceModeOverride
+            : PerformanceMode.Default;
+
+        atk = new Atk(performanceMode, messageQueue).DisposeWith(disposable);
         touchPad = new TouchPad(keyboard, messageQueue).DisposeWith(disposable);
         osd = new Osd(systemEvents).DisposeWith(disposable);
 
@@ -180,6 +185,20 @@ sealed class App : IDisposable
 
         // Auto switching
 
+        powerManagement.PowerEvent
+            .Where(x => x == PowerEvent.Resume)
+            .Throttle(TimeSpan.FromMicroseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(_ => Suspend())
+            .DisposeWith(disposable);
+
+        powerManagement.PowerEvent
+            .Where(x => x == PowerEvent.Resume)
+            .Throttle(TimeSpan.FromMicroseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(_ => Resume())
+            .DisposeWith(disposable);
+
         systemEvents.TabletMode
             .Throttle(TimeSpan.FromSeconds(2))
             .ObserveOn(SynchronizationContext.Current)
@@ -264,6 +283,19 @@ sealed class App : IDisposable
         hotKeyManager.Register(AtkKey.Rog, config.UserConfig.RogCommand);
         hotKeyManager.Register(AtkKey.Copy, config.UserConfig.CopyCommand);
         hotKeyManager.Register(AtkKey.Paste, config.UserConfig.PasteCommand);
+    }
+
+    private void Suspend()
+    {
+
+    }
+
+    private void Resume()
+    {
+        if (config.UserConfig.PerformanceModeOverrideEnabled)
+        {
+            atk.SetPerformanceMode(config.UserConfig.PerformanceModeOverride);
+        }
     }
 
     private void ShowPerformanceModeNotification(PerformanceMode performanceMode)

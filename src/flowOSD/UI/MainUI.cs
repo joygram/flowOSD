@@ -252,6 +252,7 @@ sealed class MainUI : IDisposable
                     {
                         owner.commandManager.Resolve<PerformanceModeCommand>()?.Execute(x);
                         owner.config.UserConfig.PerformanceModeOverride = performanceMode;
+                        owner.config.UserConfig.PerformanceModeOverrideEnabled = performanceMode != PerformanceMode.Default;
                     }
                 });
 

@@ -47,6 +47,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private string auraCommand, fanCommand, rogCommand, copyCommand, pasteCommand;
 
     private PerformanceMode performanceModeOverride;
+    private bool performanceModeOverrideEnabled;
 
     public UserConfig()
     {
@@ -69,6 +70,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         showBatteryChargeRate = true;
 
         performanceModeOverride = PerformanceMode.Silent;
+        performanceModeOverrideEnabled = false;
 
         events = new Dictionary<PropertyChangedEventHandler, IDisposable>();
         propertyChangedSubject = new Subject<string>();
@@ -230,6 +232,12 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => performanceModeOverride;
         set => SetProperty(ref performanceModeOverride, value);
+    }
+
+    public bool PerformanceModeOverrideEnabled
+    {
+        get => performanceModeOverrideEnabled;
+        set => SetProperty(ref performanceModeOverrideEnabled, value);
     }
 
     private void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)

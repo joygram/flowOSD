@@ -59,7 +59,7 @@ sealed partial class Atk : IAtk, IDisposable
     private CompositeDisposable disposable = new CompositeDisposable();
     private readonly object ControlLocker = new object();
 
-    public Atk(IMessageQueue messageQueue)
+    public Atk(PerformanceMode performanceMode, IMessageQueue messageQueue)
     {
         handle = CreateFile(
             @"\\.\\ATKACPI",
@@ -88,14 +88,14 @@ sealed partial class Atk : IAtk, IDisposable
         codeToKey[AK_FN_V] = AtkKey.Paste;
 
         keyPressedSubject = new Subject<AtkKey>();
-        performanceModeSubject = new BehaviorSubject<PerformanceMode>(Api.PerformanceMode.Default);
+        performanceModeSubject = new BehaviorSubject<PerformanceMode>(performanceMode);
 
         KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
         PerformanceMode = performanceModeSubject.AsObservable();
 
         messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
 
-        SetPerformanceMode(Api.PerformanceMode.Default);
+        SetPerformanceMode(performanceMode);
     }
 
     ~Atk()

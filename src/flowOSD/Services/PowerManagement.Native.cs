@@ -31,8 +31,8 @@ partial class PowerManagement
         public byte BatteryFlag;
         public byte BatteryLifePercent;
         public byte SystemStatusFlag;
-        public uint BatteryLifeTime;
-        public uint BatteryFullLifeTime;
+        public int BatteryLifeTime;
+        public int BatteryFullLifeTime;
     }
 
     [DllImport("kernel32.dll")]
@@ -50,12 +50,23 @@ partial class PowerManagement
 
     [DllImport("powrprof.dll", SetLastError = true)]
     private static extern uint PowerSettingRegisterNotification(
-        ref Guid settingGuid, uint flags,
+        ref Guid settingGuid,
+        uint flags,
         ref DEVICENOTIFYPROC recipient,
         ref IntPtr registrationHandle);
 
     [DllImport("powrprof.dll", SetLastError = true)]
     private static extern uint PowerSettingUnregisterNotification(IntPtr registrationHandle);
+
+    [DllImport("powrprof.dll", SetLastError = true)]
+    private static extern uint PowerRegisterSuspendResumeNotification(
+        uint flags,
+        ref DEVICENOTIFYPROC recipient,
+        ref IntPtr registrationHandle
+    );
+
+    [DllImport("powrprof.dll", SetLastError = true)]
+    private static extern uint PowerUnregisterSuspendResumeNotification(IntPtr registrationHandle);
 
     [DllImport("powrprof.dll", SetLastError = true)]
     private static extern uint PowerGetActiveScheme(IntPtr RootPowerKey, ref IntPtr SchemeGuid);
@@ -110,9 +121,9 @@ partial class PowerManagement
 
     [DllImport("powrprof.dll", SetLastError = true)]
     private static extern int PowerRegisterForEffectivePowerModeNotifications(
-        uint Version, 
-        EFFECTIVE_POWER_MODE_CALLBACK Callback, 
-        IntPtr Context, 
+        uint Version,
+        EFFECTIVE_POWER_MODE_CALLBACK Callback,
+        IntPtr Context,
         out IntPtr RegistrationHandle);
 
     [DllImport("powrprof.dll", SetLastError = true)]

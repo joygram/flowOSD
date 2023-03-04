@@ -42,7 +42,7 @@ public static class UIImages
 
     public static string Hardware_TouchPad => "\uefa5";
 
-    public static string Performance_Default => "\ue9ca";
+    public static string Performance_Default => "\ue770";
 
     public static string Performance_Turbo => "\ue945";
 
