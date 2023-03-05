@@ -70,6 +70,8 @@ sealed class MainUI : IDisposable
         }
     }
 
+    private IDisposable d;
+
     public void Show()
     {
         if (form == null)
@@ -78,21 +80,62 @@ sealed class MainUI : IDisposable
             form.Visible = false;
         }
 
-        if ((DateTime.Now - form.LastHide).TotalMilliseconds < 100)
+        if ((DateTime.Now - form.LastHide).TotalMilliseconds < 500)
         {
             return;
         }
 
-        var offset = form.DpiScale(14);
+        var offset = form.DpiScale(10);
 
         form.Width = form.DpiScale(350);
         form.Height = form.DpiScale(300);
 
         form.Left = Screen.PrimaryScreen.WorkingArea.Width - form.Width - offset;
         form.Top = Screen.PrimaryScreen.WorkingArea.Height - form.Height - offset;
-        form.Show();
 
-        form.Activate();
+
+        const int delta = 100;
+
+        form.Opacity = 0;
+        form.Top += delta;
+
+        const int SW_SHOW = 5;
+        ShowWindow(form.Handle, SW_SHOW);
+
+        d?.Dispose();
+        d = Observable
+            .Timer(DateTimeOffset.Now, TimeSpan.FromMilliseconds(500 / 32))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(t =>
+            {
+                form.Opacity += (1 / (100f / 15));
+                form.Location = new Point(form.Location.X, form.Location.Y - 15);
+
+                if (form.Opacity == 1)
+                {
+                    form.Activate();
+                    d?.Dispose();
+                }
+            });
+    }
+
+    private void Hide()
+    {
+        d?.Dispose();
+        d = Observable
+            .Timer(DateTimeOffset.Now, TimeSpan.FromMilliseconds(500 / 32))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(t =>
+            {
+                form.Opacity -= (0.5 / (100f / 15));
+                form.Location = new Point(form.Location.X, form.Location.Y + 15);
+
+                if (form.Opacity < 0.5)
+                {
+                    form.Hide();
+                    d?.Dispose();
+                }
+            });
     }
 
     private sealed class Window : Form
@@ -404,7 +447,7 @@ sealed class MainUI : IDisposable
 
             LastHide = DateTime.Now;
 
-            Hide();
+            owner.Hide();
 
             base.OnDeactivate(e);
         }

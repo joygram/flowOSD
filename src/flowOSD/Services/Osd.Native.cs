@@ -77,8 +77,6 @@ partial class Osd
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr FindWindowEx(IntPtr parentHandle, IntPtr hWndChildAfter, string className, string windowTitle);
 
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);
 
     [DllImport("user32.dll")]
     private static extern IntPtr SetWinEventHook(
