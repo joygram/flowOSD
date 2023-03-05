@@ -1,10 +1,12 @@
 # flowOSD 2
 
-Preview 2 is available! See [releases page](https://github.com/albertakhmetov/flowOSD/releases) for downloads.
+Preview 3 is available! See [releases page](https://github.com/albertakhmetov/flowOSD/releases) for downloads.
 
 *This preview version supports only Windows 11 22H2. Please, for Windows 10 and the previous release of Windows 11 use flowOSD 1.x*
 
-https://user-images.githubusercontent.com/5954460/221358776-af37bba0-5fdc-438a-9f22-3c2734a3a1f1.mp4
+<img width="256" alt="Preview3-volume" src="https://user-images.githubusercontent.com/5954460/222946809-2a7b5abe-9834-4a63-9588-a8e04d135a05.png">
+
+<img width="310" alt="preview3-ui" src="https://user-images.githubusercontent.com/5954460/222946644-e967cba8-99cc-40b8-b23b-8cf9e8ca950b.png">
 
 ## Disclaimer
 
@@ -22,11 +24,25 @@ flowOSD shows the following OSDs:
 * TouchPad is disabled/enabled
 * Display refresh rate is changed
 * CPU Boost is disabled/enabled
+* Performance Mode Override (Turbo/Silent)
+* System Power Mode
 * eGPU is disabled/enabled
 * Power source is changed (AC/DC)
 * Microphone state (muted/on air)
 
 Dark and Light system themes are supported.
+
+Dark theme:
+
+https://user-images.githubusercontent.com/5954460/222946632-3448bc60-cbfe-4c94-b993-4432b83a25ec.mp4
+
+<br/>
+
+Light theme:
+
+https://user-images.githubusercontent.com/5954460/222946634-7955ae3b-84de-47c9-bbe9-4a62644bac7f.mp4
+
+<br/>
 
 In addition, flowOSD provides customizable shortcuts for the following keys:
 
@@ -39,6 +55,8 @@ In addition, flowOSD provides customizable shortcuts for the following keys:
 flowOSD shows the current charge (discharge) rate of the battery. Also it allows you to control the following parameters:
 
 * Processor Boost Mode
+* Performance Mode Override (Turbo/Silent)
+* System Power Mode (Best Power Efficiency, Balanced, Best Performance)
 * Display Refresh Rate (these parameters are set depending on the power source - AC / DC)
 * eGPU (you can turn it off to save battery life)
 
