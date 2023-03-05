@@ -73,6 +73,19 @@ internal class NotificationsConfigPage : TableLayoutPanel
             "Show eGPU notifications",
             "Indicates whether notification shows when eGPU is disabled or enabled.",
             nameof(UserConfig.ShowGpuNotification));
+
+        // workaround:
+        RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+        this.Add<Label>(0, RowStyles.Count - 1, y =>
+        {
+            y.AutoSize = true;
+            y.Margin = LabelMargin;
+            y.Text = "";
+            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+            y.ForeColor = SystemColors.ControlDarkDark;
+
+            y.DisposeWith(disposable);
+        });
     }
 
     protected override void Dispose(bool disposing)

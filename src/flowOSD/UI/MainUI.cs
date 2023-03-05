@@ -80,6 +80,12 @@ sealed class MainUI : IDisposable
             form.Visible = false;
         }
 
+        if (form.Visible)
+        {
+            Hide();
+            return;
+        }
+
         if ((DateTime.Now - form.LastHide).TotalMilliseconds < 500)
         {
             return;
@@ -169,7 +175,6 @@ sealed class MainUI : IDisposable
 
             ShowInTaskbar = false;
             DoubleBuffered = true;
-            TopMost = true;
 
             KeyPreview = true;
             LastHide = DateTime.MinValue;

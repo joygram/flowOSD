@@ -38,6 +38,7 @@ sealed class PowerModeCommand : CommandBase
             .DisposeWith(Disposable);
 
         Description = "Toggle Power Mode";
+        Enabled = true;
     }
 
     public override string Name => nameof(PowerModeCommand);

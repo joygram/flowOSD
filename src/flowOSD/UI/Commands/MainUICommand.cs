@@ -31,7 +31,8 @@ sealed class MainUICommand : CommandBase
     {
         this.mainUI = mainUI ?? throw new ArgumentNullException(nameof(mainUI));
 
-        Text = Application.ProductName;
+        Text = $"Show {Application.ProductName}";
+        Description = Text;
         Enabled = true;
     }
 
