@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -18,10 +18,18 @@
  */
 namespace flowOSD.Api;
 
-public interface IImageSource
+using System.Runtime.InteropServices;
+using System.Security;
+
+public enum MouseButtonAction
 {
-    Image GetImage(string name, int dpi, bool? isDarkTheme = null);
-
-
-    Icon GetIcon(string name, int? dpi);
+    LeftButtonDown,
+    LeftButtonUp,
+    LeftButtonDoubleClick,
+    MiddleButtonDown,
+    MiddleButtonUp,
+    MiddleButtonDoubleClick, 
+    RightButtonDown,
+    RightButtonUp,
+    RightButtonDoubleClick,
 }

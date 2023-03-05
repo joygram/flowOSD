@@ -25,6 +25,7 @@ static class Native
 {
     private const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
 
+    public const int S_OK = 0x00000000;
     public const int ERROR_SUCCESS = 0x0;
 
     public const int WM_WININICHANGE = 0x001A;
@@ -33,6 +34,25 @@ static class Native
     public const int WM_DPICHANGED = 0x02E0;
     public const int WM_DPICHANGED_BEFOREPARENT = 0x02E2;
 
+    // https://learn.microsoft.com/en-us/windows/win32/inputdev/mouse-input-notifications
+
+    public const int WM_LBUTTONDOWN = 0x0201;
+    public const int WM_LBUTTONUP = 0x0202;
+    public const int WM_LBUTTONDBLCLK = 0x0203;
+    public const int WM_RBUTTONDOWN = 0x0204;
+    public const int WM_RBUTTONUP = 0x0205;
+    public const int WM_RBUTTONDBLCLK = 0x0206;
+    public const int WM_MBUTTONDOWN = 0x0207;
+    public const int WM_MBUTTONUP = 0x0208;
+    public const int WM_MBUTTONDBLCLK = 0x0209;
+
+    public const int WM_MOUSEWHEEL = 0x020A;
+    public const int WM_MOUSEHWHEEL = 0x020E;
+    public const int WM_MOUSELEAVE = 0x02A3;
+    public const int WM_MOUSEMOVE = 0x0200;
+
+
+    public const int WM_CONTEXTMENU = 0x007B;
 
     [Flags]
     public enum LocalMemoryFlags : uint
@@ -58,6 +78,9 @@ static class Native
     [DllImport("shlwapi.dll")]
     public static extern void ColorRGBToHLS(int rgb, out int hue, out int luminance, out int saturation);
 
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+
     [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)]
     internal static extern IntPtr LocalAlloc(LocalMemoryFlags uFlags, ulong uBytes);
 
@@ -72,6 +95,9 @@ static class Native
 
     [DllImport("user32.dll")]
     public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
     public static extern IntPtr SetActiveWindow(IntPtr hWnd);

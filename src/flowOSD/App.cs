@@ -25,9 +25,10 @@ using flowOSD.Api;
 using flowOSD.Services;
 using flowOSD.UI;
 using flowOSD.UI.Commands;
+using flowOSD.UI.Components;
 using static Extensions;
 
-sealed class App : IDisposable
+sealed partial class App : IDisposable
 {
     private CompositeDisposable disposable = new CompositeDisposable();
 
@@ -35,7 +36,6 @@ sealed class App : IDisposable
 
     private IMessageQueue messageQueue;
     private ISystemEvents systemEvents;
-    private IImageSource imageSource;
     private IPowerManagement powerManagement;
     private Display display;
     private IAtk atk;
@@ -46,7 +46,8 @@ sealed class App : IDisposable
     private IGpu gpu;
     private IBattery battery;
 
-    private TrayIcon trayIcon;
+    private INotifyIcon notifyIcon;
+
     private MainUI mainUI;
 
     private CommandManager commandManager;
@@ -58,9 +59,7 @@ sealed class App : IDisposable
 
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
-
         messageQueue = new MessageQueue().DisposeWith(disposable);
-        imageSource = new ImageSource().DisposeWith(disposable);
 
         keyboard = new Keyboard();
         powerManagement = new PowerManagement().DisposeWith(disposable);
@@ -90,98 +89,7 @@ sealed class App : IDisposable
 
         // Notifications
 
-        atk.PerformanceMode
-            .Skip(1)
-            .DistinctUntilChanged()
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ShowPerformanceModeNotification(x))
-            .DisposeWith(disposable);
-
-        powerManagement.PowerMode
-            .Skip(1)
-            .DistinctUntilChanged()
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ShowPowerModeNotification(x))
-            .DisposeWith(disposable);
-
-        powerManagement.IsDC
-            .Skip(1)
-            .DistinctUntilChanged()
-            .Throttle(TimeSpan.FromSeconds(2))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ShowPowerSourceNotification(x))
-            .DisposeWith(disposable);
-
-        touchPad.IsEnabled
-            .Skip(1)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ShowTouchPadNotification(x))
-            .DisposeWith(disposable);
-
-        powerManagement.IsBoost
-            .Skip(1)
-            .DistinctUntilChanged()
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ShowBoostNotification(x))
-            .DisposeWith(disposable);
-
-        display.IsHighRefreshRate
-            .Skip(1)
-            .DistinctUntilChanged()
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ShowDisplayRefreshRateNotification(x))
-            .DisposeWith(disposable);
-
-        gpu.IsEnabled
-            .Skip(1)
-            .DistinctUntilChanged()
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ShowGpuNotification(x))
-            .DisposeWith(disposable);
-
-        // Keyboard Backlight
-
-        atk.KeyPressed
-            .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => osd.Show(new OsdData(
-                x == AtkKey.BacklightDown ? UIImages.Hardware_KeyboardLightDown : UIImages.Hardware_KeyboardLightUp,
-                keyboard.GetBacklight())))
-            .DisposeWith(disposable);
-
-        // Mic Status
-
-        atk.KeyPressed
-            .Where(x => x == AtkKey.MuteMic)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x =>
-            {
-                if (!config.UserConfig.ShowMicNotification)
-                {
-                    return;
-                }
-
-                try
-                {
-                    var isMuted = audio.IsMicMuted();
-                    osd.Show(new OsdData(
-                        isMuted ? UIImages.Hardware_MicMuted : UIImages.Hardware_Mic,
-                        isMuted ? "Muted" : "On air"));
-                }
-                catch (Exception ex)
-                {
-                    TraceException(ex, "Error is occurred while toggling TouchPad state (Auto).");
-                }
-            })
-            .DisposeWith(disposable);
+        InitNotifications();
 
         // Auto switching
 
@@ -226,63 +134,10 @@ sealed class App : IDisposable
         mainUI = new MainUI(config, systemEvents, commandManager, battery, powerManagement, atk);
         commandManager.Register(new MainUICommand(mainUI));
 
-        trayIcon = new TrayIcon(
-            config,
-            imageSource,
-            commandManager,
-            systemEvents,
-            messageQueue).DisposeWith(disposable);
+        InitNotifyIcon();     
+        commandManager.Register(new NotifyIconMenuCommand(notifyIcon, commandManager, messageQueue, systemEvents));
 
-        // Hotkeys
-
-        hotKeyManager = new HotKeyManager(commandManager);
-        config.UserConfig.PropertyChanged.Subscribe(propertyName =>
-        {
-            switch (propertyName)
-            {
-                case nameof(UserConfig.AuraCommand):
-                    hotKeyManager.Register(AtkKey.Aura, config.UserConfig.AuraCommand);
-                    break;
-
-                case nameof(UserConfig.FanCommand):
-                    hotKeyManager.Register(AtkKey.Fan, config.UserConfig.FanCommand);
-                    break;
-
-                case nameof(UserConfig.RogCommand):
-                    hotKeyManager.Register(AtkKey.Rog, config.UserConfig.RogCommand);
-                    break;
-
-                case nameof(UserConfig.CopyCommand):
-                    hotKeyManager.Register(AtkKey.Copy, config.UserConfig.CopyCommand);
-                    break;
-
-                case nameof(UserConfig.PasteCommand):
-                    hotKeyManager.Register(AtkKey.Paste, config.UserConfig.PasteCommand);
-                    break;
-
-                case "":
-                case null:
-                    RegisterHotKeys();
-                    break;
-            }
-        }).DisposeWith(disposable);
-
-        RegisterHotKeys();
-
-        atk.KeyPressed
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => hotKeyManager.ExecuteCommand(x))
-            .DisposeWith(disposable);
-    }
-
-    private void RegisterHotKeys()
-    {
-        hotKeyManager.Register(AtkKey.Aura, config.UserConfig.AuraCommand);
-        hotKeyManager.Register(AtkKey.Fan, config.UserConfig.FanCommand);
-        hotKeyManager.Register(AtkKey.Rog, config.UserConfig.RogCommand);
-        hotKeyManager.Register(AtkKey.Copy, config.UserConfig.CopyCommand);
-        hotKeyManager.Register(AtkKey.Paste, config.UserConfig.PasteCommand);
+        InitHotKeys();
     }
 
     private void Suspend()
@@ -298,114 +153,7 @@ sealed class App : IDisposable
         }
     }
 
-    private void ShowPerformanceModeNotification(PerformanceMode performanceMode)
-    {
-        if (!config.UserConfig.ShowPerformanceModeNotification)
-        {
-            return;
-        }
-
-        switch (performanceMode)
-        {
-            case PerformanceMode.Default:
-                {
-                    osd.Show(new OsdData(UIImages.Performance_Default, $"{performanceMode.ToText()} performance mode"));
-                    break;
-                }
-
-            case PerformanceMode.Turbo:
-                {
-                    osd.Show(new OsdData(UIImages.Performance_Turbo, $"{performanceMode.ToText()} performance mode"));
-                    break;
-                }
-
-            case PerformanceMode.Silent:
-                {
-                    osd.Show(new OsdData(UIImages.Performance_Silent, $"{performanceMode.ToText()} performance mode"));
-                    break;
-                }
-        }
-    }
-
-    private void ShowPowerModeNotification(PowerMode powerMode)
-    {
-        if (!config.UserConfig.ShowPowerModeNotification)
-        {
-            return;
-        }
-
-        switch (powerMode)
-        {
-            case PowerMode.BestPowerEfficiency:
-                {
-                    osd.Show(new OsdData(UIImages.Power_BestPowerEfficiency, $"{powerMode.ToText()} power mode"));
-                    break;
-                }
-
-            case PowerMode.Balanced:
-                {
-                    osd.Show(new OsdData(UIImages.Power_Balanced, $"{powerMode.ToText()} power mode"));
-                    break;
-                }
-
-            case PowerMode.BestPerformance:
-                {
-                    osd.Show(new OsdData(UIImages.Power_BestPerformance, $"{powerMode.ToText()} power mode"));
-                    break;
-                }
-        }
-    }
-
-    private void ShowPowerSourceNotification(bool isBattery)
-    {
-        if (!config.UserConfig.ShowPowerSourceNotification)
-        {
-            return;
-        }
-
-        osd.Show(new OsdData(isBattery ? UIImages.Hardware_DC : UIImages.Hardware_AC, isBattery ? "On Battery" : "Plugged In"));
-    }
-
-    private void ShowDisplayRefreshRateNotification(bool isEnabled)
-    {
-        if (!config.UserConfig.ShowDisplayRateNotification)
-        {
-            return;
-        }
-
-        osd.Show(new OsdData(UIImages.Hardware_Screen, isEnabled ? "High Refresh Rate" : "Low Refresh Rate"));
-    }
-
-    private void ShowBoostNotification(bool isEnabled)
-    {
-        if (!config.UserConfig.ShowBoostNotification)
-        {
-            return;
-        }
-
-        osd.Show(new OsdData(UIImages.Hardware_Cpu, isEnabled ? "Boost Mode is on" : "Boost Mode is off"));
-    }
-
-    private void ShowTouchPadNotification(bool isEnabled)
-    {
-        if (!config.UserConfig.ShowTouchPadNotification)
-        {
-            return;
-        }
-
-        osd.Show(new OsdData(UIImages.Hardware_TouchPad, isEnabled ? "TouchPad is on" : "TouchPad is off"));
-    }
-
-    private void ShowGpuNotification(bool isEnabled)
-    {
-        if (!config.UserConfig.ShowGpuNotification)
-        {
-            return;
-        }
-
-        osd.Show(new OsdData(UIImages.Hardware_Gpu, isEnabled ? "eGPU is on" : "eGPU is off"));
-    }
-
+ 
     void IDisposable.Dispose()
     {
         disposable?.Dispose();

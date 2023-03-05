@@ -20,7 +20,7 @@ namespace flowOSD.Api;
 
 public interface IMessageQueue
 {
-    IDisposable Subscribe(int messageId, Action<int, IntPtr, IntPtr> proc);
+    IntPtr Handle { get; }
 
-    void Push(ref Message message);
+    IDisposable Subscribe(int messageId, Action<int, IntPtr, IntPtr> proc);
 }
