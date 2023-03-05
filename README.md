@@ -14,7 +14,7 @@ There are no warranties. Use this app at your own risk.
 
 ## About
 
-flowOSD - is an open source application to show OSD messages on [ASUS ROG Flow x13](https://rog.asus.com/laptops/rog-flow/2021-rog-flow-x13-series/) notebooks. For work it requires only ASUS Optimization Service (which is installed with ASUS System Control Interface drivers). I wrote this app to avoid installing MyASUS and Armoury Crate utilites (this is my personal preference).
+flowOSD - is an open source application to control hardware and show OSD messages on [ASUS ROG Flow x13](https://rog.asus.com/laptops/rog-flow/2021-rog-flow-x13-series/) notebooks. For work it requires only ASUS Optimization Service (which is installed with ASUS System Control Interface drivers). I wrote this app to avoid installing MyASUS and Armoury Crate utilites (this is my personal preference).
 
 This app is tested on **GV301QH** model (120Hz WUXGA display). The proper functionality with other modifications are not guaranteed. 
 
