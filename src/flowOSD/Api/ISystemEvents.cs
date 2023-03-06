@@ -26,8 +26,6 @@ public interface ISystemEvents
 
     IObservable<Color> AccentColor { get; }
 
-    IObservable<bool> TabletMode { get; }
-
     IObservable<Screen> PrimaryScreen { get; }
 
     IObservable<int> Dpi { get; }

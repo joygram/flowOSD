@@ -34,14 +34,14 @@ partial class App
     {
         notifyIcon = new NotifyIcon(messageQueue);
 
-        systemEvents.TabletMode
+        atk.TabletMode
             .CombineLatest(
                 systemEvents.SystemDarkMode,
                 systemEvents.Dpi,
-                (isTabletMode, isDarkMode, dpi) => new { isTabletMode, isDarkMode, dpi })
+                (tabletMode, isDarkMode, dpi) => new { tabletMode, isDarkMode, dpi })
             .Throttle(TimeSpan.FromMilliseconds(100))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => UpdateNotifyIcon(x.isTabletMode, x.isDarkMode, x.dpi))
+            .Subscribe(x => UpdateNotifyIcon(x.tabletMode, x.isDarkMode, x.dpi))
             .DisposeWith(disposable);
 
         notifyIcon.MouseButtonAction
@@ -63,9 +63,9 @@ partial class App
         notifyIcon.Show();
     }
 
-    private void UpdateNotifyIcon(bool isTabletMode, bool isDarkMode, int dpi)
+    private void UpdateNotifyIcon(TabletMode tabletMode, bool isDarkMode, int dpi)
     {
-        var iconName = isTabletMode ? "tablet" : "notebook";
+        var iconName = tabletMode == TabletMode.Tablet || tabletMode == TabletMode.Tent ? "tablet" : "notebook";
         if (isDarkMode)
         {
             iconName += "-white";

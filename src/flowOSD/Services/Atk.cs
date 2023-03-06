@@ -36,25 +36,34 @@ sealed partial class Atk : IAtk, IDisposable
     private const int AK_TOUCHPAD = 0x6B;
     private const int AK_ROG = 0x38;
     private const int AK_MUTE_MIC = 0x7C;
-    private const int AK_TABLET_STATE = 0xBD;
     private const int AK_FN_C = 0x9E;
     private const int AK_FN_V = 0x8A;
+    private const int AK_TABLET_STATE = 0xBD;
+    private const int AK_CHARGER = 0x7B;
 
     private const uint IO_CONTROL_CODE = 0x0022240C;
 
     const uint DSTS = 0x53545344;
     const uint DEVS = 0x53564544;
 
-    const uint GPU_ECO_MODE = 0x00090020;
+    const uint DEVID_GPU_ECO_MODE = 0x00090020;
     const uint DEVID_THROTTLE_THERMAL_POLICY = 0x00120075;
+    const uint DEVID_CHARGER = 0x0012006c;
+    const uint DEVID_TABLET = 0x00060077;
 
     public const uint CPU_Fan = 0x00110013;
     public const uint GPU_Fan = 0x00110014;
+
+    const int POWER_SOURCE_BATTERY = 0x00;
+    const int POWER_SOURCE_LOW = 0x22;
+    const int POWER_SOURCE_FULL = 0x2A;
 
     private readonly Dictionary<int, AtkKey> codeToKey;
     private readonly Subject<AtkKey> keyPressedSubject;
     private readonly BehaviorSubject<PerformanceMode> performanceModeSubject;
     private readonly BehaviorSubject<GpuMode> gpuModeSubject;
+    private readonly BehaviorSubject<ChargerType> chargerTypeSubject;
+    private readonly BehaviorSubject<TabletMode> tabletModeSubject;
 
     private IntPtr handle;
 
@@ -91,11 +100,15 @@ sealed partial class Atk : IAtk, IDisposable
 
         keyPressedSubject = new Subject<AtkKey>();
         performanceModeSubject = new BehaviorSubject<PerformanceMode>(performanceMode);
-        gpuModeSubject = new BehaviorSubject<GpuMode>((GpuMode)Get(GPU_ECO_MODE));
+        gpuModeSubject = new BehaviorSubject<GpuMode>((GpuMode)Get(DEVID_GPU_ECO_MODE));
+        chargerTypeSubject = new BehaviorSubject<ChargerType>(GetChargerType());
+        tabletModeSubject = new BehaviorSubject<TabletMode>(GetTabletMode());
 
         KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
         PerformanceMode = performanceModeSubject.AsObservable();
         GpuMode = gpuModeSubject.AsObservable();
+        ChargerType = chargerTypeSubject.AsObservable();
+        TabletMode = tabletModeSubject.AsObservable();
 
         messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
 
@@ -118,6 +131,10 @@ sealed partial class Atk : IAtk, IDisposable
     public IObservable<PerformanceMode> PerformanceMode { get; }
 
     public IObservable<GpuMode> GpuMode { get; }
+
+    public IObservable<ChargerType> ChargerType { get; }
+
+    public IObservable<TabletMode> TabletMode { get; }
 
     public int Get(uint deviceId)
     {
@@ -145,11 +162,11 @@ sealed partial class Atk : IAtk, IDisposable
 
     public void SetGpuMode(GpuMode gpuMode)
     {
-        var currentGpuMode = (GpuMode)Get(GPU_ECO_MODE);
+        var currentGpuMode = (GpuMode)Get(DEVID_GPU_ECO_MODE);
 
         if (currentGpuMode != gpuMode)
         {
-            Set(GPU_ECO_MODE, (uint)gpuMode);
+            Set(DEVID_GPU_ECO_MODE, (uint)gpuMode);
             gpuModeSubject.OnNext(gpuMode);
         }
     }
@@ -175,7 +192,15 @@ sealed partial class Atk : IAtk, IDisposable
         {
             var code = (int)wParam;
 
-            if (codeToKey.ContainsKey(code))
+            if (code == AK_TABLET_STATE)
+            {
+                tabletModeSubject.OnNext(GetTabletMode());
+            }
+            else if (code == AK_CHARGER)
+            {
+                chargerTypeSubject.OnNext(GetChargerType());
+            }
+            else if (codeToKey.ContainsKey(code))
             {
                 keyPressedSubject.OnNext(codeToKey[code]);
             }
@@ -208,6 +233,29 @@ sealed partial class Atk : IAtk, IDisposable
             }
 
             return outBuffer;
+        }
+    }
+
+    private TabletMode GetTabletMode()
+    {
+        return (TabletMode)Get(DEVID_TABLET);
+    }
+
+    private ChargerType GetChargerType()
+    {
+        switch (Get(DEVID_CHARGER))
+        {
+            case POWER_SOURCE_BATTERY:
+                return Api.ChargerType.None;
+
+            case POWER_SOURCE_LOW:
+                return Api.ChargerType.LowPower;
+
+            case POWER_SOURCE_FULL:
+                return Api.ChargerType.FullPower;
+
+            default:
+                throw new NotSupportedException("Charger type isn't supported");
         }
     }
 }

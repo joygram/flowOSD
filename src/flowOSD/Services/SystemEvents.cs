@@ -27,14 +27,11 @@ using static Native;
 
 sealed partial class SystemEvents : ISystemEvents, IDisposable
 {
-    private const int SM_CONVERTIBLESLATEMODE = 0x2003;
-
     private CompositeDisposable disposable = new CompositeDisposable();
 
     private BehaviorSubject<bool> systemDarkModeSubject;
     private BehaviorSubject<bool> appsDarkModeSubject;
     private BehaviorSubject<Color> accentColorSubject;
-    private BehaviorSubject<bool> tabletModeSubject;
     private BehaviorSubject<Screen> primaryScreenSubject;
     private BehaviorSubject<int> dpiSubject;
     private BehaviorSubject<UIParameters> systemUISubject, appUISubject;
@@ -44,7 +41,6 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
         systemDarkModeSubject = new BehaviorSubject<bool>(ShouldSystemUseDarkMode());
         appsDarkModeSubject = new BehaviorSubject<bool>(ShouldAppsUseDarkMode());
         accentColorSubject = new BehaviorSubject<Color>(GetAccentColor());
-        tabletModeSubject = new BehaviorSubject<bool>(GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
 
         primaryScreenSubject = new BehaviorSubject<Screen>(Screen.PrimaryScreen);
         dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(messageQueue.Handle));
@@ -69,7 +65,6 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
         SystemDarkMode = systemDarkModeSubject.AsObservable();
         AppsDarkMode = appsDarkModeSubject.AsObservable();
         AccentColor = accentColorSubject.AsObservable();
-        TabletMode = tabletModeSubject.AsObservable();
         PrimaryScreen = primaryScreenSubject.AsObservable();
         Dpi = dpiSubject.AsObservable();
 
@@ -102,8 +97,6 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
 
     public IObservable<Color> AccentColor { get; }
 
-    public IObservable<bool> TabletMode { get; }
-
     public IObservable<Screen> PrimaryScreen { get; }
 
     public IObservable<int> Dpi { get; }
@@ -123,11 +116,6 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
             systemDarkModeSubject.OnNext(ShouldSystemUseDarkMode());
             appsDarkModeSubject.OnNext(ShouldAppsUseDarkMode());
             accentColorSubject.OnNext(GetAccentColor());
-        }
-
-        if (messageId == WM_WININICHANGE && Marshal.PtrToStringUni(lParam) == "ConvertibleSlateMode")
-        {
-            tabletModeSubject.OnNext(GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
         }
 
         if (messageId == WM_DISPLAYCHANGE)

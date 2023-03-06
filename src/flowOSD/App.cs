@@ -105,10 +105,10 @@ sealed partial class App : IDisposable
             .Subscribe(_ => Resume())
             .DisposeWith(disposable);
 
-        systemEvents.TabletMode
+        atk.TabletMode
             .Throttle(TimeSpan.FromSeconds(2))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => ToggleTouchPadOnTabletMode(x))
+            .Subscribe(ToggleTouchPadOnTabletMode)
             .DisposeWith(disposable);
 
         // Commands
@@ -132,7 +132,7 @@ sealed partial class App : IDisposable
         mainUI = new MainUI(config, systemEvents, commandManager, battery, powerManagement, atk);
         commandManager.Register(new MainUICommand(mainUI));
 
-        InitNotifyIcon();     
+        InitNotifyIcon();
         commandManager.Register(new NotifyIconMenuCommand(notifyIcon, commandManager, messageQueue, systemEvents));
 
         InitHotKeys();
@@ -151,7 +151,7 @@ sealed partial class App : IDisposable
         }
     }
 
- 
+
     void IDisposable.Dispose()
     {
         disposable?.Dispose();
@@ -160,7 +160,7 @@ sealed partial class App : IDisposable
 
     public ApplicationContext ApplicationContext { get; }
 
-    private void ToggleTouchPadOnTabletMode(bool isTabletMode)
+    private void ToggleTouchPadOnTabletMode(TabletMode tabletMode)
     {
         if (!config.UserConfig.DisableTouchPadInTabletMode)
         {
@@ -169,7 +169,7 @@ sealed partial class App : IDisposable
 
         try
         {
-            if (isTabletMode)
+            if (tabletMode == TabletMode.Tablet || tabletMode == TabletMode.Tent)
             {
                 touchPad.Disable();
             }

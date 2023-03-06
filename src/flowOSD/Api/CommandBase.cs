@@ -88,7 +88,7 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
 
     public abstract void Execute(object parameter = null);
 
-    public bool CanExecute(object parameter)
+    public virtual bool CanExecute(object parameter)
     {
         return Enabled;
     }

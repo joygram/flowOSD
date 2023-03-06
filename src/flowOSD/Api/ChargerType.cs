@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -18,23 +18,9 @@
  */
 namespace flowOSD.Api;
 
-public interface IAtk
+public enum ChargerType
 {
-    IObservable<AtkKey> KeyPressed { get; }
-
-    IObservable<PerformanceMode> PerformanceMode { get; }
-
-    IObservable<GpuMode> GpuMode { get; }
-
-    IObservable<ChargerType> ChargerType { get; }
-
-    IObservable<TabletMode> TabletMode { get; }
-
-    int Get(uint deviceId);
-
-    void Set(uint deviceId, uint status);
-
-    void SetPerformanceMode(PerformanceMode performanceMode);
-
-    void SetGpuMode(GpuMode gpuMode);
+    None,
+    LowPower,
+    FullPower,
 }
