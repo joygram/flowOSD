@@ -543,7 +543,8 @@ sealed class MainUI : IDisposable
                 powerModeMenu.BackgroundColor = parameters.MenuBackgroundColor;
                 powerModeMenu.BackgroundHoverColor = parameters.MenuBackgroundHoverColor;
                 powerModeMenu.TextColor = parameters.MenuTextColor;
-                powerModeMenu.TextBrightColor = powerModeMenu.TextBrightColor;
+                powerModeMenu.TextBrightColor = parameters.MenuTextBrightColor;
+                powerModeMenu.TextDisabledColor = parameters.MenuTextDisabledColor;
             }
 
             if (performanceModeMenu != null)
@@ -551,7 +552,8 @@ sealed class MainUI : IDisposable
                 performanceModeMenu.BackgroundColor = parameters.MenuBackgroundColor;
                 performanceModeMenu.BackgroundHoverColor = parameters.MenuBackgroundHoverColor;
                 performanceModeMenu.TextColor = parameters.MenuTextColor;
-                performanceModeMenu.TextBrightColor = powerModeMenu.TextBrightColor;
+                performanceModeMenu.TextBrightColor = parameters.MenuTextBrightColor;
+                performanceModeMenu.TextDisabledColor = parameters.MenuTextDisabledColor;
             }
 
             BackColor = parameters.BackgroundColor;

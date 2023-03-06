@@ -41,6 +41,7 @@ sealed class CxContextMenu : ContextMenuStrip
         SeparatorColor = Color.FromArgb(255, 96, 96, 96);
         TextColor = Color.White;
         TextBrightColor = Color.Black;
+        TextDisabledColor = Color.LightGray;
 
         SetCornerPreference(Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
     }
@@ -116,6 +117,21 @@ sealed class CxContextMenu : ContextMenuStrip
             }
 
             Renderer.TextBrightColor = value;
+            Invalidate();
+        }
+    }
+
+    public Color TextDisabledColor
+    {
+        get => Renderer.TextDisabledColor;
+        set
+        {
+            if (Renderer.TextDisabledColor == value)
+            {
+                return;
+            }
+
+            Renderer.TextDisabledColor = value;
             Invalidate();
         }
     }
@@ -215,7 +231,7 @@ sealed class CxContextMenu : ContextMenuStrip
 
     private class MenuRenderer : ToolStripRenderer, IDisposable
     {
-        private SolidBrush textBrush, textBrightBrush, backgroundHoverBrush;
+        private SolidBrush textBrush, textBrightBrush, textDisabledBrush, backgroundHoverBrush;
         private Pen separatorPen;
 
         private CompositeDisposable disposable;
@@ -238,7 +254,7 @@ sealed class CxContextMenu : ContextMenuStrip
 
         public Color BackgroundHoverColor
         {
-            get => (backgroundHoverBrush?.Color)??Color.Empty;
+            get => (backgroundHoverBrush?.Color) ?? Color.Empty;
             set
             {
                 if (backgroundHoverBrush?.Color == value)
@@ -316,10 +332,30 @@ sealed class CxContextMenu : ContextMenuStrip
             }
         }
 
+        public Color TextDisabledColor
+        {
+            get => (textDisabledBrush?.Color) ?? Color.Empty;
+            set
+            {
+                if (textDisabledBrush?.Color == value)
+                {
+                    return;
+                }
+
+                if (textDisabledBrush != null)
+                {
+                    disposable.Remove(textDisabledBrush);
+                    textDisabledBrush.Dispose();
+                }
+
+                textDisabledBrush = new SolidBrush(value).DisposeWith(disposable);
+            }
+        }
+
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
             e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-            e.Graphics.TextRenderingHint =  TextRenderingHint.AntiAliasGridFit;
+            e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
             if (e.Item is ToolStripMenuItem)
             {
@@ -333,7 +369,7 @@ sealed class CxContextMenu : ContextMenuStrip
                 e.Graphics.DrawString(
                     e.Text,
                     e.TextFont,
-                    backgroundColor.IsBright() ? textBrightBrush : textBrush,
+                    e.Item.Enabled ? (backgroundColor.IsBright() ? textBrightBrush : textBrush) : textDisabledBrush,
                     point);
             }
         }
@@ -357,7 +393,7 @@ sealed class CxContextMenu : ContextMenuStrip
         {
             e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
 
-            if (e.Item.Selected)
+            if (e.Item.Selected && e.Item.Enabled)
             {
                 var x = e.Item.ContentRectangle.X + 4;
                 var y = e.Item.ContentRectangle.Y + 1;

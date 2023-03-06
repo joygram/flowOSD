@@ -55,6 +55,8 @@ public sealed class UIParameters
 
     public Color MenuTextBrightColor { get; private set; }
 
+    public Color MenuTextDisabledColor { get; private set; }
+
     public Color OsdBackgroundColor { get; private set; }
 
     public Color OsdTextColor { get; private set; }
@@ -85,6 +87,7 @@ public sealed class UIParameters
         p.MenuBackgroundHoverColor = p.AccentColor;
         p.MenuTextColor = Color.White;
         p.MenuTextBrightColor = Color.Black;
+        p.MenuTextDisabledColor = Color.FromArgb(255, 171, 171, 171);
 
         p.ButtonBackgroundColor = Color.FromArgb(255, 62, 62, 62);
         p.ButtonTextColor = Color.White;
@@ -103,6 +106,7 @@ public sealed class UIParameters
         p.MenuBackgroundHoverColor = p.AccentColor;
         p.MenuTextColor = Color.White;
         p.MenuTextBrightColor = Color.Black;
+        p.MenuTextDisabledColor = Color.FromArgb(255, 158, 158, 158);
 
         p.ButtonBackgroundColor = Color.FromArgb(255, 251, 251, 251);
         p.ButtonTextColor = Color.White;
