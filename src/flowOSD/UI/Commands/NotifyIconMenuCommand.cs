@@ -83,7 +83,10 @@ sealed class NotifyIconMenuCommand : CommandBase, IDisposable
             return;
         }
 
-        Native.SetForegroundWindow(messageQueue.Handle);
+       if(! Native.SetForegroundWindow(messageQueue.Handle))
+        {
+            return;
+        }
 
         var screen = await systemEvents.PrimaryScreen.FirstAsync();
         var rectangle = notifyIcon.GetIconRectangle();

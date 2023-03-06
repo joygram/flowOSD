@@ -26,13 +26,13 @@ using flowOSD.Api;
 
 sealed class ToggleGpuCommand : CommandBase
 {
-    private IGpu gpu;
+    private IAtk atk;
 
-    public ToggleGpuCommand(IGpu gpu)
+    public ToggleGpuCommand(IAtk atk)
     {
-        this.gpu = gpu;
+        this.atk = atk ?? throw new ArgumentNullException(nameof(atk));
 
-        this.gpu.IsEnabled
+        this.atk.GpuMode
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(Update)
             .DisposeWith(Disposable);
@@ -45,14 +45,15 @@ sealed class ToggleGpuCommand : CommandBase
 
     public async override void Execute(object parameter = null)
     {
-        if (! await Confirm())
+        var isGpuEnabled = await atk.GpuMode.FirstAsync() == GpuMode.dGpu;
+        if (!Confirm(isGpuEnabled))
         {
             return;
         }
 
         try
         {
-            gpu.Toggle();
+            atk.SetGpuMode(isGpuEnabled ? GpuMode.iGpu : GpuMode.dGpu);
         }
         catch (Exception ex)
         {
@@ -60,20 +61,18 @@ sealed class ToggleGpuCommand : CommandBase
         }
     }
 
-    private async Task<bool> Confirm()
+    private static bool Confirm(bool isGpuEnabled)
     {
-        var isEnabled = await gpu.IsEnabled.FirstAsync();
-
         return DialogResult.Yes == MessageBox.Show(
-            isEnabled ? "Do you want to turn off eGPU?" : "Do you want to turn on eGPU?",
+            isGpuEnabled ? "Do you want to turn off eGPU?" : "Do you want to turn on eGPU?",
             "External GPU",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question);
     }
 
-    private void Update(bool isEnabled)
+    private void Update(GpuMode gpuMode)
     {
-        IsChecked = isEnabled;
+        IsChecked = gpuMode == GpuMode.dGpu;
         Text = IsChecked ? "Disable eGPU" : "Enable eGPU";
     }
 }

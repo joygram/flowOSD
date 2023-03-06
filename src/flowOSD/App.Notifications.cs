@@ -80,7 +80,7 @@ partial class App
             .Subscribe(ShowDisplayRefreshRateNotification)
             .DisposeWith(disposable);
 
-        gpu.IsEnabled
+        atk.GpuMode
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
@@ -234,14 +234,14 @@ partial class App
         osd.Show(new OsdData(UIImages.Hardware_TouchPad, isEnabled ? "TouchPad is on" : "TouchPad is off"));
     }
 
-    private void ShowGpuNotification(bool isEnabled)
+    private void ShowGpuNotification(GpuMode gpuMode)
     {
         if (!config.UserConfig.ShowGpuNotification)
         {
             return;
         }
 
-        osd.Show(new OsdData(UIImages.Hardware_Gpu, isEnabled ? "eGPU is on" : "eGPU is off"));
+        osd.Show(new OsdData(UIImages.Hardware_Gpu, gpuMode == GpuMode.dGpu ? "eGPU is on" : "eGPU is off"));
     }
 
 }

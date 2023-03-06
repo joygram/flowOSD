@@ -43,7 +43,6 @@ sealed partial class App : IDisposable
     private IKeyboard keyboard;
     private IOsd osd;
     private IAudio audio;
-    private IGpu gpu;
     private IBattery battery;
 
     private INotifyIcon notifyIcon;
@@ -76,7 +75,6 @@ sealed partial class App : IDisposable
 
         display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
         audio = new Audio();
-        gpu = new Gpu(atk).DisposeWith(disposable);
         battery = new Battery().DisposeWith(disposable);
 
         systemEvents.AppException
@@ -120,7 +118,7 @@ sealed partial class App : IDisposable
             new ToggleRefreshRateCommand(powerManagement, display, config.UserConfig),
             new ToggleTouchPadCommand(touchPad),
             new ToggleBoostCommand(powerManagement),
-            new ToggleGpuCommand(gpu),
+            new ToggleGpuCommand(atk),
             new PerformanceModeCommand(atk),
             new PowerModeCommand(powerManagement),
             new SettingsCommand(config, commandManager),

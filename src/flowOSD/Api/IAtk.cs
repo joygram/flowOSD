@@ -24,9 +24,13 @@ public interface IAtk
 
     IObservable<PerformanceMode> PerformanceMode { get; }
 
+    IObservable<GpuMode> GpuMode { get; }
+
     int Get(uint deviceId);
 
     void Set(uint deviceId, uint status);
 
     void SetPerformanceMode(PerformanceMode performanceMode);
+
+    void SetGpuMode(GpuMode gpuMode);
 }

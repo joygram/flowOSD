@@ -16,15 +16,10 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Services;
+namespace flowOSD.Api;
 
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using flowOSD.Api;
-using static Native;
-
-partial class Gpu
+public enum GpuMode : uint
 {
-    const uint GPU_ECO_MODE = 0x00090020;
+    iGpu = 0,
+    dGpu = 1
 }

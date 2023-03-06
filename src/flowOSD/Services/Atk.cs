@@ -45,6 +45,7 @@ sealed partial class Atk : IAtk, IDisposable
     const uint DSTS = 0x53545344;
     const uint DEVS = 0x53564544;
 
+    const uint GPU_ECO_MODE = 0x00090020;
     const uint DEVID_THROTTLE_THERMAL_POLICY = 0x00120075;
 
     public const uint CPU_Fan = 0x00110013;
@@ -53,6 +54,7 @@ sealed partial class Atk : IAtk, IDisposable
     private readonly Dictionary<int, AtkKey> codeToKey;
     private readonly Subject<AtkKey> keyPressedSubject;
     private readonly BehaviorSubject<PerformanceMode> performanceModeSubject;
+    private readonly BehaviorSubject<GpuMode> gpuModeSubject;
 
     private IntPtr handle;
 
@@ -89,9 +91,11 @@ sealed partial class Atk : IAtk, IDisposable
 
         keyPressedSubject = new Subject<AtkKey>();
         performanceModeSubject = new BehaviorSubject<PerformanceMode>(performanceMode);
+        gpuModeSubject = new BehaviorSubject<GpuMode>((GpuMode)Get(GPU_ECO_MODE));
 
         KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
         PerformanceMode = performanceModeSubject.AsObservable();
+        GpuMode = gpuModeSubject.AsObservable();
 
         messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
 
@@ -109,15 +113,11 @@ sealed partial class Atk : IAtk, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public IObservable<AtkKey> KeyPressed
-    {
-        get;
-    }
+    public IObservable<AtkKey> KeyPressed { get; }
 
-    public IObservable<PerformanceMode> PerformanceMode
-    {
-        get;
-    }
+    public IObservable<PerformanceMode> PerformanceMode { get; }
+
+    public IObservable<GpuMode> GpuMode { get; }
 
     public int Get(uint deviceId)
     {
@@ -141,6 +141,17 @@ sealed partial class Atk : IAtk, IDisposable
         Set(DEVID_THROTTLE_THERMAL_POLICY, (uint)performanceMode);
 
         performanceModeSubject.OnNext(performanceMode);
+    }
+
+    public void SetGpuMode(GpuMode gpuMode)
+    {
+        var currentGpuMode = (GpuMode)Get(GPU_ECO_MODE);
+
+        if (currentGpuMode != gpuMode)
+        {
+            Set(GPU_ECO_MODE, (uint)gpuMode);
+            gpuModeSubject.OnNext(gpuMode);
+        }
     }
 
     private void Dispose(bool disposing)
