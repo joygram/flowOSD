@@ -106,7 +106,8 @@ sealed class MainUI : IDisposable
         form.Top += delta;
 
         const int SW_SHOW = 5;
-        ShowWindow(form.Handle, SW_SHOW);
+        ShowAndActivate(form.Handle);
+      //  ShowWindow(form.Handle, SW_SHOW);
 
         d?.Dispose();
         d = Observable
@@ -119,7 +120,6 @@ sealed class MainUI : IDisposable
 
                 if (form.Opacity == 1)
                 {
-                    form.Activate();
                     d?.Dispose();
                 }
             });

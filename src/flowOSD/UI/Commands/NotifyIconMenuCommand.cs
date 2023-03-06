@@ -24,6 +24,7 @@ using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
 using flowOSD.UI.Components;
+using static Native;
 
 sealed class NotifyIconMenuCommand : CommandBase, IDisposable
 {
@@ -83,10 +84,7 @@ sealed class NotifyIconMenuCommand : CommandBase, IDisposable
             return;
         }
 
-       if(! Native.SetForegroundWindow(messageQueue.Handle))
-        {
-            return;
-        }
+        ShowAndActivate(contextMenu.Handle);
 
         var screen = await systemEvents.PrimaryScreen.FirstAsync();
         var rectangle = notifyIcon.GetIconRectangle();

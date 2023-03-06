@@ -93,17 +93,32 @@ static class Native
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     public static extern UInt32 RegisterWindowMessage(string lpString);
 
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, IntPtr lpdwProcessId);
+
     [DllImport("user32.dll")]
     public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
+    public static extern bool BringWindowToTop(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
     public static extern IntPtr SetActiveWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
+    public static extern bool AttachThreadInput(IntPtr idAttach, IntPtr idAttachTo, bool fAttach);
+
+    [DllImport("user32.dll")]
     public static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetCurrentThreadId();
 
     [DllImport("kernel32.dll")]
     public static extern uint GetLastError();
@@ -119,6 +134,27 @@ static class Native
 
     [DllImport("user32.dll")]
     public static extern int GetDpiForWindow(IntPtr hwnd);
+
+    public static void ShowAndActivate(IntPtr handle)
+    {
+        const int SW_SHOW = 1;
+
+        var currentlyFocusedWindowProcessId = GetWindowThreadProcessId(GetForegroundWindow(), IntPtr.Zero);
+        var appThread = GetWindowThreadProcessId(handle, IntPtr.Zero);
+
+        if (currentlyFocusedWindowProcessId != appThread)
+        {
+            AttachThreadInput(currentlyFocusedWindowProcessId, appThread, true);
+            BringWindowToTop(handle);
+            ShowWindow(handle, SW_SHOW);
+            AttachThreadInput(currentlyFocusedWindowProcessId, appThread, false);
+        }
+        else
+        {
+            BringWindowToTop(handle);
+            ShowWindow(handle, SW_SHOW);
+        }
+    }
 
     public static uint HiWord(IntPtr ptr)
     {
