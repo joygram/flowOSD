@@ -93,9 +93,9 @@ sealed class AboutUI : IDisposable
             }).DisposeWith(disposable)
                 .Add<PictureBox>(0, 0, 1, 3, x =>
                 {
-                    x.Image = Icon
-                        .ExtractAssociatedIcon(Assembly.GetCallingAssembly().Location)
-                        .ToBitmap().DisposeWith(disposable);
+                    //x.Image = Icon
+                    //    .ExtractAssociatedIcon(Assembly.GetCallingAssembly().Location)
+                    //    .ToBitmap().DisposeWith(disposable);
 
                     x.Size = new Size(64, 64);
                     x.Margin = new Padding(20);

@@ -26,6 +26,11 @@ using static Native;
 
 static partial class Extensions
 {
+    public static short Hi(this IntPtr value) => BitConverter.ToInt16(BitConverter.GetBytes(value), 2);
+
+    public static short Low(this IntPtr value) => BitConverter.ToInt16(BitConverter.GetBytes(value), 0);
+
+
     public static T Create<T>(Action<T> initializator) where T : new()
     {
         var obj = Activator.CreateInstance<T>();
@@ -124,6 +129,11 @@ static partial class Extensions
     {
         return messageQueue
             .Subscribe(WM_DPICHANGED, (x, w, l) => SendMessage(control.Handle, WM_DPICHANGED_BEFOREPARENT, w, l));
+    }
+
+    public static int DpiScale(this IntPtr handle, int value)
+    {
+        return (int)Math.Round(value * (GetDpiForWindow(handle) / 96f));
     }
 
     public static int DpiScale(this Control control, int value)

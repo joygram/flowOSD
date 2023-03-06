@@ -24,9 +24,11 @@ sealed class MessageQueue : IMessageQueue, IDisposable
 {
     private Dictionary<int, ICollection<Action<int, IntPtr, IntPtr>>> subscriptions;
     private Filter filter;
+    private NativeWindow nativeWindow;
 
     public MessageQueue()
     {
+        nativeWindow = new NativeUI(this);
         subscriptions = new Dictionary<int, ICollection<Action<int, IntPtr, IntPtr>>>();
 
         filter = new Filter(this);
@@ -38,16 +40,7 @@ sealed class MessageQueue : IMessageQueue, IDisposable
         Application.RemoveMessageFilter(filter);
     }
 
-    public void Push(ref Message message)
-    {
-        if (subscriptions.ContainsKey(message.Msg))
-        {
-            foreach (var proc in subscriptions[message.Msg])
-            {
-                proc(message.Msg, message.WParam, message.LParam);
-            }
-        }
-    }
+    public IntPtr Handle => nativeWindow.Handle;
 
     public IDisposable Subscribe(int messageId, Action<int, IntPtr, IntPtr> proc)
     {
@@ -66,6 +59,17 @@ sealed class MessageQueue : IMessageQueue, IDisposable
         if (subscriptions.ContainsKey(messageId))
         {
             subscriptions[messageId].Remove(proc);
+        }
+    }
+
+    private void Push(ref Message message)
+    {
+        if (subscriptions.ContainsKey(message.Msg))
+        {
+            foreach (var proc in subscriptions[message.Msg])
+            {
+                proc(message.Msg, message.WParam, message.LParam);
+            }
         }
     }
 
@@ -102,6 +106,50 @@ sealed class MessageQueue : IMessageQueue, IDisposable
             queue.Push(ref m);
 
             return false;
+        }
+    }
+
+    private sealed class NativeUI : NativeWindow, IDisposable
+    {
+        private MessageQueue queue;
+
+        private Form form;
+
+        public NativeUI(MessageQueue queue)
+        {
+            this.queue = queue ?? throw new ArgumentNullException(nameof(queue));
+
+            form = new Form();
+            AssignHandle(form.Handle);
+        }
+
+        ~NativeUI()
+        {
+            Dispose(false);
+        }
+
+        void IDisposable.Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            ReleaseHandle();
+
+            if (disposing)
+            {
+                form?.Dispose();
+                form = null;
+            }
+        }
+
+        protected override void WndProc(ref Message message)
+        {
+            queue.Push(ref message);
+
+            base.WndProc(ref message);
         }
     }
 }

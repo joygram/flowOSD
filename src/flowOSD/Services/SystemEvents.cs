@@ -29,10 +29,7 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
 {
     private const int SM_CONVERTIBLESLATEMODE = 0x2003;
 
-
     private CompositeDisposable disposable = new CompositeDisposable();
-
-    private NativeUI nativeUI;
 
     private BehaviorSubject<bool> systemDarkModeSubject;
     private BehaviorSubject<bool> appsDarkModeSubject;
@@ -43,16 +40,14 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
     private BehaviorSubject<UIParameters> systemUISubject, appUISubject;
 
     public SystemEvents(IMessageQueue messageQueue)
-    {
-        nativeUI = new NativeUI(messageQueue).DisposeWith(disposable);
-
+    { 
         systemDarkModeSubject = new BehaviorSubject<bool>(ShouldSystemUseDarkMode());
         appsDarkModeSubject = new BehaviorSubject<bool>(ShouldAppsUseDarkMode());
         accentColorSubject = new BehaviorSubject<Color>(GetAccentColor());
         tabletModeSubject = new BehaviorSubject<bool>(GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
 
         primaryScreenSubject = new BehaviorSubject<Screen>(Screen.PrimaryScreen);
-        dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(nativeUI.Handle));
+        dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(messageQueue.Handle));
 
         systemUISubject = new BehaviorSubject<UIParameters>(
             UIParameters.Create(accentColorSubject.Value, systemDarkModeSubject.Value));
@@ -143,49 +138,6 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
         if (messageId == WM_DPICHANGED)
         {
             dpiSubject.OnNext((int)HiWord(wParam));
-        }
-    }
-
-    private sealed class NativeUI : NativeWindow, IDisposable
-    {
-        private IMessageQueue messageQueue;
-
-        private Form form;
-
-        public NativeUI(IMessageQueue messageQueue)
-        {
-            form = new Form();
-            var handle = form.Handle;
-
-            this.messageQueue = messageQueue;
-
-            AssignHandle(handle);
-        }
-
-        ~NativeUI()
-        {
-            Dispose(false);
-        }
-
-        void IDisposable.Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            form.Dispose();
-            form = null;
-
-            ReleaseHandle();
-        }
-
-        protected override void WndProc(ref Message message)
-        {
-            messageQueue.Push(ref message);
-
-            base.WndProc(ref message);
         }
     }
 }

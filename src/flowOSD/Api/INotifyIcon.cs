@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -18,10 +18,17 @@
  */
 namespace flowOSD.Api;
 
-public static class Images
+public interface INotifyIcon
 {
-    public const string Tablet = "tablet";
-    public const string TabletWhite = "tablet-white";
-    public const string Notebook = "notebook";
-    public const string NotebookWhite = "notebook-white";
+    string Text { get; set; }
+
+    Icon Icon { get; set; }
+
+    IObservable<MouseButtonAction> MouseButtonAction { get; }
+
+    Rectangle GetIconRectangle();
+
+    void Show();
+
+    void Hide();
 }
