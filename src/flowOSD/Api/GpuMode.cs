@@ -20,6 +20,6 @@ namespace flowOSD.Api;
 
 public enum GpuMode : uint
 {
-    iGpu = 0,
-    dGpu = 1
+    dGpu = 0,
+    iGpu = 1
 }
