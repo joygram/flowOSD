@@ -153,7 +153,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         {
             cbSize = Marshal.SizeOf<NOTIFYICONDATA>(),
             uID = 1,
-            uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
+            uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID,
             dwState = 0x0,
             hIcon = Icon?.Handler ?? IntPtr.Zero,
             hWnd = messageQueue.Handle,

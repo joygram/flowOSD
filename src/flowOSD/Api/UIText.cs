@@ -24,7 +24,7 @@ public static class UIText
 
     public static string MainUI_HighRefreshRate => "High Refesh Rate";
 
-    public static string MainUI_Gpu => "eGPU";
+    public static string MainUI_Gpu => "dGPU";
 
     public static string MainUI_TouchPad => "Touchpad";
 

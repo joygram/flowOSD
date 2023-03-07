@@ -158,8 +158,8 @@ sealed class MainUI : IDisposable
 
         private ToolTip toolTip;
 
-        private CxButton boostButton, refreshRateButton, eGpuButton, touchPadButton, performanceModeButton, powerModeButton;
-        private CxLabel boostLabel, refreshRateLabel, eGpuLabel, touchPadLabel, batteryLabel, performanceModeLabel, powerModeLabel;
+        private CxButton boostButton, refreshRateButton, dGpuButton, touchPadButton, performanceModeButton, powerModeButton;
+        private CxLabel boostLabel, refreshRateLabel, dGpuLabel, touchPadLabel, batteryLabel, performanceModeLabel, powerModeLabel;
         private CxContextMenu performanceModeMenu, powerModeMenu;
         private ICommand performanceMenuItemCommand;
 
@@ -268,7 +268,7 @@ sealed class MainUI : IDisposable
                     command: owner.commandManager.Resolve<ToggleRefreshRateCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
-                eGpuButton = CreateButton(
+                dGpuButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_Gpu,
                     command: owner.commandManager.Resolve<ToggleGpuCommand>())
@@ -333,14 +333,14 @@ sealed class MainUI : IDisposable
                 x.Add(1, 0, performanceModeButton);
                 x.Add(2, 0, powerModeButton);
                 x.Add(0, 2, refreshRateButton);
-                x.Add(1, 2, eGpuButton);
+                x.Add(1, 2, dGpuButton);
                 x.Add(2, 2, touchPadButton);
 
                 var textFont = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel).DisposeWith(disposable);
 
                 boostLabel = CreateLabel(textFont, UIText.MainUI_CpuBoost).To(ref labelList).DisposeWith(disposable);
                 refreshRateLabel = CreateLabel(textFont, UIText.MainUI_HighRefreshRate).To(ref labelList).DisposeWith(disposable);
-                eGpuLabel = CreateLabel(textFont, UIText.MainUI_Gpu).To(ref labelList).DisposeWith(disposable);
+                dGpuLabel = CreateLabel(textFont, UIText.MainUI_Gpu).To(ref labelList).DisposeWith(disposable);
                 touchPadLabel = CreateLabel(textFont, UIText.MainUI_TouchPad).To(ref labelList).DisposeWith(disposable);
                 performanceModeLabel = CreateLabel(textFont, "<performance mode>").To(ref labelList).DisposeWith(disposable);
                 powerModeLabel = CreateLabel(textFont, "<power mode>").To(ref labelList).DisposeWith(disposable);
@@ -349,7 +349,7 @@ sealed class MainUI : IDisposable
                 x.Add(1, 1, performanceModeLabel);
                 x.Add(2, 1, powerModeLabel);
                 x.Add(0, 3, refreshRateLabel);
-                x.Add(1, 3, eGpuLabel);
+                x.Add(1, 3, dGpuLabel);
                 x.Add(2, 3, touchPadLabel);
 
             });

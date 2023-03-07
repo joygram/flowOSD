@@ -70,8 +70,8 @@ internal class NotificationsConfigPage : TableLayoutPanel
             "Indicates whether notification shows when microphone state changes.",
             nameof(UserConfig.ShowMicNotification));
         AddConfig(
-            "Show eGPU notifications",
-            "Indicates whether notification shows when eGPU is disabled or enabled.",
+            "Show dGPU notifications",
+            "Indicates whether notification shows when dGPU is disabled or enabled.",
             nameof(UserConfig.ShowGpuNotification));
 
         // workaround:

@@ -37,7 +37,7 @@ sealed class ToggleGpuCommand : CommandBase
             .Subscribe(Update)
             .DisposeWith(Disposable);
 
-        Description = "Toggle eGPU";
+        Description = "Toggle dGPU";
         Enabled = true;
     }
 
@@ -64,8 +64,8 @@ sealed class ToggleGpuCommand : CommandBase
     private static bool Confirm(bool isGpuEnabled)
     {
         return DialogResult.Yes == MessageBox.Show(
-            isGpuEnabled ? "Do you want to turn off eGPU?" : "Do you want to turn on eGPU?",
-            "External GPU",
+            isGpuEnabled ? "Do you want to turn off dGPU?" : "Do you want to turn on dGPU?",
+            "Discrete GPU",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question);
     }
@@ -73,6 +73,6 @@ sealed class ToggleGpuCommand : CommandBase
     private void Update(GpuMode gpuMode)
     {
         IsChecked = gpuMode == GpuMode.dGpu;
-        Text = IsChecked ? "Disable eGPU" : "Enable eGPU";
+        Text = IsChecked ? "Disable dGPU" : "Enable dGPU";
     }
 }

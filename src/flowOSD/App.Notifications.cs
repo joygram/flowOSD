@@ -241,7 +241,7 @@ partial class App
             return;
         }
 
-        osd.Show(new OsdData(UIImages.Hardware_Gpu, gpuMode == GpuMode.dGpu ? "eGPU is on" : "eGPU is off"));
+        osd.Show(new OsdData(UIImages.Hardware_Gpu, gpuMode == GpuMode.dGpu ? "dGPU is on" : "dGPU is off"));
     }
 
 }
