@@ -58,6 +58,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         mouseButtonAction = new Subject<MouseButtonAction>();
         MouseButtonAction = mouseButtonAction.AsObservable();
 
+        messageQueue.Subscribe(WM_TASKBARCREATED, ProcessMessage).DisposeWith(disposable);
         messageQueue.Subscribe(MessageId, ProcessMessage).DisposeWith(disposable);
     }
 
@@ -166,6 +167,11 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
 
     private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
     {
+        if (messageId == WM_TASKBARCREATED)
+        {
+            Show();
+        }
+
         if (messageId != MessageId)
         {
             return;

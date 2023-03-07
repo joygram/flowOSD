@@ -28,6 +28,8 @@ using static Native;
 
 partial class NotifyIcon
 {
+    private readonly static int WM_TASKBARCREATED = (int)RegisterWindowMessage("TaskbarCreated");
+
     private const uint NIF_MESSAGE = 0x00000001;
     private const uint NIF_ICON = 0x00000002;
     private const uint NIF_TIP = 0x00000004;
@@ -51,7 +53,6 @@ partial class NotifyIcon
     private const int NIN_SELECT = 0x400;
     private const int NIN_POPUPOPEN = 0x406;
     private const int NIN_POPUPCLOSE = 0x407;
-
 
     [DllImport("shell32.dll", CallingConvention = CallingConvention.StdCall, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
