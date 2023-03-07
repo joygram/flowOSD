@@ -106,9 +106,10 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
     public Rectangle GetIconRectangle()
     {
         var notifyIcon = new NOTIFYICONIDENTIFIER();
-        notifyIcon.cbSize = (uint)Marshal.SizeOf(notifyIcon.GetType());
+        notifyIcon.cbSize = (uint)Marshal.SizeOf<NOTIFYICONIDENTIFIER>();
         notifyIcon.hWnd = messageQueue.Handle;
         notifyIcon.uID = 1;
+        notifyIcon.guidItem = IconGuid;
 
         if (Shell_NotifyIconGetRect(ref notifyIcon, out RECT rect) != S_OK)
         {
