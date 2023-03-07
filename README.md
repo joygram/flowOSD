@@ -24,7 +24,7 @@ flowOSD shows the following OSDs:
 * CPU Boost is disabled/enabled
 * Performance Mode Override (Turbo/Silent)
 * System Power Mode
-* eGPU is disabled/enabled
+* Discrete GPU is disabled/enabled
 * Power source is changed (AC/DC)
 * Microphone state (muted/on air)
 
