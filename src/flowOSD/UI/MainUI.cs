@@ -107,7 +107,7 @@ sealed class MainUI : IDisposable
 
         const int SW_SHOW = 5;
         ShowAndActivate(form.Handle);
-      //  ShowWindow(form.Handle, SW_SHOW);
+        //  ShowWindow(form.Handle, SW_SHOW);
 
         d?.Dispose();
         d = Observable
@@ -564,14 +564,20 @@ sealed class MainUI : IDisposable
 
         private void UpdateBattery(int rate, uint capacity, BatteryPowerState powerState, uint estimatedTime)
         {
+            var isEmptyRate = Math.Abs(rate) < 100;
+
             batteryLabel.Icon = GetBatteryIcon(capacity, powerState);
-            batteryLabel.Text = Math.Abs(rate) < 0.1 ? "" : $"{rate / 1000f:N1} W";
+            batteryLabel.Text = isEmptyRate ? "" : $"{rate / 1000f:N1} W";
 
             var time = TimeSpan.FromSeconds(estimatedTime);
             var builder = new StringBuilder();
             builder.Append($"{capacity * 100f / owner.battery.FullChargedCapacity:N0}%");
 
-            if ((powerState & BatteryPowerState.Discharging) == BatteryPowerState.Discharging)
+            if (isEmptyRate)
+            {
+                builder.Append("");
+            }
+            else if ((powerState & BatteryPowerState.Discharging) == BatteryPowerState.Discharging)
             {
                 builder.Append(" remaining");
             }
@@ -585,7 +591,7 @@ sealed class MainUI : IDisposable
                 builder.Append(" (plugged in)");
             }
 
-            if ((powerState & BatteryPowerState.Discharging) == BatteryPowerState.Discharging && time.TotalMinutes > 1)
+            if (!isEmptyRate && (powerState & BatteryPowerState.Discharging) == BatteryPowerState.Discharging && time.TotalMinutes > 1)
             {
                 builder.AppendLine();
 
