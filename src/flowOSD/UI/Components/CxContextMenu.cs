@@ -395,9 +395,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
             if (e.Item.Selected && e.Item.Enabled)
             {
-                var x = e.Item.ContentRectangle.X + 4;
+                const int offset =8;
+
+                var x = e.Item.ContentRectangle.X + offset;
                 var y = e.Item.ContentRectangle.Y + 1;
-                var width = e.Item.ContentRectangle.Width - 8;
+                var width = e.Item.ContentRectangle.Width - offset*2;
                 var height = e.Item.ContentRectangle.Height - 2;
 
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;

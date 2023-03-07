@@ -11,13 +11,12 @@
 		<Copyright>© 2021-2023, Albert Akhmetov</Copyright>
 		<Authors>Albert Akhmetov</Authors>
 		<Product>flowOSD</Product>
-		<Version>2.0.0-Preview4</Version>
+		<Version>2.0.0</Version>
 		<Platforms>x64</Platforms>
 		<PackageIcon></PackageIcon>
 		<PackageIconUrl />
 		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
-		<Description>Utility that provides the ability to show OSD for ASUS notebooks events (like keyboard backlight changing, touchpad state and so on).</Description>
-		<PackageReleaseNotes>This is an experimental release.</PackageReleaseNotes>
+		<Description>flowOSD is an open-source application to control hardware and show OSD messages on ASUS ROG Flow x13 notebooks.</Description>
 	</PropertyGroup>
 	
 	<PropertyGroup>
