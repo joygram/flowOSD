@@ -30,6 +30,8 @@ flowOSD shows the following OSDs:
 * Power source is changed (AC/DC)
 * Microphone state (muted/on air)
 
+Also shows the current charge (discharge) rate of the battery. All of these are optional and can be configurable (except keyboard backlight - its indicator always is shown when backlight changes).
+
 Dark and Light system themes are supported.
 
 Dark theme:
@@ -44,6 +46,14 @@ https://user-images.githubusercontent.com/5954460/222946634-7955ae3b-84de-47c9-b
 
 <br/>
 
+flowOSD allows you to control the following parameters:
+
+* Processor Boost Mode
+* Performance Mode Override (Turbo/Silent)
+* System Power Mode (Best Power Efficiency, Balanced, Best Performance)
+* Display Refresh Rate (these parameters are set depending on the power source - AC / DC)
+* Discrete GPU (you can turn it off to save battery life)
+
 In addition, flowOSD provides customizable shortcuts for the following keys:
 
 * Fn+F4 (AURA)
@@ -52,15 +62,7 @@ In addition, flowOSD provides customizable shortcuts for the following keys:
 * Fn+C
 * Fn+V
 
-flowOSD shows the current charge (discharge) rate of the battery. Also it allows you to control the following parameters:
-
-* Processor Boost Mode
-* Performance Mode Override (Turbo/Silent)
-* System Power Mode (Best Power Efficiency, Balanced, Best Performance)
-* Display Refresh Rate (these parameters are set depending on the power source - AC / DC)
-* Discrete GPU (you can turn it off to save battery life)
-
-Also flowOSD disables the touchpad when the laptop becomes a tablet.
+Also flowOSD disables the touchpad when the laptop becomes a tablet (is configurable).
 
 **Note:**
 
