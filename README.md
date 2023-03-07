@@ -1,6 +1,6 @@
 # flowOSD 2
 
-Preview 3 is available! See [releases page](https://github.com/albertakhmetov/flowOSD/releases) for downloads.
+**Preview 4** is available! See [releases page](https://github.com/albertakhmetov/flowOSD/releases) for downloads.
 
 *This preview version supports only Windows 11 22H2. Please, for Windows 10 and the previous release of Windows 11 use flowOSD 1.x*
 
@@ -58,7 +58,7 @@ flowOSD shows the current charge (discharge) rate of the battery. Also it allows
 * Performance Mode Override (Turbo/Silent)
 * System Power Mode (Best Power Efficiency, Balanced, Best Performance)
 * Display Refresh Rate (these parameters are set depending on the power source - AC / DC)
-* eGPU (you can turn it off to save battery life)
+* Discrete GPU (you can turn it off to save battery life)
 
 Also flowOSD disables the touchpad when the laptop becomes a tablet.
 
