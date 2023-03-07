@@ -1,8 +1,6 @@
 # flowOSD 2
 
-**Preview 4** is available! See [releases page](https://github.com/albertakhmetov/flowOSD/releases) for downloads.
-
-*This preview version supports only Windows 11 22H2. Please, for Windows 10 and the previous release of Windows 11 use flowOSD 1.x*
+*This version supports only Windows 11 22H2. Please, for Windows 10 and the previous release of Windows 11 use flowOSD 1.x*
 
 <img width="256" alt="Preview3-volume" src="https://user-images.githubusercontent.com/5954460/222946809-2a7b5abe-9834-4a63-9588-a8e04d135a05.png">
 
