@@ -22,120 +22,32 @@ using flowOSD.Api;
 using System.Reactive.Disposables;
 using static Extensions;
 
-internal class GeneralConfigPage : TableLayoutPanel
+internal class GeneralConfigPage : ConfigPageBase
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
-
     public GeneralConfigPage(IConfig config)
+        : base(config)
     {
-        Dock = DockStyle.Top;
-        AutoScroll = false;
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
-
         Text = "General";
 
-        ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        AddConfig(
+            "Run at logon",
+            "Indicates whether the app starts when a user is logged on.",
+            nameof(UserConfig.RunAtStartup));
 
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
+        AddConfig(
+            "Disable TouchPad in tablet mode",
+            "Indicates whether TouchPad is disabled when the notebook goes into the tablet mode.",
+            nameof(UserConfig.DisableTouchPadInTabletMode));
 
-        var checkBoxMargin = new Padding(20, 5, 0, 5);
-        var labelMargin = new Padding(15, 5, 0, 15);
+        AddConfig(
+            "Control display refresh rate",
+            "Indicates whether display refresh rate is dependent on the power source.",
+            nameof(UserConfig.ControlDisplayRefreshRate));
 
-        this.Add<CheckBox>(0, 0, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = checkBoxMargin;
-            y.Text = "Run at logon";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.RunAtStartup),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
+        AddConfig(
+            "Confirm GPU change",
+            "Indicates whether confirmation is required for GPU change.",
+            nameof(UserConfig.ConfirmGpuModeChange));
 
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 1, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = labelMargin;
-            y.Text = "Indicates whether the app starts when a user is logged on.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<CheckBox>(0, 2, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = new Padding(20, 5, 0, 5);
-            y.Text = "Disable TouchPad in tablet mode";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.DisableTouchPadInTabletMode),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 3, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = new Padding(15, 5, 0, 15);
-            y.Text = "Indicates whether TouchPad is disabled when the notebook goes into the tablet mode.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<CheckBox>(0, 4, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = new Padding(20, 5, 0, 5);
-            y.Text = "Control display refresh rate";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                nameof(UserConfig.ControlDisplayRefreshRate),
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<Label>(0, 5, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = new Padding(15, 5, 0, 15);
-            y.Text = "Indicates whether display refresh rate is dependent on the power source.";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
-        });
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        disposable?.Dispose();
-        disposable = null;
-
-        base.Dispose(disposing);
     }
 }

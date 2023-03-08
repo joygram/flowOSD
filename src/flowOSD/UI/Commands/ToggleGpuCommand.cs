@@ -27,10 +27,12 @@ using flowOSD.Api;
 sealed class ToggleGpuCommand : CommandBase
 {
     private IAtk atk;
+    private IConfig config;
 
-    public ToggleGpuCommand(IAtk atk)
+    public ToggleGpuCommand(IAtk atk, IConfig config)
     {
         this.atk = atk ?? throw new ArgumentNullException(nameof(atk));
+        this.config = config ?? throw new ArgumentNullException(nameof(config));
 
         this.atk.GpuMode
             .ObserveOn(SynchronizationContext.Current)
@@ -61,9 +63,9 @@ sealed class ToggleGpuCommand : CommandBase
         }
     }
 
-    private static bool Confirm(bool isGpuEnabled)
+    private bool Confirm(bool isGpuEnabled)
     {
-        return DialogResult.Yes == MessageBox.Show(
+        return !config.UserConfig.ConfirmGpuModeChange || DialogResult.Yes == MessageBox.Show(
             isGpuEnabled ? "Do you want to turn off dGPU?" : "Do you want to turn on dGPU?",
             "Discrete GPU",
             MessageBoxButtons.YesNo,

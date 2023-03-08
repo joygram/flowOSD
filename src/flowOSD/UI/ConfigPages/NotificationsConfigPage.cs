@@ -21,25 +21,12 @@ namespace flowOSD.UI.ConfigPages;
 using flowOSD.Api;
 using System.Reactive.Disposables;
 
-internal class NotificationsConfigPage : TableLayoutPanel
+internal class NotificationsConfigPage : ConfigPageBase
 {
-    private readonly Padding CheckBoxMargin = new Padding(20, 5, 0, 5);
-    private readonly Padding LabelMargin = new Padding(15, 5, 0, 15);
-
-    private CompositeDisposable disposable = new CompositeDisposable();
-    private IConfig config;
-
     public NotificationsConfigPage(IConfig config)
+        :base(config)
     {
-        Dock = DockStyle.Top;
-        AutoScroll = false;
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
-
-        this.config = config;
-
         Text = "Notifications";
-        ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         AddConfig(
             "Show power source notifications",
@@ -79,52 +66,12 @@ internal class NotificationsConfigPage : TableLayoutPanel
         this.Add<Label>(0, RowStyles.Count - 1, y =>
         {
             y.AutoSize = true;
-            y.Margin = LabelMargin;
+            y.Margin = ConfigPageBase.LabelMargin;
             y.Text = "";
             y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
             y.ForeColor = SystemColors.ControlDarkDark;
 
-            y.DisposeWith(disposable);
-        });
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        disposable?.Dispose();
-        disposable = null;
-
-        base.Dispose(disposing);
-    }
-
-    private void AddConfig(string text, string description, string propertyName)
-    {
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        this.Add<CheckBox>(0, RowStyles.Count - 1, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = CheckBoxMargin;
-            y.Text = text;
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                config.UserConfig,
-                propertyName,
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
-
-            y.DisposeWith(disposable);
-        });
-
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        this.Add<Label>(0, RowStyles.Count - 1, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = LabelMargin;
-            y.Text = description;
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(disposable);
+            y.DisposeWith(Disposable);
         });
     }
 }

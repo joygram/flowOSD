@@ -118,7 +118,7 @@ sealed partial class App : IDisposable
             new ToggleRefreshRateCommand(powerManagement, display, config.UserConfig),
             new ToggleTouchPadCommand(touchPad),
             new ToggleBoostCommand(powerManagement),
-            new ToggleGpuCommand(atk),
+            new ToggleGpuCommand(atk, config),
             new PerformanceModeCommand(atk),
             new PowerModeCommand(powerManagement),
             new SettingsCommand(config, commandManager),
