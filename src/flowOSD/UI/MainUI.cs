@@ -181,16 +181,6 @@ sealed class MainUI : IDisposable
 
             InitComponents();
 
-            owner.battery.Rate
-                .CombineLatest(
-                    owner.battery.Capacity,
-                    owner.battery.PowerState,
-                    owner.battery.EstimatedTime,
-                    (rate, capacity, powerState, estimatedTime) => new { rate, capacity, powerState, estimatedTime })
-                .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState, x.estimatedTime))
-                .DisposeWith(disposable);
-
             owner.config.UserConfig.PropertyChanged
                 .Where(propertyName => propertyName == nameof(UserConfig.ShowBatteryChargeRate))
                 .ObserveOn(SynchronizationContext.Current)
@@ -431,15 +421,15 @@ sealed class MainUI : IDisposable
         {
             if (owner.config.UserConfig.ShowBatteryChargeRate)
             {
-                batteryUpdate = Observable.Interval(TimeSpan.FromSeconds(1))
-                .ObserveOn(SynchronizationContext.Current)
-                .Subscribe(_ =>
-                {
-                    if (owner.config.UserConfig.ShowBatteryChargeRate)
-                    {
-                        owner.battery.Update();
-                    }
-                });
+                batteryUpdate = owner.battery.Rate
+                    .CombineLatest(
+                        owner.battery.Capacity,
+                        owner.battery.PowerState,
+                        owner.battery.EstimatedTime,
+                        (rate, capacity, powerState, estimatedTime) => new { rate, capacity, powerState, estimatedTime })
+                    .ObserveOn(SynchronizationContext.Current)
+                    .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState, x.estimatedTime))
+                    .DisposeWith(disposable);
             }
 
             base.OnActivated(e);

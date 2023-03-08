@@ -29,13 +29,17 @@ using static Native;
 
 sealed partial class Battery : IDisposable, IBattery
 {
+    private CompositeDisposable disposable = new CompositeDisposable();
+
     private SafeFileHandle batteryHandle;
     private uint batteryTag;
 
-    private BehaviorSubject<int> rateSubject;
-    private BehaviorSubject<uint> capacitySubject;
-    private BehaviorSubject<uint> estimatedTimeSubject;
-    private BehaviorSubject<BatteryPowerState> powerStateSubject;
+    private CountableSubject<int> rateSubject;
+    private CountableSubject<uint> capacitySubject;
+    private CountableSubject<uint> estimatedTimeSubject;
+    private CountableSubject<BatteryPowerState> powerStateSubject;
+
+    private IDisposable updateSubscription;
 
     public Battery()
     {
@@ -46,19 +50,42 @@ sealed partial class Battery : IDisposable, IBattery
 
         var batteryStatus = GetBatteryStatus(batteryHandle, batteryTag);
 
-        rateSubject = new BehaviorSubject<int>(batteryStatus.Rate);
-        capacitySubject = new BehaviorSubject<uint>(batteryStatus.Capacity);
-        estimatedTimeSubject = new BehaviorSubject<uint>(GetEstimatedTime(batteryHandle, batteryTag));
-        powerStateSubject = new BehaviorSubject<BatteryPowerState>((BatteryPowerState)batteryStatus.PowerState);
+        rateSubject = new CountableSubject<int>(batteryStatus.Rate).DisposeWith(disposable);
+        capacitySubject = new CountableSubject<uint>(batteryStatus.Capacity).DisposeWith(disposable);
+        estimatedTimeSubject = new CountableSubject<uint>(GetEstimatedTime(batteryHandle, batteryTag)).DisposeWith(disposable);
+        powerStateSubject = new CountableSubject<BatteryPowerState>((BatteryPowerState)batteryStatus.PowerState).DisposeWith(disposable);
 
         Rate = rateSubject.AsObservable();
         Capacity = capacitySubject.AsObservable();
         EstimatedTime = estimatedTimeSubject.AsObservable();
-        PowerState = powerStateSubject.AsObservable();
+        PowerState = powerStateSubject.AsObservable();               
+
+        rateSubject.Count
+            .CombineLatest(capacitySubject.Count, estimatedTimeSubject.Count, powerStateSubject.Count, (x1, x2, x3, x4) => x1 + x2 + x3 + x4)
+            .Subscribe(sum =>
+            {
+                if (sum == 0 && updateSubscription != null)
+                {
+                    updateSubscription.Dispose();
+                    updateSubscription = null;
+                }
+
+                if (sum > 0 && updateSubscription == null)
+                {
+                    updateSubscription = Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(_ => Update());
+                }
+            })
+            .DisposeWith(disposable);
     }
 
     void IDisposable.Dispose()
     {
+        updateSubscription?.Dispose();
+        updateSubscription = null;
+
+        disposable?.Dispose();
+        disposable = null;
+
         if (batteryHandle != null)
         {
             batteryHandle.Dispose();
