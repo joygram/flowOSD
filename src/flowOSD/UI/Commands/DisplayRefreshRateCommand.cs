@@ -24,25 +24,26 @@ using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
 
-sealed class ToggleRefreshRateCommand : CommandBase
+sealed class DisplayRefreshRateCommand : CommandBase
 {
     private IPowerManagement powerManagement;
     private IDisplay display;
     private UserConfig userConfig;
 
-    public ToggleRefreshRateCommand(IPowerManagement powerManagement, IDisplay display, UserConfig userConfig)
+    public DisplayRefreshRateCommand(IPowerManagement powerManagement, IDisplay display, UserConfig userConfig)
     {
         this.powerManagement = powerManagement ?? throw new ArgumentNullException(nameof(powerManagement));
         this.display = display ?? throw new ArgumentNullException(nameof(display));
         this.userConfig = userConfig ?? throw new ArgumentNullException(nameof(userConfig));
 
-        display.IsHighRefreshRateSupported
+        display.RefreshRates
+            .CombineLatest(display.IsEnabled, (x, isEnabled) => isEnabled && x.IsLowAvailable && x.IsHighAvailable)
             .Throttle(TimeSpan.FromMilliseconds(200))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => Enabled = x)
             .DisposeWith(Disposable);
 
-        display.IsHighRefreshRate
+        display.RefreshRate
             .Throttle(TimeSpan.FromMilliseconds(200))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(Update)
@@ -52,24 +53,40 @@ sealed class ToggleRefreshRateCommand : CommandBase
         Enabled = true;
     }
 
-    public override string Name => nameof(ToggleRefreshRateCommand);
+    public override string Name => nameof(DisplayRefreshRateCommand);
 
     public override async void Execute(object parameter = null)
     {
         try
         {
-            var isHighRefreshRate = await display.IsHighRefreshRate.FirstAsync();
-
-            if (await powerManagement.IsDC.FirstAsync())
+            if (parameter is uint refreshRate == false)
             {
-                userConfig.HighDisplayRefreshRateDC = !isHighRefreshRate;
-            }
-            else
-            {
-                userConfig.HighDisplayRefreshRateAC = !isHighRefreshRate;
+                refreshRate = await display.RefreshRate.FirstAsync();
             }
 
-            display.ToggleRefreshRate();
+            if (refreshRate == 0)
+            {
+                return;
+            }
+
+            var refreshRates = await display.RefreshRates.FirstAsync();
+            var newRefreshRate = DisplayRefreshRates.IsHigh(refreshRate) ? refreshRates.Low : refreshRates.High;
+            if (newRefreshRate.HasValue)
+            {
+                if (!display.SetRefreshRate(newRefreshRate.Value))
+                {
+                    return;
+                }
+
+                if (await powerManagement.IsDC.FirstAsync())
+                {
+                    userConfig.HighDisplayRefreshRateDC = !DisplayRefreshRates.IsHigh(newRefreshRate.Value);
+                }
+                else
+                {
+                    userConfig.HighDisplayRefreshRateAC = !DisplayRefreshRates.IsHigh(newRefreshRate.Value);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -78,9 +95,9 @@ sealed class ToggleRefreshRateCommand : CommandBase
         }
     }
 
-    private void Update(bool isEnabled)
+    private void Update(uint refreshRate)
     {
-        IsChecked = isEnabled;
+        IsChecked = DisplayRefreshRates.IsHigh(refreshRate);
         Text = IsChecked ? "Disable High Refresh Rate" : "Enable High Refresh Rate";
     }
 }

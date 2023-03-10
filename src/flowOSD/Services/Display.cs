@@ -26,39 +26,48 @@ using System.Runtime.InteropServices;
 using flowOSD.Api;
 using static Native;
 using static Extensions;
+using System.Management;
 
 sealed partial class Display : IDisposable, IDisplay
 {
-    public const int WM_DISPLAYCHANGE = 0x007E;
-
     private CompositeDisposable disposable = new CompositeDisposable();
 
     private IPowerManagement powerManagement;
     private IConfig config;
 
-    private RefreshRates refreshRates;
-    private BehaviorSubject<bool> isHighRefreshRateSupportedSubject;
-    private BehaviorSubject<bool> isHighRefreshRateSubject;
+    private BehaviorSubject<bool> isEnabledSubject;
+    private BehaviorSubject<DisplayRefreshRates> refreshRatesSubject;
+    private BehaviorSubject<uint> refreshRateSubject;
 
     public Display(IMessageQueue messageQueue, IPowerManagement powerManagement, IConfig config)
     {
         this.powerManagement = powerManagement;
         this.config = config;
 
-        refreshRates = GetSupportedRefreshRates();
+        var shortDeviceName = GetInternalDisplayShortDeviceName();
+        if (shortDeviceName == null)
+        {
+            isEnabledSubject = new BehaviorSubject<bool>(false);
+            refreshRatesSubject = new BehaviorSubject<DisplayRefreshRates>(DisplayRefreshRates.Empty);
+            refreshRateSubject = new BehaviorSubject<uint>(0);
+        }
+        else
+        {
+            refreshRatesSubject = new BehaviorSubject<DisplayRefreshRates>(GetRefreshRates(shortDeviceName));
+            isEnabledSubject = new BehaviorSubject<bool>(!refreshRatesSubject.Value.IsEmpty);
+            refreshRateSubject = new BehaviorSubject<uint>(GetRefreshRate(shortDeviceName));
+        }
 
-        isHighRefreshRateSupportedSubject = new BehaviorSubject<bool>(refreshRates?.IsHighSupported == true);
-        isHighRefreshRateSubject = new BehaviorSubject<bool>(refreshRates != null && GetRefreshRate() == refreshRates.High);
-
-        IsHighRefreshRateSupported = isHighRefreshRateSupportedSubject.AsObservable();
-        IsHighRefreshRate = isHighRefreshRateSubject.AsObservable();
+        IsEnabled = isEnabledSubject.AsObservable();
+        RefreshRates = refreshRatesSubject.AsObservable();
+        RefreshRate = refreshRateSubject.AsObservable();
 
         messageQueue.Subscribe(WM_DISPLAYCHANGE, ProcessMessage).DisposeWith(disposable);
 
         this.powerManagement.IsDC
             .Throttle(TimeSpan.FromSeconds(2))
             .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(x => OnPowerSourceChanged(x))
+            .Subscribe(OnPowerSourceChanged)
             .DisposeWith(disposable);
     }
 
@@ -68,41 +77,29 @@ sealed partial class Display : IDisposable, IDisplay
         disposable = null;
     }
 
-    public IObservable<bool> IsHighRefreshRateSupported { get; }
+    public IObservable<bool> IsEnabled { get; }
 
-    public IObservable<bool> IsHighRefreshRate { get; }
+    public IObservable<DisplayRefreshRates> RefreshRates { get; }
 
-    public void ToggleRefreshRate()
+    public IObservable<uint> RefreshRate { get; }
+
+    public bool SetRefreshRate(uint value)
     {
-        if (!isHighRefreshRateSubject.Value)
+        var shortDeviceName = GetInternalDisplayShortDeviceName();
+        if (shortDeviceName == null)
         {
-            EnableHighRefreshRate();
+            return false;
         }
         else
         {
-            DisableHighRefreshRate();
-        }
-    }
-
-    public void EnableHighRefreshRate()
-    {
-        if (isHighRefreshRateSupportedSubject.Value && !isHighRefreshRateSubject.Value)
-        {
-            SetRefreshRate(refreshRates.High);
-        }
-    }
-
-    public void DisableHighRefreshRate()
-    {
-        if (isHighRefreshRateSupportedSubject.Value && isHighRefreshRateSubject.Value)
-        {
-            SetRefreshRate(refreshRates.Default);
+            SetRefreshRate(shortDeviceName, value);
+            return true;
         }
     }
 
     private void OnPowerSourceChanged(bool isDC)
     {
-        if (!config.UserConfig.ControlDisplayRefreshRate || !isHighRefreshRateSupportedSubject.Value)
+        if (!config.UserConfig.ControlDisplayRefreshRate)
         {
             return;
         }
@@ -113,13 +110,10 @@ sealed partial class Display : IDisposable, IDisplay
                 ? config.UserConfig.HighDisplayRefreshRateDC
                 : config.UserConfig.HighDisplayRefreshRateAC;
 
-            if (isHighRefreshRate)
+            var refreshRate = isHighRefreshRate ? refreshRatesSubject.Value.High : refreshRatesSubject.Value.Low;
+            if (refreshRate.HasValue)
             {
-                EnableHighRefreshRate();
-            }
-            else
-            {
-                DisableHighRefreshRate();
+                SetRefreshRate(refreshRate.Value);
             }
         }
         catch (Exception ex)
@@ -132,23 +126,33 @@ sealed partial class Display : IDisposable, IDisplay
     {
         if (messageId == WM_DISPLAYCHANGE)
         {
-            refreshRates = GetSupportedRefreshRates();
-
-            isHighRefreshRateSupportedSubject.OnNext(refreshRates?.IsHighSupported == true);
-
-            var isHighRefreshRate = refreshRates != null && GetRefreshRate() == refreshRates.High;
-            isHighRefreshRateSubject.OnNext(isHighRefreshRate);
+            UpdateRefreshRates();
         }
     }
 
-    private uint GetRefreshRate()
+    private void UpdateRefreshRates()
     {
-        const int ENUM_CURRENT_SETTINGS = -1;
+        var shortDeviceName = GetInternalDisplayShortDeviceName();
+        if (shortDeviceName == null)
+        {
+            isEnabledSubject.OnNext(false);
+            refreshRatesSubject.OnNext(DisplayRefreshRates.Empty);
+            refreshRateSubject.OnNext(0);
+        }
+        else
+        {
+            refreshRatesSubject.OnNext(GetRefreshRates(shortDeviceName));
+            isEnabledSubject.OnNext(!refreshRatesSubject.Value.IsEmpty);
+            refreshRateSubject.OnNext(GetRefreshRate(shortDeviceName));
+        }
+    }
 
-        var deviceName = GetLaptopDisplayAdapterDeviceName();
+    private uint GetRefreshRate(string shortDeviceName)
+    {
+        var deviceName = GetDeviceName(shortDeviceName);
         if (string.IsNullOrEmpty(deviceName))
         {
-            throw new ApplicationException("Can't find laptop display device.");
+            return 0;
         }
 
         var mode = new DEVMODE();
@@ -156,67 +160,59 @@ sealed partial class Display : IDisposable, IDisplay
 
         if (!EnumDisplaySettings(deviceName, ENUM_CURRENT_SETTINGS, ref mode))
         {
-            throw new Win32Exception((int)GetLastError());
+            throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
         return mode.dmDisplayFrequency;
     }
 
-    private void SetRefreshRate(uint refreshRate)
+    private bool SetRefreshRate(string shortDeviceName, uint value)
     {
-        //Indicates that the function succeeded.
-        const int DISP_CHANGE_SUCCESSFUL = 0;
-        //The graphics mode is not supported.
-        const int DISP_CHANGE_BADMODE = -2;
-        //The computer must be restarted for the graphics mode to work.
-        const int DISP_CHANGE_RESTART = 1;
+        var refreshRates = refreshRatesSubject.Value;
 
-        const int DM_DISPLAYFREQUENCY = 0x400000;
-        const int CDS_UPDATEREGISTRY = 0x1;
-
-        if (refreshRates == null)
+        if (refreshRates.IsEmpty)
         {
-            throw new ApplicationException("Chaning refresh rate isn't supported.");
+            return false;
         }
 
-        if (!refreshRates.Supports(refreshRate))
+        if (refreshRates.High != value && refreshRates.Low != value)
         {
-            throw new ApplicationException($"Selected refresh rate ({refreshRate}) isn't supported.");
+            throw new ApplicationException($"Selected refresh rate ({value}) isn't supported.");
         }
 
-        var deviceName = GetLaptopDisplayAdapterDeviceName();
+        var deviceName = GetDeviceName(shortDeviceName);
         if (string.IsNullOrEmpty(deviceName))
         {
-            throw new ApplicationException("Can't find laptop display device.");
+            return false;
         }
 
         var mode = new DEVMODE();
         mode.dmSize = (ushort)Marshal.SizeOf(mode);
-        mode.dmDisplayFrequency = refreshRate;
+        mode.dmDisplayFrequency = value;
         mode.dmFields = DM_DISPLAYFREQUENCY;
 
         var result = ChangeDisplaySettingsEx(deviceName, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
         switch (result)
         {
-            case DISP_CHANGE_SUCCESSFUL:
-                return;
+            case DISP_CHANGE_SUCCESSFUL:                
+                return true;
 
             case DISP_CHANGE_RESTART:
                 throw new ApplicationException($"Restart is required.");
 
             case DISP_CHANGE_BADMODE:
-                throw new ApplicationException($"Selected refresh rate ({refreshRate}) isn't supported.");
+                throw new ApplicationException($"Selected refresh rate ({value}) isn't supported.");
 
             default:
                 throw new ApplicationException($"Can't change display refresh rate. Error code: {result}.");
         }
     }
 
-    private RefreshRates GetSupportedRefreshRates()
+    private DisplayRefreshRates GetRefreshRates(string shortDeviceName)
     {
         var rates = new HashSet<uint>();
 
-        var deviceName = GetLaptopDisplayAdapterDeviceName();
+        var deviceName = GetDeviceName(shortDeviceName);
         if (!string.IsNullOrEmpty(deviceName))
         {
             var mode = new DEVMODE();
@@ -230,13 +226,11 @@ sealed partial class Display : IDisposable, IDisplay
             }
         }
 
-        return rates.Count == 0 ? null : new RefreshRates(rates);
+        return new DisplayRefreshRates(rates);
     }
 
-    private string GetLaptopDisplayAdapterDeviceName()
+    private string GetDeviceName(string shortDeviceName)
     {
-        const int DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x1;
-
         var displayAdapter = new DISPLAY_DEVICE();
         displayAdapter.cb = Marshal.SizeOf<DISPLAY_DEVICE>();
 
@@ -250,7 +244,9 @@ sealed partial class Display : IDisposable, IDisplay
             while (EnumDisplayDevices(displayAdapter.DeviceName, displayMonitorNumber, ref displayMonitor, 1))
             {
                 var isAttached = (displayMonitor.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) == DISPLAY_DEVICE_ATTACHED_TO_DESKTOP;
-                if (isAttached && displayMonitor.DeviceID?.Contains("SHP151E") == true)
+                var isMirroring = (displayMonitor.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER) == DISPLAY_DEVICE_MIRRORING_DRIVER;
+
+                if (isAttached && !isMirroring && displayMonitor.DeviceID?.Contains(shortDeviceName) == true)
                 {
                     return displayAdapter.DeviceName;
                 }
@@ -264,22 +260,29 @@ sealed partial class Display : IDisposable, IDisplay
         return null;
     }
 
-    private sealed class RefreshRates
+    private string GetInternalDisplayShortDeviceName()
     {
-        public RefreshRates(ICollection<uint> values)
-        {
-            Default = values.Min();
-            High = values.Max();
+        string[] name = null;
 
-            IsHighSupported = High > 100 && values.Count > 1;
+        var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorConnectionParams");
+        foreach (var i in searcher.Get())
+        {
+            if (i.Properties["VideoOutputTechnology"].Value is uint videoOutputTechnology
+                && (videoOutputTechnology & D3DKMDT_VOT_INTERNAL) == D3DKMDT_VOT_INTERNAL)
+            {
+                name = ((i.Properties["InstanceName"].Value as string) ?? string.Empty).Split('\\');
+                break;
+            }
         }
 
-        public uint Default { get; }
-
-        public uint High { get; }
-
-        public bool IsHighSupported { get; }
-
-        public bool Supports(uint value) => value == Default || value == High;
+        if (name != null && name.Length > 1 && name[0] == "DISPLAY")
+        {
+            return $"{name[0]}#{name[1]}";
+        }
+        else
+        {
+            return null;
+        }
     }
+
 }

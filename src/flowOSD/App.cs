@@ -115,7 +115,7 @@ sealed partial class App : IDisposable
 
         commandManager = new CommandManager();
         commandManager.Register(
-            new ToggleRefreshRateCommand(powerManagement, display, config.UserConfig),
+            new DisplayRefreshRateCommand(powerManagement, display, config.UserConfig),
             new ToggleTouchPadCommand(touchPad),
             new ToggleBoostCommand(powerManagement),
             new ToggleGpuCommand(atk, config),

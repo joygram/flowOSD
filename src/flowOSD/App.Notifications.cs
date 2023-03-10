@@ -72,7 +72,10 @@ partial class App
             .Subscribe(ShowBoostNotification)
             .DisposeWith(disposable);
 
-        display.IsHighRefreshRate
+        display.RefreshRate
+            .CombineLatest(display.IsEnabled, (refreshRate, isEnabled) => new { refreshRate, isEnabled })
+            .Where(x => x.isEnabled)
+            .Select(x => x.refreshRate)
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
@@ -204,14 +207,14 @@ partial class App
         osd.Show(new OsdData(isBattery ? UIImages.Hardware_DC : UIImages.Hardware_AC, isBattery ? "On Battery" : "Plugged In"));
     }
 
-    private void ShowDisplayRefreshRateNotification(bool isEnabled)
+    private void ShowDisplayRefreshRateNotification(uint refreshRate)
     {
         if (!config.UserConfig.ShowDisplayRateNotification)
         {
             return;
         }
 
-        osd.Show(new OsdData(UIImages.Hardware_Screen, isEnabled ? "High Refresh Rate" : "Low Refresh Rate"));
+        osd.Show(new OsdData(UIImages.Hardware_Screen, DisplayRefreshRates.IsHigh(refreshRate) ? "High Refresh Rate" : "Low Refresh Rate"));
     }
 
     private void ShowBoostNotification(bool isEnabled)

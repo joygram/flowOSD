@@ -255,7 +255,7 @@ sealed class MainUI : IDisposable
                 refreshRateButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_Screen,
-                    command: owner.commandManager.Resolve<ToggleRefreshRateCommand>())
+                    command: owner.commandManager.Resolve<DisplayRefreshRateCommand>())
                 .To(ref buttonList).DisposeWith(disposable);
 
                 dGpuButton = CreateButton(

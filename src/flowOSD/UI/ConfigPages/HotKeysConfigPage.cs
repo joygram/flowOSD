@@ -92,7 +92,7 @@ internal class HotKeysConfigPage : TableLayoutPanel
                 y.Margin = new Padding(5, 0, 0, 0);
                 y.Click += (sender, e) =>
                 {
-                    config.UserConfig.AuraCommand = nameof(ToggleRefreshRateCommand);
+                    config.UserConfig.AuraCommand = nameof(DisplayRefreshRateCommand);
                     config.UserConfig.FanCommand = nameof(ToggleBoostCommand);
                     config.UserConfig.RogCommand = nameof(PrintScreenCommand);
                     config.UserConfig.CopyCommand = null;

@@ -22,25 +22,46 @@ using System.Runtime.InteropServices;
 
 partial class Display
 {
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private const uint D3DKMDT_VOT_INTERNAL = 0x80000000;
+    private const int ENUM_CURRENT_SETTINGS = -1;
+    private const int WM_DISPLAYCHANGE = 0x007E;
+
+    //Indicates that the function succeeded.
+    private const int DISP_CHANGE_SUCCESSFUL = 0;
+
+    //The graphics mode is not supported.
+    private const int DISP_CHANGE_BADMODE = -2;
+
+    //The computer must be restarted for the graphics mode to work.
+    private const int DISP_CHANGE_RESTART = 1;
+
+    private const int DM_DISPLAYFREQUENCY = 0x400000;
+    private const int CDS_UPDATEREGISTRY = 0x1;
+
+
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     static extern bool EnumDisplayDevices(
-        string lpDevice, 
-        uint iDevNum, 
+        string lpDevice,
+        uint iDevNum,
         ref DISPLAY_DEVICE lpDisplayDevice,
         uint dwFlags);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     static extern bool EnumDisplaySettings(
         string lpszDeviceName,
         int iModeNum,
         ref DEVMODE lpDevMode);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     static extern int ChangeDisplaySettingsEx(
-        string lpszDeviceName, 
-        ref DEVMODE lpDevMode, 
-        IntPtr hwnd, 
-        int dwFlags, 
+        string lpszDeviceName,
+        ref DEVMODE lpDevMode,
+        IntPtr hwnd,
+        int dwFlags,
         IntPtr lParam);
 
 
@@ -52,16 +73,16 @@ partial class Display
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCHDEVICENAME)]
         public string dmDeviceName;
-        public UInt16 dmSpecVersion;
-        public UInt16 dmDriverVersion;
-        public UInt16 dmSize;
-        public UInt16 dmDriverExtra;
-        public UInt32 dmFields;
+        public ushort dmSpecVersion;
+        public ushort dmDriverVersion;
+        public ushort dmSize;
+        public ushort dmDriverExtra;
+        public uint dmFields;
 
         public int dmPositionX;
         public int dmPositionY;
-        public UInt32 dmDisplayOrientation;
-        public UInt32 dmDisplayFixedOutput;
+        public uint dmDisplayOrientation;
+        public uint dmDisplayFixedOutput;
 
         public short dmColor;
         public short dmDuplex;
@@ -71,24 +92,33 @@ partial class Display
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCHFORMNAME)]
         public string dmFormName;
-        public UInt16 dmLogPixels;
-        public UInt32 dmBitsPerPel;
-        public UInt32 dmPelsWidth;
-        public UInt32 dmPelsHeight;
-        public UInt32 dmDisplayFlags;
-        public UInt32 dmDisplayFrequency;
-        public UInt32 dmICMMethod;
-        public UInt32 dmICMIntent;
-        public UInt32 dmMediaType;
-        public UInt32 dmDitherType;
-        public UInt32 dmReserved1;
-        public UInt32 dmReserved2;
-        public UInt32 dmPanningWidth;
-        public UInt32 dmPanningHeight;
+        public ushort dmLogPixels;
+        public uint dmBitsPerPel;
+        public uint dmPelsWidth;
+        public uint dmPelsHeight;
+        public uint dmDisplayFlags;
+        public uint dmDisplayFrequency;
+        public uint dmICMMethod;
+        public uint dmICMIntent;
+        public uint dmMediaType;
+        public uint dmDitherType;
+        public uint dmReserved1;
+        public uint dmReserved2;
+        public uint dmPanningWidth;
+        public uint dmPanningHeight;
     }
 
+    private const int DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x01;
+    private const int DISPLAY_DEVICE_PRIMARY_DEVICE = 0x04;
+    private const int DISPLAY_DEVICE_MIRRORING_DRIVER = 0x08;
+    private const int DISPLAY_DEVICE_VGA_COMPATIBLE = 0x10;
+    private const int DISPLAY_DEVICE_REMOVABLE = 0x20;
+    private const int DISPLAY_DEVICE_DISCONNECTED = 0x2000000;
+    private const int DISPLAY_DEVICE_REMOTE = 0x4000000;
+    private const int DISPLAY_DEVICE_MODESPRUNED = 0x8000000;
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct DISPLAY_DEVICE
+    private struct DISPLAY_DEVICE
     {
         public int cb;
 
@@ -97,7 +127,7 @@ partial class Display
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
         public string DeviceString;
-       
+
         public int StateFlags;
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]

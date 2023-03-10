@@ -20,10 +20,11 @@ namespace flowOSD.Api;
 
 public interface IDisplay
 {
-    IObservable<bool> IsHighRefreshRate { get; }
-    IObservable<bool> IsHighRefreshRateSupported { get; }
+    IObservable<bool> IsEnabled { get; }
 
-    void DisableHighRefreshRate();
-    void EnableHighRefreshRate();
-    void ToggleRefreshRate();
+    IObservable<DisplayRefreshRates> RefreshRates { get; }
+
+    IObservable<uint> RefreshRate { get; }
+
+    bool SetRefreshRate(uint value);
 }
