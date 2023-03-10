@@ -44,6 +44,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool showGpuNotification;
 
     private bool showBatteryChargeRate;
+    private bool showCpuTemperature;
 
     private string auraCommand, fanCommand, rogCommand, copyCommand, pasteCommand;
 
@@ -70,6 +71,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         showGpuNotification = true;
 
         showBatteryChargeRate = true;
+        showCpuTemperature = true;
 
         performanceModeOverride = PerformanceMode.Silent;
         performanceModeOverrideEnabled = false;
@@ -204,6 +206,12 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => showBatteryChargeRate;
         set => SetProperty(ref showBatteryChargeRate, value);
+    }
+
+    public bool ShowCpuTemperature
+    {
+        get => showCpuTemperature;
+        set => SetProperty(ref showCpuTemperature, value);
     }
 
     public string AuraCommand

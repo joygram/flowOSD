@@ -32,5 +32,10 @@ internal class MonitoringConfigPage : ConfigPageBase
             "Show battery charge rate",
             "Indicates whether battery charge rate is shown.",
             nameof(UserConfig.ShowBatteryChargeRate));
+
+        AddConfig(
+            "Show CPU temperature",
+            "Indicates whether CPU temperature is shown.",
+            nameof(UserConfig.ShowCpuTemperature));
     }
 }

@@ -19,6 +19,7 @@
 namespace flowOSD.Services;
 
 using System.ComponentModel;
+using System.Management;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -65,10 +66,14 @@ sealed partial class Atk : IAtk, IDisposable
     private readonly BehaviorSubject<ChargerType> chargerTypeSubject;
     private readonly BehaviorSubject<TabletMode> tabletModeSubject;
 
+    private readonly CountableSubject<uint> cpuTemperatureSubject;
+
     private IntPtr handle;
 
     private CompositeDisposable disposable = new CompositeDisposable();
     private readonly object ControlLocker = new object();
+
+    private IDisposable updateSubscription;
 
     public Atk(PerformanceMode performanceMode, IMessageQueue messageQueue)
     {
@@ -104,11 +109,30 @@ sealed partial class Atk : IAtk, IDisposable
         chargerTypeSubject = new BehaviorSubject<ChargerType>(GetChargerType());
         tabletModeSubject = new BehaviorSubject<TabletMode>(GetTabletMode());
 
+        cpuTemperatureSubject = new CountableSubject<uint>(GetCpuTemperature());
+
         KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
         PerformanceMode = performanceModeSubject.AsObservable();
         GpuMode = gpuModeSubject.AsObservable();
         ChargerType = chargerTypeSubject.AsObservable();
         TabletMode = tabletModeSubject.AsObservable();
+        CpuTemperature = cpuTemperatureSubject.AsObservable();
+
+        cpuTemperatureSubject.Count
+            .Subscribe(sum =>
+            {
+                if (sum == 0 && updateSubscription != null)
+                {
+                    updateSubscription.Dispose();
+                    updateSubscription = null;
+                }
+
+                if (sum > 0 && updateSubscription == null)
+                {
+                    updateSubscription = Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(_ => UpdateCpuTemperature());
+                }
+            })
+            .DisposeWith(disposable);
 
         messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
 
@@ -135,6 +159,8 @@ sealed partial class Atk : IAtk, IDisposable
     public IObservable<ChargerType> ChargerType { get; }
 
     public IObservable<TabletMode> TabletMode { get; }
+
+    public IObservable<uint> CpuTemperature { get; }
 
     public int Get(uint deviceId)
     {
@@ -257,5 +283,24 @@ sealed partial class Atk : IAtk, IDisposable
             default:
                 throw new NotSupportedException("Charger type isn't supported");
         }
+    }
+
+    private void UpdateCpuTemperature()
+    {
+        cpuTemperatureSubject.OnNext(GetCpuTemperature());
+    }
+
+    private uint GetCpuTemperature()
+    {
+        var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PerfFormattedData_Counters_ThermalZoneInformation");
+        foreach (ManagementObject obj in searcher.Get())
+        {
+            if (obj["Temperature"] is uint temperature)
+            {
+                return temperature - 273;
+            }
+        }
+
+        return 0;
     }
 }

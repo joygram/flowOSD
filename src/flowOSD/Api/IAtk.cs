@@ -30,6 +30,8 @@ public interface IAtk
 
     IObservable<TabletMode> TabletMode { get; }
 
+    IObservable<uint> CpuTemperature { get; }
+
     int Get(uint deviceId);
 
     void Set(uint deviceId, uint status);

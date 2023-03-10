@@ -148,7 +148,7 @@ sealed class MainUI : IDisposable
     {
         private CompositeDisposable disposable = new CompositeDisposable();
 
-        private IDisposable batteryUpdate;
+        private IDisposable batteryUpdate, cpuTemperatureUpdate;
 
         private CxTabListener tabListener = new CxTabListener();
         private IList<CxButton> buttonList = new List<CxButton>();
@@ -159,9 +159,11 @@ sealed class MainUI : IDisposable
         private ToolTip toolTip;
 
         private CxButton boostButton, refreshRateButton, dGpuButton, touchPadButton, performanceModeButton, powerModeButton;
-        private CxLabel boostLabel, refreshRateLabel, dGpuLabel, touchPadLabel, batteryLabel, performanceModeLabel, powerModeLabel;
+        private CxLabel boostLabel, refreshRateLabel, dGpuLabel, touchPadLabel, performanceModeLabel, powerModeLabel;
         private CxContextMenu performanceModeMenu, powerModeMenu;
         private ICommand performanceMenuItemCommand;
+
+        private CxLabel batteryLabel, cpuTemperatureLabel;
 
         public Window(MainUI owner)
         {
@@ -185,6 +187,12 @@ sealed class MainUI : IDisposable
                 .Where(propertyName => propertyName == nameof(UserConfig.ShowBatteryChargeRate))
                 .ObserveOn(SynchronizationContext.Current)
                 .Subscribe(_ => UpdateBatteryVisiblity())
+                .DisposeWith(disposable);
+
+            owner.config.UserConfig.PropertyChanged
+                .Where(propertyName => propertyName == nameof(UserConfig.ShowCpuTemperature))
+                .ObserveOn(SynchronizationContext.Current)
+                .Subscribe(_ => UpdateCpuTemperatureVisiblity())
                 .DisposeWith(disposable);
 
             owner.config.UserConfig.PropertyChanged
@@ -352,6 +360,8 @@ sealed class MainUI : IDisposable
                 x.AutoSize = true;
                 x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
+                x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
                 x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
                 x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
@@ -361,7 +371,7 @@ sealed class MainUI : IDisposable
                 {
                     label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
                     label.TextAlign = ContentAlignment.MiddleLeft;
-                    label.Size = this.DpiScale(new Size(80, 40));
+                    label.Size = this.DpiScale(new Size(60, 40));
                     label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
                     label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel).DisposeWith(disposable);
 
@@ -370,7 +380,21 @@ sealed class MainUI : IDisposable
                     label.DisposeWith(disposable);
                 });
 
-                x.Add<CxButton>(1, 0, button =>
+                x.Add<CxLabel>(1, 0, label =>
+                {
+                    label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
+                    label.TextAlign = ContentAlignment.MiddleLeft;
+                    label.Size = this.DpiScale(new Size(60, 40));
+                    label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
+                    label.Icon = UIImages.Temperature;
+                    label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel).DisposeWith(disposable);
+
+                    label.To(ref labelList);
+                    label.LinkAs(ref cpuTemperatureLabel);
+                    label.DisposeWith(disposable);
+                });
+
+                x.Add<CxButton>(3, 0, button =>
                 {
                     button.Margin = this.DpiScale(new Padding(3));
 
@@ -428,8 +452,14 @@ sealed class MainUI : IDisposable
                         owner.battery.EstimatedTime,
                         (rate, capacity, powerState, estimatedTime) => new { rate, capacity, powerState, estimatedTime })
                     .ObserveOn(SynchronizationContext.Current)
-                    .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState, x.estimatedTime))
-                    .DisposeWith(disposable);
+                    .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState, x.estimatedTime));
+            }
+
+            if (owner.config.UserConfig.ShowCpuTemperature)
+            {
+                cpuTemperatureUpdate = owner.atk.CpuTemperature
+                      .ObserveOn(SynchronizationContext.Current)
+                      .Subscribe(UpdateCpuTemperature);
             }
 
             base.OnActivated(e);
@@ -439,6 +469,9 @@ sealed class MainUI : IDisposable
         {
             batteryUpdate?.Dispose();
             batteryUpdate = null;
+
+            cpuTemperatureUpdate?.Dispose();
+            cpuTemperatureUpdate = null;
 
             LastHide = DateTime.Now;
 
@@ -611,6 +644,20 @@ sealed class MainUI : IDisposable
             if (batteryLabel != null)
             {
                 batteryLabel.Visible = owner.config.UserConfig.ShowBatteryChargeRate;
+            }
+        }
+
+        private void UpdateCpuTemperature(uint value)
+        {
+            cpuTemperatureLabel.Visible = value > 0 && owner.config.UserConfig.ShowCpuTemperature;
+            cpuTemperatureLabel.Text = value == 0 ? string.Empty : $"{value} °C";
+        }
+
+        private void UpdateCpuTemperatureVisiblity()
+        {
+            if (cpuTemperatureLabel != null)
+            {
+                cpuTemperatureLabel.Visible = owner.config.UserConfig.ShowCpuTemperature;
             }
         }
 
