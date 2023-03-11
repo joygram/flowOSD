@@ -24,7 +24,6 @@ partial class Display
 {
     private const uint D3DKMDT_VOT_INTERNAL = 0x80000000;
     private const int ENUM_CURRENT_SETTINGS = -1;
-    private const int WM_DISPLAYCHANGE = 0x007E;
 
     //Indicates that the function succeeded.
     private const int DISP_CHANGE_SUCCESSFUL = 0;
@@ -37,8 +36,6 @@ partial class Display
 
     private const int DM_DISPLAYFREQUENCY = 0x400000;
     private const int CDS_UPDATEREGISTRY = 0x1;
-
-
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -63,7 +60,6 @@ partial class Display
         IntPtr hwnd,
         int dwFlags,
         IntPtr lParam);
-
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Auto)]
     internal struct DEVMODE

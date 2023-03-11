@@ -102,7 +102,7 @@ sealed class NotifyIconMenuCommand : CommandBase, IDisposable
         {
             contextMenu.Show(
                 rectangle.Left + (rectangle.Width - contextMenu.Width) / 2,
-                screen.Bounds.Bottom - messageQueue.Handle.DpiScale(10) - contextMenu.Height);
+                screen.WorkingArea.Bottom - messageQueue.Handle.DpiScale(10) - contextMenu.Height);
         }
     }
 
