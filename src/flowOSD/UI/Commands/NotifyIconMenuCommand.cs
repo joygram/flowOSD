@@ -109,7 +109,7 @@ sealed class NotifyIconMenuCommand : CommandBase, IDisposable
     private void InitContextMenu()
     {
         contextMenu = new CxContextMenu();
-        contextMenu.Font = new Font(UIParameters.FontName, 20, GraphicsUnit.Pixel);
+        contextMenu.Font = new Font(UIParameters.FontName, 10, GraphicsUnit.Point);
 
         contextMenu
             .AddMenuItem(commandManager.Resolve<MainUICommand>())

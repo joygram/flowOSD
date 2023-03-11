@@ -296,6 +296,7 @@ sealed class MainUI : IDisposable
                 });
 
                 performanceModeMenu = new CxContextMenu();
+                performanceModeMenu.Font = new Font(UIParameters.FontName, this.DpiScale(13), GraphicsUnit.Pixel);
                 performanceModeMenu.AddMenuItem(
                     PerformanceMode.Silent.ToText(),
                     performanceMenuItemCommand,
@@ -313,6 +314,7 @@ sealed class MainUI : IDisposable
                 powerModeButton.IsToggle = false;
 
                 powerModeMenu = new CxContextMenu();
+                powerModeMenu.Font = new Font(UIParameters.FontName, this.DpiScale(13), GraphicsUnit.Pixel);
                 powerModeMenu.AddMenuItem(
                     PowerMode.BestPowerEfficiency.ToText(),
                     owner.commandManager.Resolve<PowerModeCommand>(),
@@ -371,7 +373,6 @@ sealed class MainUI : IDisposable
                 {
                     label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
                     label.TextAlign = ContentAlignment.MiddleLeft;
-                    label.Size = this.DpiScale(new Size(60, 40));
                     label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable);
                     label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel).DisposeWith(disposable);
 
@@ -591,6 +592,16 @@ sealed class MainUI : IDisposable
 
             batteryLabel.Icon = GetBatteryIcon(capacity, powerState);
             batteryLabel.Text = isEmptyRate ? "" : $"{rate / 1000f:N1} W";
+
+            if (string.IsNullOrEmpty(batteryLabel.Text))
+            {
+                batteryLabel.Size = this.DpiScale(new Size(15, 40));
+            }
+            else
+            {
+                batteryLabel.Size = this.DpiScale(new Size(55, 40));
+            }
+
 
             var time = TimeSpan.FromSeconds(estimatedTime);
             var builder = new StringBuilder();
