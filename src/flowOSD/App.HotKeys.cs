@@ -66,7 +66,7 @@ partial class App
 
         RegisterHotKeys();
 
-        atk.KeyPressed
+        keyboard.KeyPressed
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(hotKeyManager.ExecuteCommand)

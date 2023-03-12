@@ -93,7 +93,7 @@ partial class App
 
         // Keyboard Backlight
 
-        atk.KeyPressed
+        keyboard.KeyPressed
             .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
@@ -102,8 +102,8 @@ partial class App
 
         // Mic Status
 
-        atk.KeyPressed
-            .Where(x => x == AtkKey.MuteMic)
+        keyboard.KeyPressed
+            .Where(x => x == AtkKey.Mic)
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => ShowMicNotification())

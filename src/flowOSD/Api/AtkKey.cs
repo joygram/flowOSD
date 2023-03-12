@@ -18,15 +18,19 @@
  */
 namespace flowOSD.Api;
 
-public enum AtkKey
+public enum AtkKey : byte
 {
-    BacklightDown,
-    BacklightUp,
-    Aura,
-    Fan,
-    Rog,
-    TouchPad,
-    MuteMic,
-    Copy,
-    Paste
+    Rog = 0x38,
+    Mic = 0x7c,
+    BacklightDown = 0xc5,
+    BacklightUp = 0xc4,
+    Aura = 0xb3,
+    Fan = 0xae,
+    BrightnessDown = 0x10,
+    BrightnewssUp = 0x20,
+    TouchPad = 0x6b,
+    Sleep = 0x6c,
+    Wireless = 0x88,
+    Copy = 0x9e,
+    Paste = 0x8a
 }

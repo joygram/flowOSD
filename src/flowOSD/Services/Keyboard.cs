@@ -18,47 +18,105 @@
  */
 namespace flowOSD.Services;
 
+using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using flowOSD.Api;
 using Microsoft.Win32;
 using static Native;
 
-sealed partial class Keyboard : IKeyboard
+sealed partial class Keyboard : IKeyboard, IDisposable
 {
+    private CompositeDisposable disposable = new CompositeDisposable();
+
     private const string BACKLIGHT_KEY = @"SOFTWARE\ASUS\ASUS System Control Interface\AsusOptimization\ASUS Keyboard Hotkeys";
     private const string BACKLIGHT_VALUE = "HidKeybdLightLevel";
 
+    private const int FEATURE_KBD_REPORT_ID = 0x5a;
+    private const int KB_BACKLIGHT_1 = 0xba;
+    private const int KB_BACKLIGHT_2 = 0xc5;
+    private const int KB_BACKLIGHT_3 = 0xc4;
+
     private readonly HashSet<Keys> extendedKeys;
+    private HidDevice specialKeyboard;
+
+    private Subject<AtkKey> keyPressedSubject;
+
+    private Task task;
 
     public Keyboard()
     {
+        keyPressedSubject = new Subject<AtkKey>();
+        KeyPressed = keyPressedSubject.AsObservable();
+
         extendedKeys = new HashSet<Keys>(new Keys[]
         {
-                Keys.Menu,
-                Keys.LMenu,
-                Keys.RMenu,
-                Keys.Control,
-                Keys.RControlKey,
-                Keys.Insert,
-                Keys.Delete,
-                Keys.Home,
-                Keys.End,
-                Keys.Prior,
-                Keys.Next,
-                Keys.Right,
-                Keys.Up,
-                Keys.Left,
-                Keys.Down,
-                Keys.NumLock,
-                Keys.Cancel,
-                Keys.Snapshot,
-                Keys.Divide
+            Keys.Menu,
+            Keys.LMenu,
+            Keys.RMenu,
+            Keys.Control,
+            Keys.RControlKey,
+            Keys.Insert,
+            Keys.Delete,
+            Keys.Home,
+            Keys.End,
+            Keys.Prior,
+            Keys.Next,
+            Keys.Right,
+            Keys.Up,
+            Keys.Left,
+            Keys.Down,
+            Keys.NumLock,
+            Keys.Cancel,
+            Keys.Snapshot,
+            Keys.Divide
+        });
+
+        try
+        {
+            specialKeyboard = HidDevice.Devices
+                .Where(i => i.VendorId == 0xB05 && GetBacklight(i) >= 0)
+                .FirstOrDefault();
+        }
+        catch (Exception)
+        {
+            specialKeyboard = null;
+        }
+
+        task = Task.Factory.StartNew(() =>
+        {
+            specialKeyboard.Open();
+            while (true)
+            {
+                var data = specialKeyboard.ReadData();
+
+                if (data.Length > 1 && data[0] == FEATURE_KBD_REPORT_ID && Enum.IsDefined(typeof(AtkKey), data[1]))
+                {
+                    keyPressedSubject.OnNext((AtkKey)data[1]);
+                }
+            }
         });
     }
 
+    void IDisposable.Dispose()
+    {
+        disposable?.Dispose();
+        disposable = null;
+    }
+
+    public IObservable<AtkKey> KeyPressed { get; }
+
     public double GetBacklight()
     {
+        if (specialKeyboard != null)
+        {
+            return GetBacklight(specialKeyboard) / 3f;
+        }
+
         using (var key = Registry.LocalMachine.OpenSubKey(BACKLIGHT_KEY, false))
         {
             if (key == null)
@@ -130,5 +188,27 @@ sealed partial class Keyboard : IKeyboard
                 }
             }
         });
+    }
+
+    private int GetBacklight(HidDevice device)
+    {
+        var isOk = device.ReadFeatureData(out byte[] data, FEATURE_KBD_REPORT_ID);
+
+        if (!isOk || data.Length < 5)
+        {
+            return -1;
+        }
+
+        if (data[0] == FEATURE_KBD_REPORT_ID
+            && data[1] == KB_BACKLIGHT_1
+            && data[2] == KB_BACKLIGHT_2
+            && data[3] == KB_BACKLIGHT_3)
+        {
+            return data[4];
+        }
+        else
+        {
+            return -1;
+        }
     }
 }

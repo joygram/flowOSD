@@ -60,7 +60,7 @@ sealed partial class App : IDisposable
 
         messageQueue = new MessageQueue().DisposeWith(disposable);
 
-        keyboard = new Keyboard();
+        keyboard = new Keyboard().DisposeWith(disposable); ;
         powerManagement = new PowerManagement().DisposeWith(disposable);
 
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);

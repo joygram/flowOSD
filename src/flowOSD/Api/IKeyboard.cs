@@ -20,6 +20,8 @@ namespace flowOSD.Api;
 
 public interface IKeyboard
 {
+    IObservable<AtkKey> KeyPressed { get; }
+
     double GetBacklight();
 
     void SendKeys(Keys key, params Keys[] modifierKeys);

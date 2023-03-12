@@ -20,8 +20,6 @@ namespace flowOSD.Api;
 
 public interface IAtk
 {
-    IObservable<AtkKey> KeyPressed { get; }
-
     IObservable<PerformanceMode> PerformanceMode { get; }
 
     IObservable<GpuMode> GpuMode { get; }

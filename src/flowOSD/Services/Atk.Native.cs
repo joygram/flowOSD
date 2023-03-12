@@ -27,17 +27,6 @@ using static Native;
 
 sealed partial class Atk
 {
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    public static extern IntPtr CreateFile(
-        string lpFileName,
-        uint dwDesiredAccess,
-        uint dwShareMode,
-        IntPtr lpSecurityAttributes,
-        uint dwCreationDisposition,
-        uint dwFlagsAndAttributes,
-        IntPtr hTemplateFile
-    );
-
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool DeviceIoControl(
         IntPtr hDevice,
@@ -49,14 +38,4 @@ sealed partial class Atk
         ref uint lpBytesReturned,
         IntPtr lpOverlapped
     );
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool CloseHandle(IntPtr hObject);
-
-    private const uint GENERIC_READ = 0x80000000;
-    private const uint GENERIC_WRITE = 0x40000000;
-    private const uint OPEN_EXISTING = 3;
-    private const uint FILE_ATTRIBUTE_NORMAL = 0x80;
-    private const uint FILE_SHARE_READ = 1;
-    private const uint FILE_SHARE_WRITE = 2;
 }

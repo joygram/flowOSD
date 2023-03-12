@@ -30,15 +30,6 @@ sealed partial class Atk : IAtk, IDisposable
 {
     public readonly static int WM_ACPI = (int)RegisterWindowMessage("ACPI Notification through ATKHotkey from BIOS");
 
-    private const int AK_BACKLIGHT_DOWN = 0xC5;
-    private const int AK_BACKLIGHT_UP = 0xC4;
-    private const int AK_AURA = 0xB3;
-    private const int AK_FAN = 0xAE;
-    private const int AK_TOUCHPAD = 0x6B;
-    private const int AK_ROG = 0x38;
-    private const int AK_MUTE_MIC = 0x7C;
-    private const int AK_FN_C = 0x9E;
-    private const int AK_FN_V = 0x8A;
     private const int AK_TABLET_STATE = 0xBD;
     private const int AK_CHARGER = 0x7B;
 
@@ -60,7 +51,6 @@ sealed partial class Atk : IAtk, IDisposable
     const int POWER_SOURCE_FULL = 0x2A;
 
     private readonly Dictionary<int, AtkKey> codeToKey;
-    private readonly Subject<AtkKey> keyPressedSubject;
     private readonly BehaviorSubject<PerformanceMode> performanceModeSubject;
     private readonly BehaviorSubject<GpuMode> gpuModeSubject;
     private readonly BehaviorSubject<ChargerType> chargerTypeSubject;
@@ -92,18 +82,6 @@ sealed partial class Atk : IAtk, IDisposable
             throw new ApplicationException("Can't connect to ACPI.");
         }
 
-        codeToKey = new Dictionary<int, AtkKey>();
-        codeToKey[AK_BACKLIGHT_DOWN] = AtkKey.BacklightDown;
-        codeToKey[AK_BACKLIGHT_UP] = AtkKey.BacklightUp;
-        codeToKey[AK_AURA] = AtkKey.Aura;
-        codeToKey[AK_FAN] = AtkKey.Fan;
-        codeToKey[AK_TOUCHPAD] = AtkKey.TouchPad;
-        codeToKey[AK_ROG] = AtkKey.Rog;
-        codeToKey[AK_MUTE_MIC] = AtkKey.MuteMic;
-        codeToKey[AK_FN_C] = AtkKey.Copy;
-        codeToKey[AK_FN_V] = AtkKey.Paste;
-
-        keyPressedSubject = new Subject<AtkKey>();
         performanceModeSubject = new BehaviorSubject<PerformanceMode>(performanceMode);
         gpuModeSubject = new BehaviorSubject<GpuMode>((GpuMode)Get(DEVID_GPU_ECO_MODE));
         chargerTypeSubject = new BehaviorSubject<ChargerType>(GetChargerType());
@@ -111,7 +89,6 @@ sealed partial class Atk : IAtk, IDisposable
 
         cpuTemperatureSubject = new CountableSubject<uint>(GetCpuTemperature());
 
-        KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
         PerformanceMode = performanceModeSubject.AsObservable();
         GpuMode = gpuModeSubject.AsObservable();
         ChargerType = chargerTypeSubject.AsObservable();
@@ -149,8 +126,6 @@ sealed partial class Atk : IAtk, IDisposable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-
-    public IObservable<AtkKey> KeyPressed { get; }
 
     public IObservable<PerformanceMode> PerformanceMode { get; }
 
@@ -225,10 +200,6 @@ sealed partial class Atk : IAtk, IDisposable
             else if (code == AK_CHARGER)
             {
                 chargerTypeSubject.OnNext(GetChargerType());
-            }
-            else if (codeToKey.ContainsKey(code))
-            {
-                keyPressedSubject.OnNext(codeToKey[code]);
             }
         }
     }
