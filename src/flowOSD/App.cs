@@ -34,18 +34,18 @@ sealed partial class App : IDisposable
 
     private IConfig config;
 
-    private IMessageQueue messageQueue;
-    private ISystemEvents systemEvents;
-    private IPowerManagement powerManagement;
+    private MessageQueue messageQueue;
+    private SystemEvents systemEvents;
+    private PowerManagement powerManagement;
     private Display display;
-    private IAtk atk;
-    private ITouchPad touchPad;
-    private IKeyboard keyboard;
-    private IOsd osd;
-    private IAudio audio;
-    private IBattery battery;
+    private Atk atk;
+    private TouchPad touchPad;
+    private Keyboard keyboard;
+    private Osd osd;
+    private Audio audio;
+    private Battery battery;
 
-    private INotifyIcon notifyIcon;
+    private NotifyIcon notifyIcon;
 
     private MainUI mainUI;
 
@@ -60,7 +60,7 @@ sealed partial class App : IDisposable
 
         messageQueue = new MessageQueue().DisposeWith(disposable);
 
-        keyboard = new Keyboard().DisposeWith(disposable); ;
+        keyboard = new Keyboard(KeyboardBacklight.Low).DisposeWith(disposable); ;
         powerManagement = new PowerManagement().DisposeWith(disposable);
 
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);

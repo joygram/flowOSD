@@ -85,4 +85,17 @@ partial class Keyboard
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LASTINPUTINFO
+    {
+        public int cbSize;
+        public uint dwTime;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint GetTickCount();
 }

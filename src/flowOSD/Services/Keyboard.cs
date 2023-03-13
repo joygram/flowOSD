@@ -43,15 +43,23 @@ sealed partial class Keyboard : IKeyboard, IDisposable
 
     private readonly HashSet<Keys> extendedKeys;
     private HidDevice specialKeyboard;
+    private TimeSpan backlightTimeout = TimeSpan.FromSeconds(30);
+
+    private volatile uint lastSpecialKeyTime = 0;
 
     private Subject<AtkKey> keyPressedSubject;
+    private BehaviorSubject<KeyboardBacklight> backlightSubject;
 
-    private Task task;
+    private Task speialKeyReaderTask;
+    private CancellationTokenSource cancellationTokenSource;
 
-    public Keyboard()
+    public Keyboard(KeyboardBacklight backlight)
     {
         keyPressedSubject = new Subject<AtkKey>();
+        backlightSubject = new BehaviorSubject<KeyboardBacklight>(backlight);
+
         KeyPressed = keyPressedSubject.AsObservable();
+        Backlight = backlightSubject.AsObservable();
 
         extendedKeys = new HashSet<Keys>(new Keys[]
         {
@@ -81,18 +89,30 @@ sealed partial class Keyboard : IKeyboard, IDisposable
             specialKeyboard = HidDevice.Devices
                 .Where(i => i.VendorId == 0xB05 && GetBacklight(i) >= 0)
                 .FirstOrDefault();
+
+            SetBacklight(specialKeyboard, (byte)backlightSubject.Value);
         }
         catch (Exception)
         {
             specialKeyboard = null;
         }
 
-        task = Task.Factory.StartNew(() =>
+        Observable.Interval(TimeSpan.FromMilliseconds(500))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(x => UpdateBacklightState())
+            .DisposeWith(disposable);
+
+        cancellationTokenSource = new CancellationTokenSource();
+        speialKeyReaderTask = Task.Factory.StartNew(async () =>
         {
-            specialKeyboard.Open();
-            while (true)
+            while (!cancellationTokenSource.Token.IsCancellationRequested)
             {
-                var data = specialKeyboard.ReadData();
+                var data = await specialKeyboard.ReadDataAsync(cancellationTokenSource.Token);
+
+                if (data.Length > 1)
+                {
+                    lastSpecialKeyTime = GetTickCount();
+                }
 
                 if (data.Length > 1 && data[0] == FEATURE_KBD_REPORT_ID && Enum.IsDefined(typeof(AtkKey), data[1]))
                 {
@@ -106,9 +126,13 @@ sealed partial class Keyboard : IKeyboard, IDisposable
     {
         disposable?.Dispose();
         disposable = null;
+
+        cancellationTokenSource?.Cancel();
     }
 
     public IObservable<AtkKey> KeyPressed { get; }
+
+    public IObservable<KeyboardBacklight> Backlight { get; }
 
     public double GetBacklight()
     {
@@ -134,6 +158,20 @@ sealed partial class Keyboard : IKeyboard, IDisposable
                 throw new ApplicationException("Can't read the keyboard backlight value from Registry.");
             }
         }
+    }
+
+    public void Up()
+    {
+        var nextValue = Math.Min((byte)KeyboardBacklight.High, (byte)backlightSubject.Value + 1);
+
+        SetBacklight(specialKeyboard, nextValue);
+    }
+
+    public void Down()
+    {
+        var nextValue = Math.Max((byte)KeyboardBacklight.Off, (byte)backlightSubject.Value - 1);
+
+        SetBacklight(specialKeyboard, nextValue);
     }
 
     public void SendKeys(Keys key, params Keys[] modifierKeys)
@@ -190,6 +228,37 @@ sealed partial class Keyboard : IKeyboard, IDisposable
         });
     }
 
+    private void UpdateBacklightState()
+    {
+        var lii = new LASTINPUTINFO();
+        lii.cbSize = Marshal.SizeOf<LASTINPUTINFO>();
+
+        if (GetLastInputInfo(ref lii))
+        {
+            var isIdle = backlightTimeout < TimeSpan.FromMilliseconds(GetTickCount() - Math.Max(lastSpecialKeyTime, lii.dwTime));
+
+            if (isIdle && backlightSubject.Value != KeyboardBacklight.Off && GetBacklight(specialKeyboard) > 0)
+            {
+                SetBacklight(specialKeyboard, 0);
+            }
+
+            if (!isIdle && backlightSubject.Value > KeyboardBacklight.Off && GetBacklight(specialKeyboard) == 0)
+            {
+                SetBacklight(specialKeyboard, (byte)backlightSubject.Value);
+            }
+        }
+    }
+
+    private bool SetBacklight(HidDevice device, int value)
+    {
+        return device.WriteFeatureData(
+            FEATURE_KBD_REPORT_ID,
+            KB_BACKLIGHT_1,
+            KB_BACKLIGHT_2,
+            KB_BACKLIGHT_3,
+            (byte)Math.Max(0, Math.Min(3, value)));
+    }
+
     private int GetBacklight(HidDevice device)
     {
         var isOk = device.ReadFeatureData(out byte[] data, FEATURE_KBD_REPORT_ID);
@@ -199,10 +268,10 @@ sealed partial class Keyboard : IKeyboard, IDisposable
             return -1;
         }
 
-        if (data[0] == FEATURE_KBD_REPORT_ID
-            && data[1] == KB_BACKLIGHT_1
-            && data[2] == KB_BACKLIGHT_2
-            && data[3] == KB_BACKLIGHT_3)
+        if (data[0] == FEATURE_KBD_REPORT_ID)
+        /*  && data[1] == KB_BACKLIGHT_1
+          && data[2] == KB_BACKLIGHT_2
+          && data[3] == KB_BACKLIGHT_3)*/
         {
             return data[4];
         }

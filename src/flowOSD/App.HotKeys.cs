@@ -71,6 +71,20 @@ partial class App
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(hotKeyManager.ExecuteCommand)
             .DisposeWith(disposable);
+
+        keyboard.KeyPressed
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .Where(x=>x== AtkKey.BacklightDown)
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(_=>keyboard.Down())
+            .DisposeWith(disposable);
+
+        keyboard.KeyPressed
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .Where(x => x == AtkKey.BacklightUp)
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(_ => keyboard.Up())
+            .DisposeWith(disposable);
     }
 
     private void RegisterHotKeys()

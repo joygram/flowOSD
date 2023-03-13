@@ -18,39 +18,31 @@
  */
 namespace flowOSD.Services;
 
+using System.Reactive.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using static Native;
 
-sealed partial class HidDevice : IDisposable
+sealed partial class HidDevice
 {
     private readonly int featureReportByteLength, inputReportByteLength;
-    private DeviceHandle deviceReadHandle, deviceWriteHandle;
 
     private HidDevice(string devicePath)
     {
         DevicePath = devicePath ?? throw new ArgumentNullException(nameof(devicePath));
 
-        using var h = new DeviceHandle(DevicePath);
+        using var device = OpenDeviceIO();
 
         var deviceAttributes = new HIDD_ATTRIBUTES();
         deviceAttributes.Size = Marshal.SizeOf(deviceAttributes);
-        HidD_GetAttributes(h, ref deviceAttributes);
+        HidD_GetAttributes(device, ref deviceAttributes);
 
         VendorId = deviceAttributes.VendorID;
         ProductId = deviceAttributes.ProductID;
 
-        var capabilities = GetCapabilities(h);
+        var capabilities = GetCapabilities(device);
         featureReportByteLength = capabilities.FeatureReportByteLength;
         inputReportByteLength = capabilities.InputReportByteLength;
-    }
-
-    void IDisposable.Dispose()
-    {
-        deviceReadHandle?.Dispose();
-        deviceReadHandle = null;
-
-        deviceWriteHandle?.Dispose();
-        deviceWriteHandle = null;
     }
 
     public string DevicePath { get; }
@@ -60,23 +52,6 @@ sealed partial class HidDevice : IDisposable
     public int ProductId { get; }
 
     public static IEnumerable<HidDevice> Devices { get; } = new HidDevices();
-
-    public bool IsOpen => deviceWriteHandle?.IsClosed == false && deviceReadHandle?.IsClosed == false;
-
-    public void Open(bool isOverlapped = false)
-    {
-        deviceReadHandle = new DeviceHandle(DevicePath, deviceAccess: GENERIC_READ, isOverlapped: isOverlapped);
-        deviceWriteHandle = new DeviceHandle(DevicePath, deviceAccess: GENERIC_WRITE, isOverlapped: isOverlapped);
-    }
-
-    public void Close()
-    {
-        deviceReadHandle?.Dispose();
-        deviceReadHandle = null;
-
-        deviceWriteHandle?.Dispose();
-        deviceWriteHandle = null;
-    }
 
     public bool ReadFeatureData(out byte[] data, byte reportId = 0)
     {
@@ -91,7 +66,7 @@ sealed partial class HidDevice : IDisposable
         var buffer = new byte[featureReportByteLength];
         buffer[0] = reportId;
 
-        using var device = new DeviceHandle(DevicePath);
+        using var device = OpenDeviceIO();
         if (HidD_GetFeature(device, buffer, buffer.Length))
         {
             Array.Copy(buffer, 0, data, 0, Math.Min(data.Length, featureReportByteLength));
@@ -113,36 +88,87 @@ sealed partial class HidDevice : IDisposable
         var buffer = new byte[featureReportByteLength];
         Array.Copy(data, 0, buffer, 0, Math.Min(data.Length, featureReportByteLength));
 
-        using var device = deviceWriteHandle ?? new DeviceHandle(DevicePath);
+        using var device = OpenDeviceIO();
 
         return HidD_SetFeature(device, buffer, buffer.Length);
     }
 
-    public byte[] ReadData()
+    public async Task<byte[]> ReadDataAsync()
     {
-        if (inputReportByteLength < 0 || !IsOpen)
+        return await ReadDataAsync(CancellationToken.None);
+    }
+
+    public async Task<byte[]> ReadDataAsync(CancellationToken token)
+    {
+        if (inputReportByteLength < 0)
         {
             return new byte[0];
         }
 
-        uint bytesRead;
+        using var device = OpenDeviceIO();
+
+        using var fs = new FileStream(device, FileAccess.Read);
+
+        var buffer = new byte[inputReportByteLength];
+        await fs.ReadAsync(buffer, 0, buffer.Length, token);
+
+        return buffer;
+    }
+
+    public byte[] ReadData()
+    {
+        if (inputReportByteLength < 0)
+        {
+            return new byte[0];
+        }
+
+        using var device = OpenDeviceIO();
+
+        using var fs = new FileStream(device, FileAccess.Read);
+
+        var buffer = new byte[inputReportByteLength];
+        fs.Read(buffer, 0, buffer.Length);
+
+        return buffer;
+
+        /*uint bytesRead;
 
         var buffer = new byte[inputReportByteLength];
         IntPtr nonManagedBuffer = Marshal.AllocHGlobal(buffer.Length);
 
         try
         {
-            var overlapped = new NativeOverlapped();
+            //var overlapped = new NativeOverlapped();
 
-            ReadFile(deviceReadHandle, nonManagedBuffer, (uint)buffer.Length, out bytesRead, ref overlapped);
-            Marshal.Copy(nonManagedBuffer, buffer, 0, (int)bytesRead);
+            //ReadFile(deviceReadHandle, nonManagedBuffer, (uint)buffer.Length, out bytesRead, ref overlapped);
+            //Marshal.Copy(nonManagedBuffer, buffer, 0, (int)bytesRead);
 
             return buffer;
         }
         finally
         {
             Marshal.FreeHGlobal(nonManagedBuffer);
-        }
+        }*/
+    }
+
+    private SafeFileHandle OpenDeviceIO(
+        uint deviceAccess = GENERIC_READ | GENERIC_WRITE,
+        uint shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+        bool isOverlapped = false)
+    {
+        var security = new SECURITY_ATTRIBUTES();
+        security.lpSecurityDescriptor = IntPtr.Zero;
+        security.bInheritHandle = true;
+        security.nLength = Marshal.SizeOf(security);
+
+        return CreateFile(
+            DevicePath,
+            deviceAccess,
+            shareMode,
+            ref security,
+            OPEN_EXISTING,
+            isOverlapped ? FILE_FLAG_OVERLAPPED : 0,
+            IntPtr.Zero);
     }
 
     private static HIDP_CAPS GetCapabilities(SafeHandle handle)
@@ -296,39 +322,39 @@ sealed partial class HidDevice : IDisposable
         }
     }
 
-    private sealed class DeviceHandle : SafeHandle
-    {
-        public DeviceHandle(
-            string devicePath,
-            uint deviceAccess = GENERIC_READ | GENERIC_WRITE,
-            uint shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
-            bool isOverlapped = false)
-            : base(INVALID_HANDLE_VALUE, true)
-        {
-            IsOverlapped = isOverlapped;
+    /* private sealed class DeviceHandle : SafeHandle
+     {
+         public DeviceHandle(
+             string devicePath,
+             uint deviceAccess = GENERIC_READ | GENERIC_WRITE,
+             uint shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+             bool isOverlapped = false)
+             : base(INVALID_HANDLE_VALUE, true)
+         {
+             IsOverlapped = isOverlapped;
 
-            var security = new SECURITY_ATTRIBUTES();
-            security.lpSecurityDescriptor = IntPtr.Zero;
-            security.bInheritHandle = true;
-            security.nLength = Marshal.SizeOf(security);
+             var security = new SECURITY_ATTRIBUTES();
+             security.lpSecurityDescriptor = IntPtr.Zero;
+             security.bInheritHandle = true;
+             security.nLength = Marshal.SizeOf(security);
 
-            handle = CreateFile(
-                devicePath,
-                deviceAccess,
-                shareMode,
-                ref security,
-                OPEN_EXISTING,
-                isOverlapped ? FILE_FLAG_OVERLAPPED : 0,
-                IntPtr.Zero);
-        }
+             handle = CreateFile(
+                 devicePath,
+                 deviceAccess,
+                 shareMode,
+                 ref security,
+                 OPEN_EXISTING,
+                 isOverlapped ? FILE_FLAG_OVERLAPPED : 0,
+                 IntPtr.Zero);
+         }
 
-        public bool IsOverlapped { get; }
+         public bool IsOverlapped { get; }
 
-        public override bool IsInvalid => handle == IntPtr.Zero || handle == INVALID_HANDLE_VALUE;
+         public override bool IsInvalid => handle == IntPtr.Zero || handle == INVALID_HANDLE_VALUE;
 
-        protected override bool ReleaseHandle()
-        {
-            return CancelIoEx(handle, IntPtr.Zero) && CloseHandle(handle);
-        }
-    }
+         protected override bool ReleaseHandle()
+         {
+             return CancelIoEx(handle, IntPtr.Zero) && CloseHandle(handle);
+         }
+     }*/
 }

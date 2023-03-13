@@ -20,6 +20,7 @@ namespace flowOSD;
 
 using System.Runtime.InteropServices;
 using System.Security;
+using Microsoft.Win32.SafeHandles;
 
 static class Native
 {
@@ -54,7 +55,7 @@ static class Native
     }
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    public static extern IntPtr CreateFile(
+    public static extern SafeFileHandle CreateFile(
         string lpFileName,
         uint dwDesiredAccess,
         uint dwShareMode,
