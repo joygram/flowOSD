@@ -28,8 +28,6 @@ using static Native;
 
 sealed partial class Atk : IAtk, IDisposable
 {
-    public readonly static int WM_ACPI = (int)RegisterWindowMessage("ACPI Notification through ATKHotkey from BIOS");
-
     private const int AK_TABLET_STATE = 0xBD;
     private const int AK_CHARGER = 0x7B;
 
@@ -111,9 +109,11 @@ sealed partial class Atk : IAtk, IDisposable
             })
             .DisposeWith(disposable);
 
-        messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
-
         SetPerformanceMode(performanceMode);
+
+        var watcher = new ManagementEventWatcher("root\\wmi", "SELECT * FROM AsusAtkWmiEvent").DisposeWith(disposable);
+        watcher.EventArrived += OnWmiEvent;
+        watcher.Start();
     }
 
     ~Atk()
@@ -187,23 +187,6 @@ sealed partial class Atk : IAtk, IDisposable
         }
     }
 
-    private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
-    {
-        if (messageId == WM_ACPI)
-        {
-            var code = (int)wParam;
-
-            if (code == AK_TABLET_STATE)
-            {
-                tabletModeSubject.OnNext(GetTabletMode());
-            }
-            else if (code == AK_CHARGER)
-            {
-                chargerTypeSubject.OnNext(GetChargerType());
-            }
-        }
-    }
-
     private byte[] Invoke(uint MethodId, byte[] args)
     {
         lock (ControlLocker)
@@ -230,6 +213,29 @@ sealed partial class Atk : IAtk, IDisposable
             }
 
             return outBuffer;
+        }
+    }
+
+    private void OnWmiEvent(object sender, EventArrivedEventArgs e)
+    {
+        var v = e.NewEvent.Properties.FirstOrDefault<PropertyData>(x => x.Name == "EventID")?.Value;
+        if (v is not uint code)
+        {
+            return;
+        }
+
+        switch (code)
+        {
+            case AK_TABLET_STATE:
+                {
+                    tabletModeSubject.OnNext(GetTabletMode());
+                    break;
+                }
+            case AK_CHARGER:
+                {
+                    chargerTypeSubject.OnNext(GetChargerType());
+                    break;
+                }
         }
     }
 

@@ -18,6 +18,7 @@
  */
 namespace flowOSD;
 
+using System.Collections;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
@@ -29,6 +30,19 @@ static partial class Extensions
     public static short Hi(this IntPtr value) => BitConverter.ToInt16(BitConverter.GetBytes(value), 2);
 
     public static short Low(this IntPtr value) => BitConverter.ToInt16(BitConverter.GetBytes(value), 0);
+
+    public static T FirstOrDefault<T>(this ICollection collection, Func<T, bool> condition)
+    {
+        foreach(var i in collection)
+        {
+            if (i is T item && condition(item))
+            {
+                return item;
+            }
+        }
+
+        return default(T);
+    }
 
 
     public static T Create<T>(Action<T> initializator) where T : new()
