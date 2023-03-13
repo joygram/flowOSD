@@ -102,14 +102,14 @@ sealed class NotifyIconMenuCommand : CommandBase, IDisposable
         {
             contextMenu.Show(
                 rectangle.Left + (rectangle.Width - contextMenu.Width) / 2,
-                screen.Bounds.Bottom - messageQueue.Handle.DpiScale(10) - contextMenu.Height);
+                screen.WorkingArea.Bottom - messageQueue.Handle.DpiScale(10) - contextMenu.Height);
         }
     }
 
     private void InitContextMenu()
     {
         contextMenu = new CxContextMenu();
-        contextMenu.Font = new Font(UIParameters.FontName, 20, GraphicsUnit.Pixel);
+        contextMenu.Font = new Font(UIParameters.FontName, 10, GraphicsUnit.Point);
 
         contextMenu
             .AddMenuItem(commandManager.Resolve<MainUICommand>())
