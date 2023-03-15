@@ -16,6 +16,8 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
+using flowOSD.Api.Hardware;
+
 namespace flowOSD.Api;
 
 public static class UIText

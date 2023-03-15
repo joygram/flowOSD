@@ -23,6 +23,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text.Json;
 using flowOSD.Api;
+using flowOSD.Extensions;
 using Microsoft.Win32;
 
 sealed class Config : IConfig, IDisposable

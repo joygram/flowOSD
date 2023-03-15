@@ -19,6 +19,7 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Extensions;
 using System.Reactive.Disposables;
 
 internal class NotificationsConfigPage : ConfigPageBase

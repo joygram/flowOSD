@@ -19,8 +19,8 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Extensions;
 using System.Reactive.Disposables;
-using static Extensions;
 
 internal class ConfigPageBase : TableLayoutPanel
 {

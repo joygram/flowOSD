@@ -23,6 +23,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 sealed class ToggleGpuCommand : CommandBase
 {
@@ -59,7 +62,7 @@ sealed class ToggleGpuCommand : CommandBase
         }
         catch (Exception ex)
         {
-            Extensions.TraceException(ex, "Error is occurred while toggling GPU (UI).");
+            TraceException(ex, "Error is occurred while toggling GPU (UI).");
         }
     }
 

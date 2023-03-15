@@ -24,7 +24,10 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using flowOSD.Api;
-using static Native;
+using flowOSD.Extensions;
+using flowOSD.Native;
+using static flowOSD.Native.Shell32;
+using static Native.Messages;
 
 sealed partial class NotifyIcon : INotifyIcon, IDisposable
 {
@@ -111,7 +114,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         notifyIcon.uID = 1;
         notifyIcon.guidItem = IconGuid;
 
-        if (Shell_NotifyIconGetRect(ref notifyIcon, out RECT rect) != S_OK)
+        if (Shell_NotifyIconGetRect(ref notifyIcon, out RECT rect) != 0)
         {
             return Rectangle.Empty;
         }

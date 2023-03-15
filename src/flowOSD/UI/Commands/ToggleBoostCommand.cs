@@ -23,6 +23,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 sealed class ToggleBoostCommand : CommandBase
 {
@@ -51,7 +54,7 @@ sealed class ToggleBoostCommand : CommandBase
         }
         catch (Exception ex)
         {
-            Extensions.TraceException(ex, "Error is occurred while toggling CPU boost mode (UI).");
+            TraceException(ex, "Error is occurred while toggling CPU boost mode (UI).");
         }
     }
 

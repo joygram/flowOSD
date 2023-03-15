@@ -25,18 +25,37 @@ using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
 
-sealed class HotKeyManager : IHotKeyManager
+sealed class HotKeyManager : IDisposable
 {
+    private CompositeDisposable disposable = new CompositeDisposable();
+
+    private IConfig config;
     private ICommandManager commandManager;
+
     private Dictionary<AtkKey, Binding> keys = new Dictionary<AtkKey, Binding>();
 
-    public HotKeyManager(ICommandManager commandManager)
+    public HotKeyManager(IConfig config, ICommandManager commandManager, IKeyboard keyboard)
     {
+        this.config = config;
         this.commandManager = commandManager;
+
+        keyboard.KeyPressed
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(ExecuteCommand)
+            .DisposeWith(disposable);
     }
 
-    public void Register(AtkKey key, string commandName, object commandParameter = null)
+    public void Dispose()
+    {
+        disposable?.Dispose();
+        disposable = null;
+    }
+
+    private void Register(AtkKey key, string commandName, object commandParameter = null)
     {
         var command = commandManager.Resolve(commandName);
 
@@ -50,7 +69,47 @@ sealed class HotKeyManager : IHotKeyManager
         }
     }
 
-    public void ExecuteCommand(AtkKey key)
+    private void RegisterHotKeys()
+    {
+        Register(AtkKey.Aura, config.UserConfig.AuraCommand);
+        Register(AtkKey.Fan, config.UserConfig.FanCommand);
+        Register(AtkKey.Rog, config.UserConfig.RogCommand);
+        Register(AtkKey.Copy, config.UserConfig.CopyCommand);
+        Register(AtkKey.Paste, config.UserConfig.PasteCommand);
+    }
+
+    private void UpdateBindings(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(UserConfig.AuraCommand):
+                Register(AtkKey.Aura, config.UserConfig.AuraCommand);
+                break;
+
+            case nameof(UserConfig.FanCommand):
+                Register(AtkKey.Fan, config.UserConfig.FanCommand);
+                break;
+
+            case nameof(UserConfig.RogCommand):
+                Register(AtkKey.Rog, config.UserConfig.RogCommand);
+                break;
+
+            case nameof(UserConfig.CopyCommand):
+                Register(AtkKey.Copy, config.UserConfig.CopyCommand);
+                break;
+
+            case nameof(UserConfig.PasteCommand):
+                Register(AtkKey.Paste, config.UserConfig.PasteCommand);
+                break;
+
+            case "":
+            case null:
+                RegisterHotKeys();
+                break;
+        }
+    }
+
+    private void ExecuteCommand(AtkKey key)
     {
         if (keys.TryGetValue(key, out Binding binding))
         {

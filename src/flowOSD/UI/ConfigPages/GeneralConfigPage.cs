@@ -20,7 +20,6 @@ namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
 using System.Reactive.Disposables;
-using static Extensions;
 
 internal class GeneralConfigPage : ConfigPageBase
 {

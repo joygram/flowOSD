@@ -23,6 +23,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 sealed class DisplayRefreshRateCommand : CommandBase
 {
@@ -37,7 +40,7 @@ sealed class DisplayRefreshRateCommand : CommandBase
         this.userConfig = userConfig ?? throw new ArgumentNullException(nameof(userConfig));
 
         display.RefreshRates
-            .CombineLatest(display.IsEnabled, (x, isEnabled) => isEnabled && x.IsLowAvailable && x.IsHighAvailable)
+            .CombineLatest(display.State, (x, displayState) => (displayState == DeviceState.Enabled) && x.IsLowAvailable && x.IsHighAvailable)
             .Throttle(TimeSpan.FromMilliseconds(200))
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(x => Enabled = x)
@@ -90,7 +93,7 @@ sealed class DisplayRefreshRateCommand : CommandBase
         }
         catch (Exception ex)
         {
-            Extensions.TraceException(ex, "Error is occurred while toggling display refresh rate (UI).");
+            TraceException(ex, "Error is occurred while toggling display refresh rate (UI).");
             MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

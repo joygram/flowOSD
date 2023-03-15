@@ -25,8 +25,8 @@ using System.Runtime.Versioning;
 using System.Text;
 using System.Windows.Forms;
 using flowOSD.Api;
-using static Extensions;
-using static Native;
+using flowOSD.Extensions;
+using static flowOSD.Extensions.Forms;
 
 sealed class AboutUI : IDisposable
 {
@@ -77,8 +77,7 @@ sealed class AboutUI : IDisposable
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             StartPosition = FormStartPosition.CenterScreen;
 
-            var scale = GetDpiForWindow(Handle) / 96f;
-            this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
+            this.Font = new Font("Segoe UI", this.DpiScale(12), GraphicsUnit.Pixel);
 
             this.Add(Create<TableLayoutPanel>(x =>
             {
@@ -155,22 +154,21 @@ sealed class AboutUI : IDisposable
             );
         }
 
-        private void UpdateSize(int dpi)
+        private void UpdateSize()
         {
-            var scale = dpi / 96f;
-            this.Size = new Size((int)(400 * scale), (int)(300 * scale));
+            Size = this.DpiScale(new Size(400, 300));
         }
 
         protected override void OnShown(EventArgs e)
         {
-            UpdateSize(GetDpiForWindow(Handle));
+            UpdateSize();
 
             base.OnShown(e);
         }
 
         protected override void OnDpiChanged(DpiChangedEventArgs e)
         {
-            UpdateSize(e.DeviceDpiNew);
+            UpdateSize();
 
             base.OnDpiChanged(e);
         }

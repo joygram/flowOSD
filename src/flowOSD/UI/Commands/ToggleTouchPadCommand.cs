@@ -23,6 +23,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 sealed class ToggleTouchPadCommand : CommandBase
 {
@@ -32,7 +35,7 @@ sealed class ToggleTouchPadCommand : CommandBase
     {
         this.touchPad = touchPad ?? throw new ArgumentNullException(nameof(touchPad));
 
-        this.touchPad.IsEnabled
+        this.touchPad.State
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(Update)
             .DisposeWith(Disposable);
@@ -51,13 +54,13 @@ sealed class ToggleTouchPadCommand : CommandBase
         }
         catch (Exception ex)
         {
-            Extensions.TraceException(ex, "Error is occurred while toggling TouchPad state (UI).");
+            TraceException(ex, "Error is occurred while toggling TouchPad state (UI).");
         }
     }
 
-    private void Update(bool isEnabled)
+    private void Update(DeviceState state)
     {
-        IsChecked = isEnabled;
+        IsChecked = state == DeviceState.Enabled;
         Text = IsChecked ? "Disable TouchPad" : "Enable TouchPad";
     }
 }

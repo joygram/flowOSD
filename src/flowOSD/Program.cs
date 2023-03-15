@@ -20,8 +20,9 @@ namespace flowOSD;
 
 using System.Diagnostics;
 using System.Reactive.Disposables;
+using flowOSD.Extensions;
 using flowOSD.Services;
-using static Extensions;
+using static flowOSD.Extensions.Common;
 
 public static class Program
 {

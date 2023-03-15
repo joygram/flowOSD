@@ -27,10 +27,15 @@ using System.Text;
 using System.Windows.Forms;
 using System.Windows.Input;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using flowOSD.Native;
 using flowOSD.UI.Commands;
 using flowOSD.UI.Components;
-using static Extensions;
-using static Native;
+using static flowOSD.Extensions.Common;
+using static flowOSD.Extensions.Forms;
+using static flowOSD.Native.Dwmapi;
+using static flowOSD.Native.User32;
 
 sealed class MainUI : IDisposable
 {
@@ -39,6 +44,7 @@ sealed class MainUI : IDisposable
     private ISystemEvents systemEvents;
     private ICommandManager commandManager;
     private IPowerManagement powerManagement;
+    private ICpu cpu;
     private IAtk atk;
 
     private IBattery battery;
@@ -47,18 +53,18 @@ sealed class MainUI : IDisposable
         IConfig config,
         ISystemEvents systemEvents,
         ICommandManager commandManager,
-        IBattery battery,
-        IPowerManagement powerManagement,
-        IAtk atk)
+        IHardwareManager hardwareManager)
     {
         this.config = config;
         this.systemEvents = systemEvents;
         this.systemEvents.Dpi.Subscribe(x => { form?.Dispose(); form = null; });
 
         this.commandManager = commandManager;
-        this.battery = battery;
-        this.powerManagement = powerManagement;
-        this.atk = atk;
+        
+        battery = hardwareManager.Resolve<IBattery>();
+        powerManagement = hardwareManager.Resolve<IPowerManagement>();
+        cpu = hardwareManager.Resolve<ICpu>();
+        atk = hardwareManager.Resolve<IAtk>();
     }
 
     void IDisposable.Dispose()
@@ -458,7 +464,7 @@ sealed class MainUI : IDisposable
 
             if (owner.config.UserConfig.ShowCpuTemperature)
             {
-                cpuTemperatureUpdate = owner.atk.CpuTemperature
+                cpuTemperatureUpdate = owner.cpu.Temperature
                       .ObserveOn(SynchronizationContext.Current)
                       .Subscribe(UpdateCpuTemperature);
             }
@@ -581,7 +587,7 @@ sealed class MainUI : IDisposable
             }
 
             BackColor = parameters.BackgroundColor;
-            EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(230));
+            Acrylic.EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(230));
 
             Invalidate();
         }

@@ -24,7 +24,7 @@ public interface ICommandManager
 {
     CommandBase Resolve(string commandName);
 
-    CommandBase Resolve<T>();
+    T Resolve<T>() where T : CommandBase;
 
     public IList<CommandBase> Commands { get; }
 }

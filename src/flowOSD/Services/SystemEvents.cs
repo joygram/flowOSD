@@ -23,7 +23,11 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using flowOSD.Api;
-using static Native;
+
+using static Native.UxTheme;
+using static Native.User32;
+using static Native.Messages;
+using flowOSD.Extensions;
 
 sealed partial class SystemEvents : ISystemEvents, IDisposable
 {
@@ -125,7 +129,7 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
 
         if (messageId == WM_DPICHANGED)
         {
-            dpiSubject.OnNext((int)HiWord(wParam));
+            dpiSubject.OnNext(HiWord(wParam));
         }
     }
 }

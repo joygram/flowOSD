@@ -21,8 +21,8 @@ namespace flowOSD.UI;
 using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
 using flowOSD.Api;
-using static Extensions;
-using static Native;
+using flowOSD.Extensions;
+using static flowOSD.Extensions.Forms;
 
 sealed class ConfigUI : IDisposable
 {
@@ -109,22 +109,21 @@ sealed class ConfigUI : IDisposable
 
         protected override void OnShown(EventArgs e)
         {
-            UpdateSize(GetDpiForWindow(Handle));
+            UpdateSize();
 
             base.OnShown(e);
         }
 
         protected override void OnDpiChanged(DpiChangedEventArgs e)
         {
-            UpdateSize(e.DeviceDpiNew);
+            UpdateSize();
 
             base.OnDpiChanged(e);
         }
 
-        private void UpdateSize(int dpi)
+        private void UpdateSize()
         {
-            var scale = dpi / 96f;
-            this.Size = new Size((int)(600 * scale), (int)(500 * scale));
+            Size = this.DpiScale(new Size(600, 500));
         }
 
         private void Init()
@@ -155,8 +154,7 @@ sealed class ConfigUI : IDisposable
 
             layout.Add<ListBox>(0, 0, x =>
             {
-                var scale = GetDpiForWindow(Handle) / 96f;
-                x.Width = (int)(listWidth * scale);
+                x.Width = this.DpiScale(listWidth);
 
                 x.DrawMode = DrawMode.OwnerDrawVariable;
                 x.IntegralHeight = false;
@@ -191,16 +189,13 @@ sealed class ConfigUI : IDisposable
 
                 x.MeasureItem += (_, e) =>
                 {
-                    var scale = GetDpiForWindow(Handle) / 96f;
-
-                    e.ItemHeight = (int)(listItemHeight * scale);
-                    e.ItemWidth = (int)(listWidth * scale);
+                    e.ItemHeight = this.DpiScale(listItemHeight);
+                    e.ItemWidth = this.DpiScale(listWidth);
                 };
 
                 x.DpiChangedAfterParent += (_, _) =>
                 {
-                    var scale = GetDpiForWindow(Handle) / 96f;
-                    x.Width = (int)(listWidth * scale);
+                    x.Width = this.DpiScale(listWidth);
                 };
 
                 x.DisposeWith(disposable);
@@ -242,9 +237,8 @@ sealed class ConfigUI : IDisposable
             ShowInTaskbar = false;
             FormBorderStyle = FormBorderStyle.FixedSingle;
 
-            var scale = GetDpiForWindow(Handle) / 96f;
-            this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
-            UpdateSize(GetDpiForWindow(Handle));
+            this.Font = new Font("Segoe UI", this.DpiScale(12), GraphicsUnit.Pixel);
+            UpdateSize();
 
             StartPosition = FormStartPosition.CenterScreen;
         }

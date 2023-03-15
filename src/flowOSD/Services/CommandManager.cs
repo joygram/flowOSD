@@ -35,7 +35,7 @@ sealed class CommandManager : ICommandManager
     {
         names[command.Name] = command;
 
-        foreach(var c in commands)
+        foreach (var c in commands)
         {
             names[c.Name] = c;
         }
@@ -46,9 +46,9 @@ sealed class CommandManager : ICommandManager
         return !string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out CommandBase command) ? command : null;
     }
 
-    public CommandBase Resolve<T>()
+    public T Resolve<T>() where T : CommandBase
     {
-        return Resolve(typeof(T).Name);
+        return Resolve(typeof(T).Name) as T;
     }
 
     public IList<CommandBase> Commands => names.Values.Where(i => i.CanExecuteWithHotKey).ToArray();

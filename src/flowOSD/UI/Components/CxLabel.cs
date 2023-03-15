@@ -18,12 +18,6 @@
  */
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
-using System.Reactive.Disposables;
-using System.Linq;
-using flowOSD.Api;
-using System.Reactive.Linq;
-using static flowOSD.Native;
-using System.Windows.Input;
 
 namespace flowOSD.UI.Components;
 

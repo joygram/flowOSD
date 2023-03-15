@@ -22,6 +22,7 @@ using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Extensions;
 
 sealed class AboutCommand : CommandBase
 {

@@ -22,11 +22,14 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reflection;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using flowOSD.Hardware;
 using flowOSD.Services;
 using flowOSD.UI;
 using flowOSD.UI.Commands;
 using flowOSD.UI.Components;
-using static Extensions;
+using static flowOSD.Extensions.Common;
 
 sealed partial class App : IDisposable
 {
@@ -36,47 +39,27 @@ sealed partial class App : IDisposable
 
     private MessageQueue messageQueue;
     private SystemEvents systemEvents;
-    private PowerManagement powerManagement;
-    private Display display;
-    private Atk atk;
-    private TouchPad touchPad;
-    private Keyboard keyboard;
-    private Osd osd;
-    private Audio audio;
-    private Battery battery;
+    private KeysSender keysSender;
 
     private NotifyIcon notifyIcon;
 
+    private Osd osd;
     private MainUI mainUI;
 
+    private HardwareManager hardwareManager;
     private CommandManager commandManager;
-    private HotKeyManager hotKeyManager;
 
     public App(IConfig config)
     {
         this.config = config;
 
+
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
         messageQueue = new MessageQueue().DisposeWith(disposable);
-
-        keyboard = new Keyboard(KeyboardBacklight.Low).DisposeWith(disposable); ;
-        powerManagement = new PowerManagement().DisposeWith(disposable);
+        hardwareManager = new HardwareManager(config, messageQueue).DisposeWith(disposable);
 
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);
-
-        var performanceMode = this.config.UserConfig.PerformanceModeOverrideEnabled
-            ? this.config.UserConfig.PerformanceModeOverride
-            : PerformanceMode.Default;
-
-        atk = new Atk(performanceMode, messageQueue).DisposeWith(disposable);
-        touchPad = new TouchPad(keyboard, messageQueue).DisposeWith(disposable);
-        osd = new Osd(systemEvents).DisposeWith(disposable);
-
-        display = new Display(messageQueue, powerManagement, config).DisposeWith(disposable);
-        audio = new Audio();
-        battery = new Battery().DisposeWith(disposable);
-
         systemEvents.AppException
             .Subscribe(ex =>
             {
@@ -84,73 +67,50 @@ sealed partial class App : IDisposable
                 MessageBox.Show(ex.Message, "Unhandled application exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
             })
             .DisposeWith(disposable);
+        keysSender = new KeysSender();
 
         // Notifications
 
-        InitNotifications();
-
-        // Auto switching
-
-        powerManagement.PowerEvent
-            .Where(x => x == PowerEvent.Resume)
-            .Throttle(TimeSpan.FromMicroseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ => Suspend())
-            .DisposeWith(disposable);
-
-        powerManagement.PowerEvent
-            .Where(x => x == PowerEvent.Resume)
-            .Throttle(TimeSpan.FromMicroseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(_ => Resume())
-            .DisposeWith(disposable);
-
-        atk.TabletMode
-            .Throttle(TimeSpan.FromSeconds(2))
-            .ObserveOn(SynchronizationContext.Current)
-            .Subscribe(ToggleTouchPadOnTabletMode)
-            .DisposeWith(disposable);
+        osd = new Osd(systemEvents);
+        new Notifications(config, osd, hardwareManager).DisposeWith(disposable);
 
         // Commands
 
         commandManager = new CommandManager();
         commandManager.Register(
-            new DisplayRefreshRateCommand(powerManagement, display, config.UserConfig),
-            new ToggleTouchPadCommand(touchPad),
-            new ToggleBoostCommand(powerManagement),
-            new ToggleGpuCommand(atk, config),
-            new PerformanceModeCommand(atk),
-            new PowerModeCommand(powerManagement),
+            new DisplayRefreshRateCommand(hardwareManager.Resolve<IPowerManagement>(), hardwareManager.Resolve<IDisplay>(), config.UserConfig),
+            new ToggleTouchPadCommand(hardwareManager.Resolve<ITouchPad>()),
+            new ToggleBoostCommand(hardwareManager.Resolve<IPowerManagement>()),
+            new ToggleGpuCommand(hardwareManager.Resolve<IAtk>(), config),
+            new PerformanceModeCommand(hardwareManager.Resolve<IAtk>()),
+            new PowerModeCommand(hardwareManager.Resolve<IPowerManagement>()),
             new SettingsCommand(config, commandManager),
             new AboutCommand(config),
             new ExitCommand(),
-            new PrintScreenCommand(keyboard),
-            new ClipboardCopyPlainTextCommand(keyboard),
-            new ClipboardPastePlainTextCommand(keyboard)
+            new PrintScreenCommand(keysSender),
+            new ClipboardCopyPlainTextCommand(keysSender),
+            new ClipboardPastePlainTextCommand(keysSender)
         );
 
-        mainUI = new MainUI(config, systemEvents, commandManager, battery, powerManagement, atk);
+        mainUI = new MainUI(
+            config,
+            systemEvents,
+            commandManager,
+            hardwareManager).DisposeWith(disposable);
         commandManager.Register(new MainUICommand(mainUI));
 
-        InitNotifyIcon();
-        commandManager.Register(new NotifyIconMenuCommand(notifyIcon, commandManager, messageQueue, systemEvents));
+        new NotifyIconUI(
+            config,
+            messageQueue,
+            systemEvents,
+            commandManager,
+            hardwareManager.Resolve<IAtkWmi>()).DisposeWith(disposable);
 
-        InitHotKeys();
+        new HotKeyManager(
+            config,
+            commandManager,
+            hardwareManager.Resolve<IKeyboard>()).DisposeWith(disposable);
     }
-
-    private void Suspend()
-    {
-
-    }
-
-    private void Resume()
-    {
-        if (config.UserConfig.PerformanceModeOverrideEnabled)
-        {
-            atk.SetPerformanceMode(config.UserConfig.PerformanceModeOverride);
-        }
-    }
-
 
     void IDisposable.Dispose()
     {
@@ -159,28 +119,4 @@ sealed partial class App : IDisposable
     }
 
     public ApplicationContext ApplicationContext { get; }
-
-    private void ToggleTouchPadOnTabletMode(TabletMode tabletMode)
-    {
-        if (!config.UserConfig.DisableTouchPadInTabletMode)
-        {
-            return;
-        }
-
-        try
-        {
-            if (tabletMode == TabletMode.Tablet || tabletMode == TabletMode.Tent)
-            {
-                touchPad.Disable();
-            }
-            else
-            {
-                touchPad.Enable();
-            }
-        }
-        catch (Exception ex)
-        {
-            TraceException(ex, "Error is occurred while toggling TouchPad state (Auto).");
-        }
-    }
 }

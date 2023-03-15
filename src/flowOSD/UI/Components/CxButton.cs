@@ -16,17 +16,14 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
+namespace flowOSD.UI.Components;
+
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Reactive.Disposables;
-using System.Linq;
-using flowOSD.Api;
-using System.Reactive.Linq;
-using static flowOSD.Native;
-using System.Windows.Input;
 using System.ComponentModel;
-
-namespace flowOSD.UI.Components;
+using static flowOSD.Extensions.Drawing;
+using flowOSD.Extensions;
 
 internal sealed class CxButton : ButtonBase
 {
@@ -536,7 +533,7 @@ internal sealed class CxButton : ButtonBase
                     drawingAreaRect.Width / 2,
                     drawingAreaRect.Height),
                 8,
-                Extensions.Corners.BottomRight | Extensions.Corners.TopRight);
+                Drawing.Corners.BottomRight | Drawing.Corners.TopRight);
         }
         else
         {
@@ -548,7 +545,7 @@ internal sealed class CxButton : ButtonBase
                     drawingAreaRect.Width / 2,
                     drawingAreaRect.Height),
                 8,
-                Extensions.Corners.BottomLeft | Extensions.Corners.TopLeft);
+                Drawing.Corners.BottomLeft | Drawing.Corners.TopLeft);
         }
     }
 

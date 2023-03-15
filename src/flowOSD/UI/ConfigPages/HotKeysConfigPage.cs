@@ -19,6 +19,7 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Extensions;
 using flowOSD.UI.Commands;
 using System.ComponentModel;
 using System.Reactive.Disposables;
