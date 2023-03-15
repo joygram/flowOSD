@@ -28,8 +28,10 @@ using Microsoft.Win32;
 using static flowOSD.Native.User32;
 using static flowOSD.Native.Messages;
 using flowOSD.Api.Hardware;
+using System.Management;
+using System.Security.Principal;
 
-sealed class TouchPad :IDisposable, ITouchPad
+sealed class TouchPad : IDisposable, ITouchPad
 {
     public const int FEATURE_KBD_REPORT_ID = 0x5a;
 
@@ -39,22 +41,25 @@ sealed class TouchPad :IDisposable, ITouchPad
     private CompositeDisposable disposable = new CompositeDisposable();
 
     private HidDevice device;
-    private IMessageQueue messageQueue;
 
+    private ManagementEventWatcher watcher;
     private BehaviorSubject<DeviceState> stateSubject;
 
-    public TouchPad(HidDevice device, IMessageQueue messageQueue)
+    public TouchPad(HidDevice device)
     {
         this.device = device ?? throw new ArgumentNullException(nameof(device));
-        this.messageQueue = messageQueue ?? throw new ArgumentNullException(nameof(messageQueue));
 
         stateSubject = new BehaviorSubject<DeviceState>(GetState());
         State = stateSubject.AsObservable();
 
-        //this.messageQueue
-        //    .Subscribe(wm_, ProcessMessage)
-        //    .DisposeWith(disposable);
+        var sid = WindowsIdentity.GetCurrent().User;
+        var query = "SELECT * FROM RegistryValueChangeEvent WHERE Hive='HKEY_USERS' " +
+            $"AND KeyPath='{sid}\\\\{TOUCHPAD_STATE_KEY.Replace("\\", "\\\\")}' AND ValueName='{TOUCHPAD_STATE_VALUE}'";
 
+
+        watcher = new ManagementEventWatcher(query);
+        watcher.EventArrived += OnWmiEvent;
+        watcher.Start();
     }
 
     public IObservable<DeviceState> State { get; }
@@ -88,8 +93,8 @@ sealed class TouchPad :IDisposable, ITouchPad
         }
     }
 
-    private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
-    { 
-    
+    private void OnWmiEvent(object sender, EventArrivedEventArgs e)
+    {
+        stateSubject.OnNext(GetState());
     }
 }

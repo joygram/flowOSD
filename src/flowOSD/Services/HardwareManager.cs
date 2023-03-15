@@ -67,7 +67,7 @@ sealed class HardwareManager : IDisposable, IHardwareManager
 
         keyboard = new Keyboard(hidDevice);
         keyboardBacklight = new KeyboardBacklight(hidDevice, KeyboardBacklightLevel.Medium); // << change to config
-        touchPad = new TouchPad(hidDevice, this.messageQueue);
+        touchPad = new TouchPad(hidDevice);
 
         display = new Display(this.messageQueue);
 
