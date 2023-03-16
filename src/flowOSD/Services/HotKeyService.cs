@@ -28,7 +28,7 @@ using flowOSD.Api;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 
-sealed class HotKeyManager : IDisposable
+sealed class HotKeyService : IDisposable
 {
     private CompositeDisposable? disposable = new CompositeDisposable();
 
@@ -38,7 +38,7 @@ sealed class HotKeyManager : IDisposable
 
     private Dictionary<AtkKey, Binding> keys = new Dictionary<AtkKey, Binding>();
 
-    public HotKeyManager(IConfig config, ICommandManager commandManager, IKeyboard keyboard)
+    public HotKeyService(IConfig config, ICommandManager commandManager, IKeyboard keyboard)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
@@ -55,6 +55,8 @@ sealed class HotKeyManager : IDisposable
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ExecuteCommand)
             .DisposeWith(disposable);
+
+        UpdateBindings(null);
     }
 
     public void Dispose()
@@ -86,7 +88,7 @@ sealed class HotKeyManager : IDisposable
         Register(AtkKey.Paste, config.UserConfig.PasteCommand);
     }
 
-    private void UpdateBindings(string propertyName)
+    private void UpdateBindings(string? propertyName)
     {
         switch (propertyName)
         {
