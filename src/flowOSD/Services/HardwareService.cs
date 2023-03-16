@@ -45,6 +45,7 @@ sealed class HardwareService : IDisposable, IHardwareService
     private KeyboardBacklight keyboardBacklight;
     private TouchPad touchPad;
     private Display display;
+    private DisplayBrightness displayBrightness;
     private Battery battery;
     private PowerManagement powerManagement;
     private Microphone microphone;
@@ -73,6 +74,7 @@ sealed class HardwareService : IDisposable, IHardwareService
         touchPad = new TouchPad(hidDevice);
 
         display = new Display(this.messageQueue);
+        displayBrightness = new DisplayBrightness();
 
         battery = new Battery();
         powerManagement = new PowerManagement();
@@ -86,6 +88,7 @@ sealed class HardwareService : IDisposable, IHardwareService
         Register<IKeyboardBacklight>(keyboardBacklight);
         Register<ITouchPad>(touchPad);
         Register<IDisplay>(display);
+        Register<IDisplayBrightness>(displayBrightness);
         Register<IBattery>(battery);
         Register<IPowerManagement>(powerManagement);
         Register<IMicrophone>(microphone);
@@ -119,9 +122,15 @@ sealed class HardwareService : IDisposable, IHardwareService
             .DisposeWith(disposable);
 
         keyboard.KeyPressed
-            .Where(x => x == AtkKey.BrightnessDown || x == AtkKey.BrightnewssUp)
+            .Where(x => x == AtkKey.BrightnessDown)
             .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(x => UpdateBrightness(x))
+            .Subscribe(x => displayBrightness.LevelDown())
+            .DisposeWith(disposable);
+
+        keyboard.KeyPressed
+            .Where(x => x == AtkKey.BrightnewssUp)
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(x => displayBrightness.LevelUp())
             .DisposeWith(disposable);
 
         keyboard.KeyPressed
@@ -225,13 +234,5 @@ sealed class HardwareService : IDisposable, IHardwareService
             touchPad.Toggle();
             return;
         }
-    }
-
-    private void UpdateBrightness(AtkKey key)
-    {
-        var delta = key == AtkKey.BrightnessDown ? -0.1 : +0.1;
-        var brightness = display.GetBrightness();
-
-        display.SetBrightness((brightness + delta));
     }
 }

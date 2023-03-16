@@ -40,19 +40,16 @@ sealed partial class Display : IDisposable, IDisplay
     private BehaviorSubject<DeviceState> isStateSubject;
     private BehaviorSubject<DisplayRefreshRates> refreshRatesSubject;
     private BehaviorSubject<uint> refreshRateSubject;
-    private Subject<double> brightnessSubject;
 
     public Display(IMessageQueue messageQueue)
     {
         refreshRatesSubject = new BehaviorSubject<DisplayRefreshRates>(GetRefreshRates());
         isStateSubject = new BehaviorSubject<DeviceState>(GetDeviceState());
         refreshRateSubject = new BehaviorSubject<uint>(GetRefreshRate());
-        brightnessSubject = new Subject<double>();
 
         State = isStateSubject.AsObservable();
         RefreshRates = refreshRatesSubject.AsObservable();
         RefreshRate = refreshRateSubject.AsObservable();
-        Brightness = brightnessSubject.AsObservable();
 
         messageQueue.Subscribe(WM_DISPLAYCHANGE, ProcessMessage).DisposeWith(disposable);
     }
@@ -62,8 +59,6 @@ sealed partial class Display : IDisposable, IDisplay
     public IObservable<DisplayRefreshRates> RefreshRates { get; }
 
     public IObservable<uint> RefreshRate { get; }
-
-    public IObservable<double> Brightness { get; }
 
     public bool SetRefreshRate(uint value)
     {
@@ -103,43 +98,6 @@ sealed partial class Display : IDisposable, IDisplay
 
             default:
                 throw new ApplicationException($"Can't change display refresh rate. Error code: {result}.");
-        }
-    }
-
-    public double GetBrightness()
-    {
-        if (GetBrightness(GetInternalDisplayDeviceName(), out _, out _, out var value))
-        {
-            return value!.Value;
-        }
-
-        return 0;
-    }
-
-    public void SetBrightness(double value)
-    {
-        var deviceName = GetInternalDisplayDeviceName();
-        if (string.IsNullOrEmpty(deviceName) || !GetBrightness(deviceName, out var level, out var levels, out var oldValue))
-        {
-            return;
-        }
-
-        var newValue = Math.Max(0, Math.Min(1, Math.Round(value * 10) / 10));
-        var newIndex = (int)Math.Round((levels!.Length - 1) * newValue);
-
-        using var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorBrightnessMethods");
-        foreach (ManagementObject i in searcher.Get())
-        {
-            if (i.Properties["InstanceName"].Value as string != deviceName)
-            {
-                continue;
-            }
-
-            i.InvokeMethod("WmiSetBrightness", new object[] { uint.MaxValue, levels[newIndex] });
-            var sign = Math.Sign(newValue - oldValue!.Value);
-            brightnessSubject.OnNext((sign == 0 ? 1 : sign) * newValue);
-
-            return;
         }
     }
 
@@ -207,38 +165,6 @@ sealed partial class Display : IDisposable, IDisplay
         return new DisplayRefreshRates(rates);
     }
 
-    private bool GetBrightness(string? deviceName, out byte? level, out byte[]? levels, out double? value)
-    {
-        if (!string.IsNullOrEmpty(deviceName))
-        {
-            var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorBrightness");
-            foreach (var i in searcher.Get())
-            {
-                if (i.Properties["InstanceName"].Value as string != deviceName)
-                {
-                    continue;
-                }
-
-                if (i.Properties["CurrentBrightness"].Value is byte && i.Properties["Level"].Value is byte[])
-                {
-                    level = (byte)i.Properties["CurrentBrightness"].Value;
-                    levels = (byte[])i.Properties["Level"].Value;
-
-                    value = 1d * Array.IndexOf(levels!, level) / (levels!.Length - 1);
-
-                    return true;
-                }
-
-            }
-        }
-
-        level = null;
-        levels = null;
-        value = null;
-
-        return false;
-    }
-
     private bool GetDeviceName(out string? deviceName)
     {
         deviceName = null;
@@ -280,24 +206,20 @@ sealed partial class Display : IDisposable, IDisplay
         return false;
     }
 
-    private string? GetInternalDisplayDeviceName()
+    private string? GetInternalDisplayShortDeviceName()
     {
+        var name = default(string[]);
+
         var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorConnectionParams");
         foreach (var i in searcher.Get())
         {
             if (i.Properties["VideoOutputTechnology"].Value is uint videoOutputTechnology
                 && (videoOutputTechnology & D3DKMDT_VOT_INTERNAL) == D3DKMDT_VOT_INTERNAL)
             {
-                return i.Properties["InstanceName"].Value as string;
+                name = ((i.Properties["InstanceName"].Value as string) ?? string.Empty).Split('\\');
+                break;
             }
         }
-
-        return null;
-    }
-
-    private string? GetInternalDisplayShortDeviceName()
-    {
-        var name = (GetInternalDisplayDeviceName() ?? string.Empty).Split('\\');
 
         if (name != null && name.Length > 1 && name[0] == "DISPLAY")
         {

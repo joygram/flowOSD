@@ -19,13 +19,13 @@
 
 namespace flowOSD.Api.Hardware;
 
-public interface IDisplay
+public interface IDisplayBrightness
 {
-    IObservable<DeviceState> State { get; }
+    double GetLevel();
 
-    IObservable<DisplayRefreshRates> RefreshRates { get; }
+    void SetLevel(double value);
 
-    IObservable<uint> RefreshRate { get; }
+    void LevelUp();
 
-    bool SetRefreshRate(uint value);
+    void LevelDown();
 }

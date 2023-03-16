@@ -41,6 +41,7 @@ sealed class Notifications : IDisposable
     private IPowerManagement powerManagement;
     private ITouchPad touchPad;
     private IDisplay display;
+    private IDisplayBrightness displayBrightness;
     private IKeyboard keyboard;
     private IKeyboardBacklight keyboardBacklight;
     private IMicrophone microphone;
@@ -59,6 +60,7 @@ sealed class Notifications : IDisposable
         powerManagement = hardwareService.ResolveNotNull<IPowerManagement>();
         touchPad = hardwareService.ResolveNotNull<ITouchPad>();
         display = hardwareService.ResolveNotNull<IDisplay>();
+        displayBrightness = hardwareService.ResolveNotNull<IDisplayBrightness>();
         keyboard = hardwareService.ResolveNotNull<IKeyboard>();
         keyboardBacklight = hardwareService.ResolveNotNull<IKeyboardBacklight>();
         microphone = hardwareService.ResolveNotNull<IMicrophone>();
@@ -175,7 +177,7 @@ sealed class Notifications : IDisposable
             ? UIImages.Hardware_BrightnessDown
             : UIImages.Hardware_BrightnessUp;
 
-        osd.Show(new OsdData(icon, display.GetBrightness()));
+        osd.Show(new OsdData(icon, displayBrightness.GetLevel()));
     }
 
     private void ShowMicNotification()
