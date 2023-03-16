@@ -22,4 +22,6 @@ namespace flowOSD.Api.Hardware;
 public interface IMicrophone
 {
     bool IsMicMuted();
+
+    void Toggle();
 }

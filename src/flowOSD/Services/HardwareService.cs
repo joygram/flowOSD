@@ -123,6 +123,12 @@ sealed class HardwareService : IDisposable, IHardwareService
             .Subscribe(x => UpdateBrightness(x))
             .DisposeWith(disposable);
 
+        keyboard.KeyPressed
+            .Where(x => x == AtkKey.Mic)
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(x => microphone.Toggle())
+            .DisposeWith(disposable);
+
         keyboardBacklightService = new KeyboardBacklightService(
             keyboardBacklight, 
             keyboard, 

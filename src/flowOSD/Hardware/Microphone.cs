@@ -47,6 +47,29 @@ sealed class Microphone : IMicrophone
         }
     }
 
+    public void Toggle()
+    {
+        var masterVol = default(IAudioEndpointVolume);
+        try
+        {
+            masterVol = GetMasterVolumeObject(EDataFlow.eCapture);
+            if (masterVol == null)
+            {
+                return;
+            }
+
+            masterVol.GetMute(out bool isMuted);
+            masterVol.SetMute(!isMuted, Guid.Empty);
+        }
+        finally
+        {
+            if (masterVol != null)
+            {
+                Marshal.ReleaseComObject(masterVol);
+            }
+        }
+    }
+
     private IAudioEndpointVolume GetMasterVolumeObject(EDataFlow dataFlow)
     {
         var deviceEnumerator = default(IMMDeviceEnumerator);
