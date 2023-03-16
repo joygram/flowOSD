@@ -27,5 +27,11 @@ public interface IDisplay
 
     IObservable<uint> RefreshRate { get; }
 
+    IObservable<double> Brightness { get; }
+
     bool SetRefreshRate(uint value);
+
+    double GetBrightness();
+
+    void SetBrightness(double value);
 }

@@ -24,6 +24,10 @@ public static class UIImages
 
     public static string Settings = "\ue713";
 
+    public static string Hardware_BrightnessDown = "\uec8a";
+    
+    public static string Hardware_BrightnessUp = "\ue706";
+
     public static string Hardware_AC = "\ue83e";
 
     public static string Hardware_DC = "\ue83f";

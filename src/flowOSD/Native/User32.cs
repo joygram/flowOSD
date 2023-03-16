@@ -80,10 +80,23 @@ static class User32
         [FieldOffset(0)] public HARDWAREINPUT Hardware;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct INPUT
     {
         public UInt32 type;
         public INPUTUNION union;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MONITORINFOEX
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string DeviceName;
     }
 
     [Flags]
@@ -106,8 +119,8 @@ static class User32
 
     [DllImport(nameof(User32), SetLastError = true)]
     public static extern uint SendInput(
-        uint nInputs, 
-        
+        uint nInputs,
+
         INPUT[] pInputs, int cbSize);
 
     [DllImport(nameof(User32), SetLastError = true)]
@@ -138,17 +151,17 @@ static class User32
     [DllImport(nameof(User32), CharSet = CharSet.Auto, SetLastError = true)]
     public static extern IntPtr LoadImage(
         IntPtr hinst,
-        string lpszName, 
-        uint uType, 
-        int cxDesired, 
+        string lpszName,
+        uint uType,
+        int cxDesired,
         int cyDesired,
         uint fuLoad);
 
     [DllImport(nameof(User32), SetLastError = true)]
     public static extern int SendMessage(
-        IntPtr hWnd, 
-        uint wMsg, 
-        IntPtr wParam, 
+        IntPtr hWnd,
+        uint wMsg,
+        IntPtr wParam,
         IntPtr lParam);
 
     [DllImport(nameof(User32), CharSet = CharSet.Auto, SetLastError = true)]
@@ -157,12 +170,12 @@ static class User32
 
     [DllImport(nameof(User32), CharSet = CharSet.Auto, SetLastError = true)]
     public static extern IntPtr GetWindowThreadProcessId(
-        IntPtr hWnd, 
+        IntPtr hWnd,
         IntPtr lpdwProcessId);
 
     [DllImport(nameof(User32), SetLastError = true)]
     public static extern bool ShowWindow(
-        IntPtr hWnd, 
+        IntPtr hWnd,
         int nCmdShow);
 
     [DllImport(nameof(User32), SetLastError = true)]
@@ -182,15 +195,15 @@ static class User32
 
     [DllImport(nameof(User32), SetLastError = true)]
     private static extern IntPtr FindWindowEx(
-        IntPtr parentHandle, 
-        IntPtr hWndChildAfter, 
-        string className, 
+        IntPtr parentHandle,
+        IntPtr hWndChildAfter,
+        string className,
         string windowTitle);
 
     [DllImport(nameof(User32), SetLastError = true)]
     public static extern bool AttachThreadInput(
-        IntPtr idAttach, 
-        IntPtr idAttachTo, 
+        IntPtr idAttach,
+        IntPtr idAttachTo,
         bool fAttach);
 
     [DllImport(nameof(User32), SetLastError = true)]

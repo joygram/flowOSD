@@ -40,26 +40,19 @@ sealed partial class Display : IDisposable, IDisplay
     private BehaviorSubject<DeviceState> isStateSubject;
     private BehaviorSubject<DisplayRefreshRates> refreshRatesSubject;
     private BehaviorSubject<uint> refreshRateSubject;
+    private Subject<double> brightnessSubject;
 
     public Display(IMessageQueue messageQueue)
     {
-        var shortDeviceName = GetInternalDisplayShortDeviceName();
-        if (shortDeviceName == null)
-        {
-            isStateSubject = new BehaviorSubject<DeviceState>(DeviceState.Disabled);
-            refreshRatesSubject = new BehaviorSubject<DisplayRefreshRates>(DisplayRefreshRates.Empty);
-            refreshRateSubject = new BehaviorSubject<uint>(0);
-        }
-        else
-        {
-            refreshRatesSubject = new BehaviorSubject<DisplayRefreshRates>(GetRefreshRates(shortDeviceName));
-            isStateSubject = new BehaviorSubject<DeviceState>(GetDeviceState());
-            refreshRateSubject = new BehaviorSubject<uint>(GetRefreshRate(shortDeviceName));
-        }
+        refreshRatesSubject = new BehaviorSubject<DisplayRefreshRates>(GetRefreshRates());
+        isStateSubject = new BehaviorSubject<DeviceState>(GetDeviceState());
+        refreshRateSubject = new BehaviorSubject<uint>(GetRefreshRate());
+        brightnessSubject = new Subject<double>();
 
         State = isStateSubject.AsObservable();
         RefreshRates = refreshRatesSubject.AsObservable();
         RefreshRate = refreshRateSubject.AsObservable();
+        Brightness = brightnessSubject.AsObservable();
 
         messageQueue.Subscribe(WM_DISPLAYCHANGE, ProcessMessage).DisposeWith(disposable);
     }
@@ -70,17 +63,83 @@ sealed partial class Display : IDisposable, IDisplay
 
     public IObservable<uint> RefreshRate { get; }
 
+    public IObservable<double> Brightness { get; }
+
     public bool SetRefreshRate(uint value)
     {
-        var shortDeviceName = GetInternalDisplayShortDeviceName();
-        if (shortDeviceName == null)
+        if (!GetDeviceName(out var deviceName))
         {
             return false;
         }
-        else
+
+        var refreshRates = refreshRatesSubject.Value;
+
+        if (refreshRates.IsEmpty)
         {
-            SetRefreshRate(shortDeviceName, value);
-            return true;
+            return false;
+        }
+
+        if (refreshRates.High != value && refreshRates.Low != value)
+        {
+            throw new ApplicationException($"Selected refresh rate ({value}) isn't supported.");
+        }
+
+        var mode = new DEVMODE();
+        mode.dmSize = (ushort)Marshal.SizeOf(mode);
+        mode.dmDisplayFrequency = value;
+        mode.dmFields = DM_DISPLAYFREQUENCY;
+
+        var result = ChangeDisplaySettingsEx(deviceName!, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
+        switch (result)
+        {
+            case DISP_CHANGE_SUCCESSFUL:
+                return true;
+
+            case DISP_CHANGE_RESTART:
+                throw new ApplicationException($"Restart is required.");
+
+            case DISP_CHANGE_BADMODE:
+                throw new ApplicationException($"Selected refresh rate ({value}) isn't supported.");
+
+            default:
+                throw new ApplicationException($"Can't change display refresh rate. Error code: {result}.");
+        }
+    }
+
+    public double GetBrightness()
+    {
+        if (GetBrightness(GetInternalDisplayDeviceName(), out _, out _, out var value))
+        {
+            return value!.Value;
+        }
+
+        return 0;
+    }
+
+    public void SetBrightness(double value)
+    {
+        var deviceName = GetInternalDisplayDeviceName();
+        if (string.IsNullOrEmpty(deviceName) || !GetBrightness(deviceName, out var level, out var levels, out var oldValue))
+        {
+            return;
+        }
+
+        var newValue = Math.Max(0, Math.Min(1, Math.Round(value * 10) / 10));
+        var newIndex = (int)Math.Round((levels!.Length - 1) * newValue);
+
+        using var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorBrightnessMethods");
+        foreach (ManagementObject i in searcher.Get())
+        {
+            if (i.Properties["InstanceName"].Value as string != deviceName)
+            {
+                continue;
+            }
+
+            i.InvokeMethod("WmiSetBrightness", new object[] { uint.MaxValue, levels[newIndex] });
+            var sign = Math.Sign(newValue - oldValue!.Value);
+            brightnessSubject.OnNext((sign == 0 ? 1 : sign) * newValue);
+
+            return;
         }
     }
 
@@ -105,25 +164,14 @@ sealed partial class Display : IDisposable, IDisplay
 
     private void UpdateRefreshRates()
     {
-        var shortDeviceName = GetInternalDisplayShortDeviceName();
-        if (shortDeviceName == null)
-        {
-            isStateSubject.OnNext(DeviceState.Disabled);
-            refreshRatesSubject.OnNext(DisplayRefreshRates.Empty);
-            refreshRateSubject.OnNext(0);
-        }
-        else
-        {
-            refreshRatesSubject.OnNext(GetRefreshRates(shortDeviceName));
-            isStateSubject.OnNext(GetDeviceState());
-            refreshRateSubject.OnNext(GetRefreshRate(shortDeviceName));
-        }
+        refreshRatesSubject.OnNext(GetRefreshRates());
+        isStateSubject.OnNext(GetDeviceState());
+        refreshRateSubject.OnNext(GetRefreshRate());
     }
 
-    private uint GetRefreshRate(string shortDeviceName)
+    private uint GetRefreshRate()
     {
-        var deviceName = GetDeviceName(shortDeviceName);
-        if (string.IsNullOrEmpty(deviceName))
+        if (!GetDeviceName(out var deviceName))
         {
             return 0;
         }
@@ -131,7 +179,7 @@ sealed partial class Display : IDisposable, IDisplay
         var mode = new DEVMODE();
         mode.dmSize = (ushort)Marshal.SizeOf(mode);
 
-        if (!EnumDisplaySettings(deviceName, ENUM_CURRENT_SETTINGS, ref mode))
+        if (!EnumDisplaySettings(deviceName!, ENUM_CURRENT_SETTINGS, ref mode))
         {
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
@@ -139,60 +187,17 @@ sealed partial class Display : IDisposable, IDisplay
         return mode.dmDisplayFrequency;
     }
 
-    private bool SetRefreshRate(string shortDeviceName, uint value)
-    {
-        var refreshRates = refreshRatesSubject.Value;
-
-        if (refreshRates.IsEmpty)
-        {
-            return false;
-        }
-
-        if (refreshRates.High != value && refreshRates.Low != value)
-        {
-            throw new ApplicationException($"Selected refresh rate ({value}) isn't supported.");
-        }
-
-        var deviceName = GetDeviceName(shortDeviceName);
-        if (string.IsNullOrEmpty(deviceName))
-        {
-            return false;
-        }
-
-        var mode = new DEVMODE();
-        mode.dmSize = (ushort)Marshal.SizeOf(mode);
-        mode.dmDisplayFrequency = value;
-        mode.dmFields = DM_DISPLAYFREQUENCY;
-
-        var result = ChangeDisplaySettingsEx(deviceName, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
-        switch (result)
-        {
-            case DISP_CHANGE_SUCCESSFUL:
-                return true;
-
-            case DISP_CHANGE_RESTART:
-                throw new ApplicationException($"Restart is required.");
-
-            case DISP_CHANGE_BADMODE:
-                throw new ApplicationException($"Selected refresh rate ({value}) isn't supported.");
-
-            default:
-                throw new ApplicationException($"Can't change display refresh rate. Error code: {result}.");
-        }
-    }
-
-    private DisplayRefreshRates GetRefreshRates(string shortDeviceName)
+    private DisplayRefreshRates GetRefreshRates()
     {
         var rates = new HashSet<uint>();
 
-        var deviceName = GetDeviceName(shortDeviceName);
-        if (!string.IsNullOrEmpty(deviceName))
+        if (GetDeviceName(out var deviceName))
         {
             var mode = new DEVMODE();
             mode.dmSize = (ushort)Marshal.SizeOf(mode);
 
             var modeNumber = 0;
-            while (EnumDisplaySettings(deviceName, modeNumber, ref mode))
+            while (EnumDisplaySettings(deviceName!, modeNumber, ref mode))
             {
                 rates.Add(mode.dmDisplayFrequency);
                 modeNumber++;
@@ -202,8 +207,48 @@ sealed partial class Display : IDisposable, IDisplay
         return new DisplayRefreshRates(rates);
     }
 
-    private string? GetDeviceName(string shortDeviceName)
+    private bool GetBrightness(string? deviceName, out byte? level, out byte[]? levels, out double? value)
     {
+        if (!string.IsNullOrEmpty(deviceName))
+        {
+            var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorBrightness");
+            foreach (var i in searcher.Get())
+            {
+                if (i.Properties["InstanceName"].Value as string != deviceName)
+                {
+                    continue;
+                }
+
+                if (i.Properties["CurrentBrightness"].Value is byte && i.Properties["Level"].Value is byte[])
+                {
+                    level = (byte)i.Properties["CurrentBrightness"].Value;
+                    levels = (byte[])i.Properties["Level"].Value;
+
+                    value = 1d * Array.IndexOf(levels!, level) / (levels!.Length - 1);
+
+                    return true;
+                }
+
+            }
+        }
+
+        level = null;
+        levels = null;
+        value = null;
+
+        return false;
+    }
+
+    private bool GetDeviceName(out string? deviceName)
+    {
+        deviceName = null;
+
+        var shortDeviceName = GetInternalDisplayShortDeviceName();
+        if (shortDeviceName == null)
+        {
+            return false;
+        }
+
         var displayAdapter = new DISPLAY_DEVICE();
         displayAdapter.cb = Marshal.SizeOf<DISPLAY_DEVICE>();
 
@@ -221,7 +266,9 @@ sealed partial class Display : IDisposable, IDisplay
 
                 if (isAttached && !isMirroring && displayMonitor.DeviceID?.Contains(shortDeviceName) == true)
                 {
-                    return displayAdapter.DeviceName;
+                    deviceName = displayAdapter.DeviceName;
+
+                    return true;
                 }
 
                 displayMonitorNumber++;
@@ -230,23 +277,27 @@ sealed partial class Display : IDisposable, IDisplay
             displayAdapterNumber++;
         }
 
-        return null;
+        return false;
     }
 
-    private string? GetInternalDisplayShortDeviceName()
+    private string? GetInternalDisplayDeviceName()
     {
-        var name = default(string[]);
-
         var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorConnectionParams");
         foreach (var i in searcher.Get())
         {
             if (i.Properties["VideoOutputTechnology"].Value is uint videoOutputTechnology
                 && (videoOutputTechnology & D3DKMDT_VOT_INTERNAL) == D3DKMDT_VOT_INTERNAL)
             {
-                name = ((i.Properties["InstanceName"].Value as string) ?? string.Empty).Split('\\');
-                break;
+                return i.Properties["InstanceName"].Value as string;
             }
         }
+
+        return null;
+    }
+
+    private string? GetInternalDisplayShortDeviceName()
+    {
+        var name = (GetInternalDisplayDeviceName() ?? string.Empty).Split('\\');
 
         if (name != null && name.Length > 1 && name[0] == "DISPLAY")
         {

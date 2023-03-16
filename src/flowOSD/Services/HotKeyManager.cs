@@ -34,13 +34,15 @@ sealed class HotKeyManager : IDisposable
 
     private IConfig config;
     private ICommandManager commandManager;
+    private IKeyboard keyboard;
 
     private Dictionary<AtkKey, Binding> keys = new Dictionary<AtkKey, Binding>();
 
     public HotKeyManager(IConfig config, ICommandManager commandManager, IKeyboard keyboard)
     {
-        this.config = config;
-        this.commandManager = commandManager;
+        this.config = config ?? throw new ArgumentNullException(nameof(config));
+        this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
+        this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
 
         this.config.UserConfig.PropertyChanged
             .Throttle(TimeSpan.FromMilliseconds(50))
@@ -48,7 +50,7 @@ sealed class HotKeyManager : IDisposable
             .Subscribe(UpdateBindings)
             .DisposeWith(disposable);
 
-        keyboard.KeyPressed
+        this.keyboard.KeyPressed
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ExecuteCommand)

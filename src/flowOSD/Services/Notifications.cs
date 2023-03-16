@@ -32,7 +32,7 @@ using static flowOSD.Extensions.Common;
 
 sealed class Notifications : IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
     private IOsd osd;
@@ -63,7 +63,7 @@ sealed class Notifications : IDisposable
         keyboardBacklight = hardwareManager.ResolveNotNull<IKeyboardBacklight>();
         microphone = hardwareManager.ResolveNotNull<IMicrophone>();
 
-        Init();
+        Init(disposable);
     }
 
     public void Dispose()
@@ -72,7 +72,7 @@ sealed class Notifications : IDisposable
         disposable = null;
     }
 
-    private void Init()
+    private void Init(CompositeDisposable disposable)
     {
         atk.PerformanceMode
             .Skip(1)
@@ -143,6 +143,13 @@ sealed class Notifications : IDisposable
             .Subscribe(x => ShowKeyboardBacklightNotification(x.key, x.level))
             .DisposeWith(disposable);
 
+        keyboard.KeyPressed
+            .Where(x => x == AtkKey.BrightnessDown || x == AtkKey.BrightnewssUp)
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(ShowDisplayBrightnessNotification)
+            .DisposeWith(disposable);
+
         // Mic Status
 
         keyboard.KeyPressed
@@ -160,6 +167,15 @@ sealed class Notifications : IDisposable
             : UIImages.Hardware_KeyboardLightUp;
 
         osd.Show(new OsdData(icon, (float)backlightLevel / (float)KeyboardBacklightLevel.High));
+    }
+
+    private void ShowDisplayBrightnessNotification(AtkKey key)
+    {
+        var icon = key == AtkKey.BacklightDown
+            ? UIImages.Hardware_BrightnessDown
+            : UIImages.Hardware_BrightnessUp;
+
+        osd.Show(new OsdData(icon, display.GetBrightness()));
     }
 
     private void ShowMicNotification()

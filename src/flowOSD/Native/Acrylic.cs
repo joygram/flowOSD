@@ -16,9 +16,9 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-using System.Runtime.InteropServices;
-
 namespace flowOSD.Native;
+
+using System.Runtime.InteropServices;
 
 static class Acrylic
 {

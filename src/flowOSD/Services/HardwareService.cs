@@ -68,7 +68,7 @@ sealed class HardwareService : IDisposable, IHardwareService
         cpu = new Cpu();
 
         keyboard = new Keyboard(hidDevice);
-        keyboardBacklight = new KeyboardBacklight(hidDevice, KeyboardBacklightLevel.Medium); // << change to config
+        keyboardBacklight = new KeyboardBacklight(hidDevice, KeyboardBacklightLevel.Low); // << change to config
         touchPad = new TouchPad(hidDevice);
 
         display = new Display(this.messageQueue);
@@ -115,6 +115,12 @@ sealed class HardwareService : IDisposable, IHardwareService
             .Where(x => x == AtkKey.BacklightUp)
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(_ => keyboardBacklight.LevelUp())
+            .DisposeWith(disposable);
+
+        keyboard.KeyPressed
+            .Where(x => x == AtkKey.BrightnessDown || x == AtkKey.BrightnewssUp)
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(x => UpdateBrightness(x))
             .DisposeWith(disposable);
 
         keyboardBacklightService = new KeyboardBacklightService(
@@ -200,5 +206,13 @@ sealed class HardwareService : IDisposable, IHardwareService
             touchPad.Toggle();
             return;
         }
+    }
+
+    private void UpdateBrightness(AtkKey key)
+    {
+        var delta = key == AtkKey.BrightnessDown ? -0.1 : +0.1;
+        var brightness = display.GetBrightness();
+
+        display.SetBrightness((brightness + delta));
     }
 }

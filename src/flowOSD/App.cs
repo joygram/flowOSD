@@ -95,6 +95,7 @@ sealed partial class App : IDisposable
             systemEvents,
             commandManager,
             hardwareService).DisposeWith(disposable);
+
         commandManager.Register(new MainUICommand(mainUI));
 
         new NotifyIconUI(
@@ -115,6 +116,8 @@ sealed partial class App : IDisposable
         disposable?.Dispose();
         disposable = null;
     }
+
+
 
     public ApplicationContext ApplicationContext { get; }
 }
