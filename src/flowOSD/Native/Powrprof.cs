@@ -139,4 +139,11 @@ static class Powrprof
     [DllImport(nameof(Powrprof), SetLastError = true)]
     public static extern uint PowerGetEffectiveOverlayScheme(
         out Guid effectiveOverlayGuid);
+
+    [DllImport(nameof(Powrprof), SetLastError = true)]
+    public static extern bool SetSuspendState(
+        bool hiberate, 
+        bool forceCritical,
+        bool disableWakeEvent);
+
 }

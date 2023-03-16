@@ -26,6 +26,7 @@ using flowOSD.Api;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using flowOSD.Hardware;
+using flowOSD.Native;
 using Microsoft.Win32;
 
 sealed class HardwareService : IDisposable, IHardwareService
@@ -127,6 +128,18 @@ sealed class HardwareService : IDisposable, IHardwareService
             .Where(x => x == AtkKey.Mic)
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => microphone.Toggle())
+            .DisposeWith(disposable);
+
+        keyboard.KeyPressed
+            .Where(x => x == AtkKey.TouchPad)
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(x => touchPad.Toggle())
+            .DisposeWith(disposable);
+
+        keyboard.KeyPressed
+            .Where(x => x == AtkKey.Sleep)
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(x => Powrprof.SetSuspendState(true, true, true))
             .DisposeWith(disposable);
 
         keyboardBacklightService = new KeyboardBacklightService(
