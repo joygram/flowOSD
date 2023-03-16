@@ -20,9 +20,9 @@ namespace flowOSD.Api;
 
 public interface INotifyIcon
 {
-    string Text { get; set; }
+    string? Text { get; set; }
 
-    Icon Icon { get; set; }
+    Icon? Icon { get; set; }
 
     IObservable<MouseButtonAction> MouseButtonAction { get; }
 

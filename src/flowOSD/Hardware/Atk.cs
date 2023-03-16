@@ -45,12 +45,13 @@ sealed partial class Atk : IDisposable, IAtk
     public const uint CPU_Fan = 0x00110013;
     public const uint GPU_Fan = 0x00110014;
 
+    private CompositeDisposable? disposable = new CompositeDisposable();
+
     private readonly BehaviorSubject<PerformanceMode> performanceModeSubject;
     private readonly BehaviorSubject<GpuMode> gpuModeSubject;
 
     private SafeFileHandle handle;
 
-    private CompositeDisposable disposable = new CompositeDisposable();
     private readonly object ControlLocker = new object();
 
     public Atk(PerformanceMode? performanceMode)

@@ -36,9 +36,9 @@ sealed class ToggleBoostCommand : CommandBase
         this.powerManagement = powerManagement;
 
         this.powerManagement.IsBoost
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(Update)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         Description = "Toggle CPU Boost Mode";
         Enabled = true;
@@ -46,7 +46,7 @@ sealed class ToggleBoostCommand : CommandBase
 
     public override string Name => nameof(ToggleBoostCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         try
         {

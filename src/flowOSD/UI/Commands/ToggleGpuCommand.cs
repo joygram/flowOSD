@@ -38,9 +38,9 @@ sealed class ToggleGpuCommand : CommandBase
         this.config = config ?? throw new ArgumentNullException(nameof(config));
 
         this.atk.GpuMode
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(Update)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         Description = "Toggle dGPU";
         Enabled = true;
@@ -48,7 +48,7 @@ sealed class ToggleGpuCommand : CommandBase
 
     public override string Name => nameof(ToggleGpuCommand);
 
-    public async override void Execute(object parameter = null)
+    public async override void Execute(object? parameter = null)
     {
         var isGpuEnabled = await atk.GpuMode.FirstAsync() == GpuMode.dGpu;
         if (!Confirm(isGpuEnabled))

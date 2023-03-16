@@ -23,16 +23,16 @@ namespace flowOSD.UI.Components;
 
 internal sealed class CxLabel : Label
 {
-    private string icon;
-    private Font iconFont;
+    private string? icon;
+    private Font? iconFont;
 
     public CxLabel()
     {
-        icon = string.Empty;
+        icon = null;
         iconFont = null;
     }
 
-    public string Icon
+    public string? Icon
     {
         get => icon;
         set
@@ -47,7 +47,7 @@ internal sealed class CxLabel : Label
         }
     }
 
-    public Font IconFont
+    public Font? IconFont
     {
         get => iconFont;
         set

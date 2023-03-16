@@ -44,7 +44,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
     private static Guid OVERLAY_BETTER_PERFORMANCE = new Guid("3af9B8d9-7c97-431d-ad78-34a8bfea439f");
     private static Guid OVERLAY_BEST_PERFORMANCE = new Guid("ded574b5-45a0-4f42-8737-46345c09c238");
 
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private BehaviorSubject<bool> isBoostSubject, isDCSubject, isBatterySaverSubject;
     private BehaviorSubject<PowerMode> powerModeSubject;
@@ -228,12 +228,6 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
 
     private int HandlerCallback(IntPtr context, int eventType, IntPtr setting)
     {
-        const int PBT_POWERSETTINGCHANGE = 0x8013;
-        const int PBT_APMRESUMEAUTOMATIC = 0x0012;
-        const int PBT_APMPOWERSTATUSCHANGE = 0x000A;
-        const int PBT_APMRESUMESUSPEND = 0x0007;
-        const int PBT_APMSUSPEND = 0x0004;
-
         switch (eventType)
         {
             case PBT_APMSUSPEND:
@@ -317,9 +311,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
         private IntPtr handle;
 
         public PowerSettingSubscription(Guid setting, DEVICENOTIFYPROC callback)
-        {
-            const int DEVICE_NOTIFY_CALLBACK = 0x2;
-
+        { 
             this.callback = callback;
 
             var errorCode = PowerSettingRegisterNotification(
@@ -393,8 +385,6 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
 
         public PowerSuspendResumeSubscription(DEVICENOTIFYPROC callback)
         {
-            const int DEVICE_NOTIFY_CALLBACK = 0x2;
-
             this.callback = callback;
 
             var errorCode = PowerRegisterSuspendResumeNotification(

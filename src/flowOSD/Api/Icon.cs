@@ -53,11 +53,11 @@ public sealed partial class Icon : IDisposable
 
     public IntPtr Handler => handler;
 
-    public static Icon LoadFromResource(string resourceName, int dpi)
+    public static Icon? LoadFromResource(string resourceName, int dpi)
     {
         using var stream = typeof(Icon).Assembly.GetManifestResourceStream(resourceName);
 
-        return new Icon(stream, dpi);
+        return stream == null ? null : new Icon(stream, dpi);
     }
 
     public void Dispose()

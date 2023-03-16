@@ -33,7 +33,7 @@ sealed class Keyboard : IDisposable, IKeyboard
 
     private volatile uint lastSpecialKeyTime;
 
-    private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+    private CancellationTokenSource? cancellationTokenSource = new CancellationTokenSource();
     private Subject<AtkKey> keyPressedSubject;
 
     public Keyboard(HidDevice device)

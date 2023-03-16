@@ -27,6 +27,8 @@ using flowOSD.Extensions;
 
 internal sealed class CxButton : ButtonBase
 {
+    private CompositeDisposable? disposable = new CompositeDisposable();
+
     private const float BACKGROUND_HOVER = -.1f;
     private const float BACKGROUND_PRESSED = -.2f;
     private const float BACKGROUND_DISABLED = .4f;
@@ -36,25 +38,22 @@ internal sealed class CxButton : ButtonBase
     private const float BORDER = .2f;
     private const int FOCUS_SPACE = 3;
 
-    private CompositeDisposable disposable;
 
     private ButtonState state;
-    private CxTabListener tabListener;
+    private CxTabListener? tabListener;
 
-    private Pen focusPen;
+    private Pen? focusPen;
 
     private Color accentColor, textColor, textBrightColor;
     private bool isToggle, isTransparent, isChecked;
 
     private string icon;
-    private Font iconFont;
+    private Font? iconFont;
 
-    private CxContextMenu dropDownMenu;
+    private CxContextMenu? dropDownMenu;
 
     public CxButton()
     {
-        disposable = new CompositeDisposable();
-
         isToggle = false;
         isChecked = false;
         isTransparent = false;
@@ -72,7 +71,7 @@ internal sealed class CxButton : ButtonBase
         iconFont = null;
     }
 
-    public CxContextMenu DropDownMenu
+    public CxContextMenu? DropDownMenu
     {
         get => dropDownMenu;
         set
@@ -114,7 +113,7 @@ internal sealed class CxButton : ButtonBase
 
             if (focusPen != null)
             {
-                disposable.Remove(focusPen);
+                disposable?.Remove(focusPen);
                 focusPen.Dispose();
             }
 
@@ -153,7 +152,7 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
-    public CxTabListener TabListener
+    public CxTabListener? TabListener
     {
         get => tabListener;
         set
@@ -194,7 +193,7 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
-    public Font IconFont
+    public Font? IconFont
     {
         get => iconFont;
         set
@@ -460,8 +459,13 @@ internal sealed class CxButton : ButtonBase
             e.Graphics.DrawRoundedRectangle(pen, drawingAreaRect, 8);
         }
 
-        if (TabListener.ShowKeyboardFocus && Focused)
+        if (TabListener?.ShowKeyboardFocus == true && Focused)
         {
+            if (focusPen == null)
+            {
+                throw new InvalidOperationException("focusPen is null");
+            }
+
             e.Graphics.DrawRoundedRectangle(focusPen, 0, 0, Width - 1, Height - 1, 8);
         }
 
@@ -598,7 +602,7 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
-    private void OnShowKeyboardFocusChanged(object sender, EventArgs e)
+    private void OnShowKeyboardFocusChanged(object? sender, EventArgs e)
     {
         Invalidate();
     }

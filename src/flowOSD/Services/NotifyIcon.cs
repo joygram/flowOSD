@@ -31,7 +31,7 @@ using static Native.Messages;
 
 sealed partial class NotifyIcon : INotifyIcon, IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
     private Dictionary<int, MouseButtonAction> messageToMouseButtonAction;
 
     private static readonly Guid IconGuid = new Guid("EF27BC18-C13D-4056-BE35-3603AB766796");
@@ -40,8 +40,8 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
     private Subject<MouseButtonAction> mouseButtonAction;
 
     private IMessageQueue messageQueue;
-    private string text;
-    private Icon icon;
+    private string? text;
+    private Icon? icon;
 
     public NotifyIcon(IMessageQueue messageQueue)
     {
@@ -74,7 +74,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         disposable = null;
     }
 
-    public string Text
+    public string? Text
     {
         get => text;
         set
@@ -89,7 +89,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         }
     }
 
-    public Icon Icon
+    public Icon? Icon
     {
         get => icon;
         set
@@ -163,7 +163,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
             hIcon = Icon?.Handler ?? IntPtr.Zero,
             hWnd = messageQueue.Handle,
             uCallbackMessage = MessageId,
-            szTip = Text,
+            szTip = Text ?? string.Empty,
             uVersion = 5,
             guidItem = IconGuid
         };

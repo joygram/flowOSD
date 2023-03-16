@@ -26,7 +26,7 @@ sealed class Microphone : IMicrophone
 {
     public bool IsMicMuted()
     {
-        IAudioEndpointVolume masterVol = null;
+        var masterVol = default(IAudioEndpointVolume);
         try
         {
             masterVol = GetMasterVolumeObject(EDataFlow.eCapture);
@@ -49,8 +49,8 @@ sealed class Microphone : IMicrophone
 
     private IAudioEndpointVolume GetMasterVolumeObject(EDataFlow dataFlow)
     {
-        IMMDeviceEnumerator deviceEnumerator = null;
-        IMMDevice mic = null;
+        var deviceEnumerator = default(IMMDeviceEnumerator);
+        var mic = default(IMMDevice);
         try
         {
             deviceEnumerator = (IMMDeviceEnumerator)(new MMDeviceEnumerator());

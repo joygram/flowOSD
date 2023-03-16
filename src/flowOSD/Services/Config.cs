@@ -30,7 +30,7 @@ sealed class Config : IConfig, IDisposable
 {
     private const string RUN_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
 
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
     private FileInfo configFile;
     private Lazy<UserConfig> userConfig;
 
@@ -38,9 +38,15 @@ sealed class Config : IConfig, IDisposable
     {
         AppFile = new FileInfo(typeof(Config).Assembly.Location);
         AppFileInfo = FileVersionInfo.GetVersionInfo(AppFile.FullName);
+
+        if (string.IsNullOrEmpty(AppFileInfo.ProductName))
+        {
+            throw new ApplicationException("Product Name isn't set");
+        }
+
         DataDirectory = new DirectoryInfo(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            AppFileInfo.ProductName));
+            AppFileInfo.ProductName!));
 
         if (!DataDirectory.Exists)
         {
@@ -91,7 +97,7 @@ sealed class Config : IConfig, IDisposable
         {
             using (var stream = configFile.OpenRead())
             {
-                return JsonSerializer.Deserialize<UserConfig>(stream);
+                return JsonSerializer.Deserialize<UserConfig>(stream) ?? new UserConfig();
             }
         }
         catch (Exception)
@@ -114,7 +120,7 @@ sealed class Config : IConfig, IDisposable
     {
         using (var key = Registry.CurrentUser.OpenSubKey(RUN_KEY, true))
         {
-            return key.GetValue(AppFileInfo.ProductName) != null;
+            return key?.GetValue(AppFileInfo.ProductName) != null;
         }
     }
 
@@ -122,13 +128,18 @@ sealed class Config : IConfig, IDisposable
     {
         using (var key = Registry.CurrentUser.OpenSubKey(RUN_KEY, true))
         {
+            if (key == null)
+            {
+                throw new ApplicationException("Can't write to Windows registry");
+            }
+
             if (runAtStartup)
             {
-                key.SetValue(AppFileInfo.ProductName, Application.ExecutablePath);
+                key.SetValue(AppFileInfo.ProductName!, Application.ExecutablePath);
             }
             else
             {
-                key.DeleteValue(AppFileInfo.ProductName, false);
+                key.DeleteValue(AppFileInfo.ProductName!, false);
             }
         }
     }

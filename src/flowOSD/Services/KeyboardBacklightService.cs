@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -16,38 +16,27 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api;
+using System.Reactive.Disposables;
+using flowOSD.Api.Hardware;
 
-public class OsdData
+namespace flowOSD.Services;
+
+sealed class KeyboardBacklightService : IDisposable
 {
-    public OsdData(string text)
+    private CompositeDisposable? disposable = new CompositeDisposable();
+
+    private IKeyboardBacklight keyboardBacklight;
+    private IKeyboard keyboard;
+
+    public KeyboardBacklightService(IKeyboardBacklight keyboardBacklight, IKeyboard keyboard)
     {
-        Icon = null;
-        Text = text;
-        Value = null;
+        this.keyboardBacklight = keyboardBacklight;
+        this.keyboard = keyboard;
     }
 
-    public OsdData(string icon, string text)
+    public void Dispose()
     {
-        Icon = icon;
-        Text = text;
-        Value = null;
+        disposable?.Dispose();
+        disposable = null;
     }
-
-    public OsdData(string icon, double value)
-    {
-        Icon = icon;
-        Text = null;
-        Value = value;
-    }
-
-    public string? Icon { get; }
-
-    public string? Text { get; }
-
-    public double? Value { get; }
-
-    public bool HasIcon => !string.IsNullOrEmpty(Icon);
-
-    public bool IsIndicator => Value != null;
 }

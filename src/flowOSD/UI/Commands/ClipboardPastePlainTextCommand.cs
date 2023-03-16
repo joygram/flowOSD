@@ -35,7 +35,7 @@ sealed class ClipboardPastePlainTextCommand : CommandBase
 
     public override string Name => nameof(ClipboardPastePlainTextCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         if (Clipboard.ContainsText())
         {

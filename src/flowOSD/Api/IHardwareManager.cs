@@ -22,5 +22,7 @@ using System.ComponentModel;
 
 public interface IHardwareManager
 {
-    T Resolve<T>() where T : class;
+    T? Resolve<T>() where T : class;
+
+    T ResolveNotNull<T>() where T : class;
 }

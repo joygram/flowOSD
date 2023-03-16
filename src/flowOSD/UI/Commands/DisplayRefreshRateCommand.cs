@@ -42,15 +42,15 @@ sealed class DisplayRefreshRateCommand : CommandBase
         display.RefreshRates
             .CombineLatest(display.State, (x, displayState) => (displayState == DeviceState.Enabled) && x.IsLowAvailable && x.IsHighAvailable)
             .Throttle(TimeSpan.FromMilliseconds(200))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => Enabled = x)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         display.RefreshRate
             .Throttle(TimeSpan.FromMilliseconds(200))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(Update)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         Description = "Toggle High Refresh Rate";
         Enabled = true;
@@ -58,7 +58,7 @@ sealed class DisplayRefreshRateCommand : CommandBase
 
     public override string Name => nameof(DisplayRefreshRateCommand);
 
-    public override async void Execute(object parameter = null)
+    public override async void Execute(object? parameter = null)
     {
         try
         {

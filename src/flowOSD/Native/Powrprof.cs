@@ -23,6 +23,14 @@ namespace flowOSD.Native;
 
 static class Powrprof
 {
+    public const int DEVICE_NOTIFY_CALLBACK = 0x2;
+
+    public const int PBT_POWERSETTINGCHANGE = 0x8013;
+    public const int PBT_APMRESUMEAUTOMATIC = 0x0012;
+    public const int PBT_APMPOWERSTATUSCHANGE = 0x000A;
+    public const int PBT_APMRESUMESUSPEND = 0x0007;
+    public const int PBT_APMSUSPEND = 0x0004;
+
     public delegate int DEVICENOTIFYPROC(IntPtr context, int type, IntPtr setting);
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]

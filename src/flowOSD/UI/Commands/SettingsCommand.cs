@@ -39,7 +39,7 @@ sealed class SettingsCommand : CommandBase
 
     public override bool CanExecuteWithHotKey => false;
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         configUI.Show();
     }

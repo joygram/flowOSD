@@ -26,7 +26,7 @@ using System.Windows.Input;
 
 public sealed class DisplayRefreshRates
 {
-    public static readonly DisplayRefreshRates Empty = new DisplayRefreshRates(null);
+    public static readonly DisplayRefreshRates Empty = new DisplayRefreshRates(new HashSet<uint>());
 
     private const uint LoEdge = 60, HiEdge = 90;
 
@@ -34,8 +34,8 @@ public sealed class DisplayRefreshRates
     {
         IsEmpty = values == null || values.Count == 0;
 
-        var min = IsEmpty ? 0 : values.Min();
-        var max = IsEmpty ? 0 : values.Max();
+        var min = IsEmpty ? 0 : values!.Min();
+        var max = IsEmpty ? 0 : values!.Max();
 
         Low = min < LoEdge && min >= HiEdge ? null : min;
         High = max < HiEdge ? null : max;

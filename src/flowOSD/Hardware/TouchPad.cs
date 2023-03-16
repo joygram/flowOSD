@@ -38,7 +38,7 @@ sealed class TouchPad : IDisposable, ITouchPad
     private const string TOUCHPAD_STATE_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad\Status";
     private const string TOUCHPAD_STATE_VALUE = "Enabled";
 
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private HidDevice device;
 
@@ -55,7 +55,6 @@ sealed class TouchPad : IDisposable, ITouchPad
         var sid = WindowsIdentity.GetCurrent().User;
         var query = "SELECT * FROM RegistryValueChangeEvent WHERE Hive='HKEY_USERS' " +
             $"AND KeyPath='{sid}\\\\{TOUCHPAD_STATE_KEY.Replace("\\", "\\\\")}' AND ValueName='{TOUCHPAD_STATE_VALUE}'";
-
 
         watcher = new ManagementEventWatcher(query);
         watcher.EventArrived += OnWmiEvent;
@@ -87,7 +86,7 @@ sealed class TouchPad : IDisposable, ITouchPad
     {
         using (var key = Registry.CurrentUser.OpenSubKey(TOUCHPAD_STATE_KEY, false))
         {
-            return key.GetValue(TOUCHPAD_STATE_VALUE)?.ToString() == "1"
+            return key?.GetValue(TOUCHPAD_STATE_VALUE)?.ToString() == "1"
                 ? DeviceState.Enabled
                 : DeviceState.Disabled;
         }

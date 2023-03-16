@@ -113,7 +113,7 @@ sealed class MessageQueue : IMessageQueue, IDisposable
     {
         private MessageQueue queue;
 
-        private Form form;
+        private Form? form;
 
         public NativeUI(MessageQueue queue)
         {

@@ -18,6 +18,9 @@
  */
 namespace flowOSD.Services;
 
+// This module needs for refactoring
+#pragma warning disable CS8625, CS8602, CS8618
+
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -30,7 +33,7 @@ using static Native.User32;
 
 sealed partial class Osd : IOsd, IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
     private OsdForm form;
 
     private Subject<OsdData> dataSubject;
@@ -41,7 +44,7 @@ sealed partial class Osd : IOsd, IDisposable
         dataSubject
             .Where(x => !x.IsIndicator)
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x =>
             {
                 form.Show(x);
@@ -50,7 +53,7 @@ sealed partial class Osd : IOsd, IDisposable
 
         dataSubject
             .Where(x => x.IsIndicator)
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x =>
             {
                 form.Show(x);
@@ -143,7 +146,7 @@ sealed partial class Osd : IOsd, IDisposable
 
             hideTimer = Observable
                 .Timer(DateTimeOffset.Now.AddMilliseconds(Parameters.Timeout), TimeSpan.FromMilliseconds(500 / 16))
-                .ObserveOn(SynchronizationContext.Current)
+                .ObserveOn(SynchronizationContext.Current!)
                 .Subscribe(t =>
                 {
                     Opacity -= .1;

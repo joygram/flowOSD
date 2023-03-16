@@ -36,9 +36,9 @@ sealed class ToggleTouchPadCommand : CommandBase
         this.touchPad = touchPad ?? throw new ArgumentNullException(nameof(touchPad));
 
         this.touchPad.State
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(Update)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         Description = "Toggle TouchPad";
         Enabled = true;
@@ -46,7 +46,7 @@ sealed class ToggleTouchPadCommand : CommandBase
 
     public override string Name => nameof(ToggleTouchPadCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         try
         {

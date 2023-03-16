@@ -28,7 +28,7 @@ static class Common
 
     public static short Low(this IntPtr value) => BitConverter.ToInt16(BitConverter.GetBytes(value), 0);
 
-    public static T FirstOrDefault<T>(this ICollection collection, Func<T, bool> condition)
+    public static T? FirstOrDefault<T>(this ICollection collection, Func<T, bool> condition)
     {
         foreach (var i in collection)
         {

@@ -27,23 +27,23 @@ using flowOSD.Api;
 
 sealed class RelayCommand : ICommand
 {
-    private Action<object> action;
-    private Func<object, bool> canExecute;
+    private Action<object?> action;
+    private Func<object?, bool>? canExecute;
 
-    public RelayCommand(Action<object> action, Func<object, bool> canExecute = null)
+    public RelayCommand(Action<object?> action, Func<object?, bool>? canExecute = null)
     {
         this.action = action ?? throw new ArgumentNullException(nameof(action));
         this.canExecute = canExecute;
     }
 
-    public event EventHandler CanExecuteChanged;
+    public event EventHandler? CanExecuteChanged;
 
-    public bool CanExecute(object parameter)
+    public bool CanExecute(object? parameter)
     {
         return canExecute == null? true:canExecute(parameter);
     }
 
-    public void Execute(object parameter)
+    public void Execute(object? parameter)
     {
         action(parameter);
     }

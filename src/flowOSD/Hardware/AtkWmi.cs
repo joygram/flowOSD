@@ -40,7 +40,7 @@ sealed class AtkWmi : IDisposable, IAtkWmi
 
     private Atk atk;
 
-    private ManagementEventWatcher watcher;
+    private ManagementEventWatcher? watcher;
     private readonly BehaviorSubject<ChargerType> chargerTypeSubject;
     private readonly BehaviorSubject<TabletMode> tabletModeSubject;
 

@@ -30,7 +30,7 @@ using static flowOSD.Extensions.Forms;
 
 sealed class AboutUI : IDisposable
 {
-    private Window instance;
+    private Window? instance;
     private IConfig config;
 
     public AboutUI(IConfig config)
@@ -93,7 +93,7 @@ sealed class AboutUI : IDisposable
                 .Add<PictureBox>(0, 0, 1, 3, x =>
                 {
                     x.Image = System.Drawing.Icon
-                        .ExtractAssociatedIcon(Assembly.GetCallingAssembly().Location)
+                        .ExtractAssociatedIcon(Assembly.GetCallingAssembly().Location)?
                         .ToBitmap().DisposeWith(disposable);
 
                     x.Size = new Size(64, 64);

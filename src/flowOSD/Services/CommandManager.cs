@@ -41,14 +41,25 @@ sealed class CommandManager : ICommandManager
         }
     }
 
-    public CommandBase Resolve(string commandName)
+    public CommandBase? Resolve(string? commandName)
     {
-        return !string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out CommandBase command) ? command : null;
+        return !string.IsNullOrEmpty(commandName) && names.TryGetValue(commandName, out CommandBase? command) ? command : null;
     }
 
-    public T Resolve<T>() where T : CommandBase
+    public T? Resolve<T>() where T : CommandBase
     {
         return Resolve(typeof(T).Name) as T;
+    }
+
+    public T ResolveNotNull<T>() where T : CommandBase
+    {
+        return Resolve<T>() ?? throw new InvalidOperationException($"Can't resolve {typeof(T).Name}");
+    }
+
+    public bool TryResolve<T>(out T? command) where T : CommandBase
+    {
+        command = Resolve<T>();
+        return command != null;
     }
 
     public IList<CommandBase> Commands => names.Values.Where(i => i.CanExecuteWithHotKey).ToArray();

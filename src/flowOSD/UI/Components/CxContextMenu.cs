@@ -29,12 +29,10 @@ namespace flowOSD.UI.Components;
 
 sealed class CxContextMenu : ContextMenuStrip
 {
-    private CompositeDisposable disposable;
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     public CxContextMenu()
     {
-        disposable = new CompositeDisposable();
-
         base.Renderer = new MenuRenderer().DisposeWith(disposable);
 
         BackgroundHoverColor = Color.FromArgb(255, 25, 110, 191);
@@ -136,9 +134,9 @@ sealed class CxContextMenu : ContextMenuStrip
         }
     }
 
-    private new MenuRenderer Renderer => base.Renderer as MenuRenderer;
+    private new MenuRenderer Renderer => (base.Renderer as MenuRenderer)!;
 
-    public static ToolStripMenuItem CreateMenuItem(string text, ICommand command, object commandParameter = null)
+    public static ToolStripMenuItem CreateMenuItem(string text, ICommand command, object? commandParameter = null)
     {
         var item = new ToolStripMenuItem();
         item.Margin = new Padding(0, 8, 0, 8);
@@ -149,7 +147,7 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
-    public static ToolStripMenuItem CreateMenuItem(CommandBase command, object commandParameter = null)
+    public static ToolStripMenuItem CreateMenuItem(CommandBase command, object? commandParameter = null)
     {
         var item = new ToolStripMenuItem();
         item.Margin = new Padding(0, 8, 0, 8);
@@ -162,7 +160,7 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
-    public static ToolStripSeparator CreateSeparator(ToolStripItem dependsOn = null)
+    public static ToolStripSeparator CreateSeparator(ToolStripItem? dependsOn = null)
     {
         var item = new ToolStripSeparator();
 
@@ -186,7 +184,7 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
-    public ToolStripItem AddMenuItem(CommandBase command, object commandParameter = null)
+    public ToolStripItem AddMenuItem(CommandBase command, object? commandParameter = null)
     {
         var item = CreateMenuItem(command, commandParameter);
 
@@ -195,7 +193,7 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
-    public ToolStripItem AddMenuItem(string text, ICommand command, object commandParameter = null)
+    public ToolStripItem AddMenuItem(string text, ICommand command, object? commandParameter = null)
     {
         var item = CreateMenuItem(text, command, commandParameter);
 
@@ -204,7 +202,7 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
-    public ToolStripSeparator AddSeparator(ToolStripItem dependsOn = null)
+    public ToolStripSeparator AddSeparator(ToolStripItem? dependsOn = null)
     {
         var item = CreateSeparator(dependsOn);
 
@@ -217,7 +215,7 @@ sealed class CxContextMenu : ContextMenuStrip
     {
         if (disposing)
         {
-            disposable.Dispose();
+            disposable?.Dispose();
             disposable = null;
         }
 
@@ -231,14 +229,13 @@ sealed class CxContextMenu : ContextMenuStrip
 
     private class MenuRenderer : ToolStripRenderer, IDisposable
     {
-        private SolidBrush textBrush, textBrightBrush, textDisabledBrush, backgroundHoverBrush;
-        private Pen separatorPen;
+        private SolidBrush? textBrush, textBrightBrush, textDisabledBrush, backgroundHoverBrush;
+        private Pen? separatorPen;
 
-        private CompositeDisposable disposable;
+        private CompositeDisposable? disposable = new CompositeDisposable();
 
         public MenuRenderer()
         {
-            disposable = new CompositeDisposable();
         }
 
         void IDisposable.Dispose()
@@ -257,6 +254,8 @@ sealed class CxContextMenu : ContextMenuStrip
             get => (backgroundHoverBrush?.Color) ?? Color.Empty;
             set
             {
+                CheckDisposed();
+
                 if (backgroundHoverBrush?.Color == value)
                 {
                     return;
@@ -264,11 +263,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
                 if (backgroundHoverBrush != null)
                 {
-                    disposable.Remove(backgroundHoverBrush);
+                    disposable!.Remove(backgroundHoverBrush);
                     backgroundHoverBrush.Dispose();
                 }
 
-                backgroundHoverBrush = new SolidBrush(value).DisposeWith(disposable);
+                backgroundHoverBrush = new SolidBrush(value).DisposeWith(disposable!);
             }
         }
 
@@ -277,6 +276,8 @@ sealed class CxContextMenu : ContextMenuStrip
             get => (separatorPen?.Color) ?? Color.Empty;
             set
             {
+                CheckDisposed();
+
                 if (separatorPen?.Color == value)
                 {
                     return;
@@ -284,11 +285,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
                 if (separatorPen != null)
                 {
-                    disposable.Remove(separatorPen);
+                    disposable!.Remove(separatorPen);
                     separatorPen.Dispose();
                 }
 
-                separatorPen = new Pen(value, 1).DisposeWith(disposable);
+                separatorPen = new Pen(value, 1).DisposeWith(disposable!);
             }
         }
 
@@ -297,6 +298,8 @@ sealed class CxContextMenu : ContextMenuStrip
             get => (textBrush?.Color) ?? Color.Empty;
             set
             {
+                CheckDisposed();
+
                 if (textBrush?.Color == value)
                 {
                     return;
@@ -304,11 +307,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
                 if (textBrush != null)
                 {
-                    disposable.Remove(textBrush);
+                    disposable!.Remove(textBrush);
                     textBrush.Dispose();
                 }
 
-                textBrush = new SolidBrush(value).DisposeWith(disposable);
+                textBrush = new SolidBrush(value).DisposeWith(disposable!);
             }
         }
 
@@ -317,6 +320,8 @@ sealed class CxContextMenu : ContextMenuStrip
             get => (textBrightBrush?.Color) ?? Color.Empty;
             set
             {
+                CheckDisposed();
+
                 if (textBrightBrush?.Color == value)
                 {
                     return;
@@ -324,11 +329,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
                 if (textBrightBrush != null)
                 {
-                    disposable.Remove(textBrightBrush);
+                    disposable!.Remove(textBrightBrush);
                     textBrightBrush.Dispose();
                 }
 
-                textBrightBrush = new SolidBrush(value).DisposeWith(disposable);
+                textBrightBrush = new SolidBrush(value).DisposeWith(disposable!);
             }
         }
 
@@ -337,6 +342,8 @@ sealed class CxContextMenu : ContextMenuStrip
             get => (textDisabledBrush?.Color) ?? Color.Empty;
             set
             {
+                CheckDisposed();
+
                 if (textDisabledBrush?.Color == value)
                 {
                     return;
@@ -344,11 +351,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
                 if (textDisabledBrush != null)
                 {
-                    disposable.Remove(textDisabledBrush);
+                    disposable!.Remove(textDisabledBrush);
                     textDisabledBrush.Dispose();
                 }
 
-                textDisabledBrush = new SolidBrush(value).DisposeWith(disposable);
+                textDisabledBrush = new SolidBrush(value).DisposeWith(disposable!);
             }
         }
 
@@ -395,15 +402,23 @@ sealed class CxContextMenu : ContextMenuStrip
 
             if (e.Item.Selected && e.Item.Enabled)
             {
-                const int offset =8;
+                const int offset = 8;
 
                 var x = e.Item.ContentRectangle.X + offset;
                 var y = e.Item.ContentRectangle.Y + 1;
-                var width = e.Item.ContentRectangle.Width - offset*2;
+                var width = e.Item.ContentRectangle.Width - offset * 2;
                 var height = e.Item.ContentRectangle.Height - 2;
 
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
                 e.Graphics.FillRoundedRectangle(backgroundHoverBrush, x, y, width, height, 4);
+            }
+        }
+
+        private void CheckDisposed()
+        {
+            if (disposable == null)
+            {
+                throw new ObjectDisposedException(nameof(MenuRenderer));
             }
         }
     }

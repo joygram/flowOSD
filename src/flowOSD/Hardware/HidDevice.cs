@@ -185,7 +185,7 @@ sealed class HidDevice
     {
         private Guid hidClassGuid;
 
-        private HidDevice current;
+        private HidDevice? current;
         private uint deviceIndex, deviceInterfaceIndex;
 
         private IntPtr deviceInfoSet;
@@ -214,9 +214,9 @@ sealed class HidDevice
             GC.SuppressFinalize(this);
         }
 
-        object System.Collections.IEnumerator.Current => current;
+        object System.Collections.IEnumerator.Current => this.Current;
 
-        public HidDevice Current => current;
+        public HidDevice Current => current ?? throw new InvalidOperationException();
 
         public bool MoveNext()
         {

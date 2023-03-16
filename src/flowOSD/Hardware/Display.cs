@@ -35,7 +35,7 @@ sealed partial class Display : IDisposable, IDisplay
 {
     private const uint D3DKMDT_VOT_INTERNAL = 0x80000000;
 
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private BehaviorSubject<DeviceState> isStateSubject;
     private BehaviorSubject<DisplayRefreshRates> refreshRatesSubject;
@@ -202,7 +202,7 @@ sealed partial class Display : IDisposable, IDisplay
         return new DisplayRefreshRates(rates);
     }
 
-    private string GetDeviceName(string shortDeviceName)
+    private string? GetDeviceName(string shortDeviceName)
     {
         var displayAdapter = new DISPLAY_DEVICE();
         displayAdapter.cb = Marshal.SizeOf<DISPLAY_DEVICE>();
@@ -233,9 +233,9 @@ sealed partial class Display : IDisposable, IDisplay
         return null;
     }
 
-    private string GetInternalDisplayShortDeviceName()
+    private string? GetInternalDisplayShortDeviceName()
     {
-        string[] name = null;
+        var name = default(string[]);
 
         var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorConnectionParams");
         foreach (var i in searcher.Get())

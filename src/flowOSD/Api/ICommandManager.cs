@@ -22,9 +22,13 @@ using System.ComponentModel;
 
 public interface ICommandManager
 {
-    CommandBase Resolve(string commandName);
+    CommandBase? Resolve(string? commandName);
 
-    T Resolve<T>() where T : CommandBase;
+    T? Resolve<T>() where T : CommandBase;
+
+    T ResolveNotNull<T>() where T : CommandBase;
+
+    bool TryResolve<T>(out T? command) where T : CommandBase;
 
     public IList<CommandBase> Commands { get; }
 }

@@ -55,13 +55,13 @@ sealed class Notifications : IDisposable
             throw new ArgumentNullException("hardwareManager");
         }
 
-        atk = hardwareManager.Resolve<IAtk>();
-        powerManagement = hardwareManager.Resolve<IPowerManagement>();
-        touchPad = hardwareManager.Resolve<ITouchPad>();
-        display = hardwareManager.Resolve<IDisplay>();
-        keyboard = hardwareManager.Resolve<IKeyboard>();
-        keyboardBacklight = hardwareManager.Resolve<IKeyboardBacklight>();
-        microphone = hardwareManager.Resolve<IMicrophone>();
+        atk = hardwareManager.ResolveNotNull<IAtk>();
+        powerManagement = hardwareManager.ResolveNotNull<IPowerManagement>();
+        touchPad = hardwareManager.ResolveNotNull<ITouchPad>();
+        display = hardwareManager.ResolveNotNull<IDisplay>();
+        keyboard = hardwareManager.ResolveNotNull<IKeyboard>();
+        keyboardBacklight = hardwareManager.ResolveNotNull<IKeyboardBacklight>();
+        microphone = hardwareManager.ResolveNotNull<IMicrophone>();
 
         Init();
     }
@@ -78,7 +78,7 @@ sealed class Notifications : IDisposable
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowPerformanceModeNotification)
             .DisposeWith(disposable);
 
@@ -86,7 +86,7 @@ sealed class Notifications : IDisposable
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowPowerModeNotification)
             .DisposeWith(disposable);
 
@@ -94,7 +94,7 @@ sealed class Notifications : IDisposable
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromSeconds(2))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowPowerSourceNotification)
             .DisposeWith(disposable);
 
@@ -102,7 +102,7 @@ sealed class Notifications : IDisposable
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowTouchPadNotification)
             .DisposeWith(disposable);
 
@@ -110,7 +110,7 @@ sealed class Notifications : IDisposable
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowBoostNotification)
             .DisposeWith(disposable);
 
@@ -121,7 +121,7 @@ sealed class Notifications : IDisposable
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowDisplayRefreshRateNotification)
             .DisposeWith(disposable);
 
@@ -129,7 +129,7 @@ sealed class Notifications : IDisposable
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowGpuNotification)
             .DisposeWith(disposable);
 
@@ -139,7 +139,7 @@ sealed class Notifications : IDisposable
             .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
             .CombineLatest(keyboardBacklight.Level, (key, level) => new { key, level })
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => ShowKeyboardBacklightNotification(x.key, x.level))
             .DisposeWith(disposable);
 
@@ -148,7 +148,7 @@ sealed class Notifications : IDisposable
         keyboard.KeyPressed
             .Where(x => x == AtkKey.Mic)
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => ShowMicNotification())
             .DisposeWith(disposable);
     }

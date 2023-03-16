@@ -27,8 +27,8 @@ using flowOSD.Api.Hardware;
 
 public sealed class UserConfig : INotifyPropertyChanged, IDisposable
 {
-    private Dictionary<PropertyChangedEventHandler, IDisposable> events;
-    private Subject<string> propertyChangedSubject;
+    private Dictionary<PropertyChangedEventHandler, IDisposable>? events;
+    private Subject<string?> propertyChangedSubject;
     private bool runAtStartup;
     private bool disableTouchPadInTabletMode;
     private bool controlDisplayRefreshRate;
@@ -47,7 +47,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool showBatteryChargeRate;
     private bool showCpuTemperature;
 
-    private string auraCommand, fanCommand, rogCommand, copyCommand, pasteCommand;
+    private string? auraCommand, fanCommand, rogCommand, copyCommand, pasteCommand;
 
     private PerformanceMode performanceModeOverride;
     private bool performanceModeOverrideEnabled;
@@ -78,7 +78,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         performanceModeOverrideEnabled = false;
 
         events = new Dictionary<PropertyChangedEventHandler, IDisposable>();
-        propertyChangedSubject = new Subject<string>();
+        propertyChangedSubject = new Subject<string?>();
 
         PropertyChanged = propertyChangedSubject.AsObservable();
     }
@@ -98,15 +98,25 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         events = null;
     }
 
-    event PropertyChangedEventHandler INotifyPropertyChanged.PropertyChanged
+    event PropertyChangedEventHandler? INotifyPropertyChanged.PropertyChanged
     {
         add
         {
+            if (events == null || value == null)
+            {
+                return;
+            }
+
             events[value] = PropertyChanged.Subscribe(x => value(this, new PropertyChangedEventArgs(x)));
         }
 
         remove
         {
+            if (events == null || value == null)
+            {
+                return;
+            }
+
             if (events.ContainsKey(value))
             {
                 events[value].Dispose();
@@ -116,7 +126,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     }
 
     [JsonIgnore]
-    public IObservable<string> PropertyChanged { get; }
+    public IObservable<string?> PropertyChanged { get; }
 
     [JsonIgnore]
     public bool RunAtStartup
@@ -215,31 +225,31 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         set => SetProperty(ref showCpuTemperature, value);
     }
 
-    public string AuraCommand
+    public string? AuraCommand
     {
         get => auraCommand;
         set => SetProperty(ref auraCommand, value);
     }
 
-    public string FanCommand
+    public string? FanCommand
     {
         get => fanCommand;
         set => SetProperty(ref fanCommand, value);
     }
 
-    public string RogCommand
+    public string? RogCommand
     {
         get => rogCommand;
         set => SetProperty(ref rogCommand, value);
     }
 
-    public string CopyCommand
+    public string? CopyCommand
     {
         get => copyCommand;
         set => SetProperty(ref copyCommand, value);
     }
 
-    public string PasteCommand
+    public string? PasteCommand
     {
         get => pasteCommand;
         set => SetProperty(ref pasteCommand, value);
@@ -257,7 +267,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         set => SetProperty(ref performanceModeOverrideEnabled, value);
     }
 
-    private void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)
+    private void SetProperty<T>(ref T property, T value, [CallerMemberName] string? propertyName = null)
     {
         if (!Equals(property, value))
         {

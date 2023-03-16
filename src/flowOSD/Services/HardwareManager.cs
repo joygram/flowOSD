@@ -30,7 +30,7 @@ using Microsoft.Win32;
 
 sealed class HardwareManager : IDisposable, IHardwareManager
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
     private IMessageQueue messageQueue;
@@ -57,7 +57,7 @@ sealed class HardwareManager : IDisposable, IHardwareManager
 
         hidDevice = HidDevice.Devices
             .Where(i => i.VendorId == 0xB05 && i.ReadFeatureData(out byte[] data, Keyboard.FEATURE_KBD_REPORT_ID))
-            .FirstOrDefault();
+            .FirstOrDefault() ?? throw new ApplicationException("Can't connect to HID");
 
         InitHid();
 
@@ -90,28 +90,28 @@ sealed class HardwareManager : IDisposable, IHardwareManager
         powerManagement.PowerEvent
            .Where(x => x == PowerEvent.Resume)
            .Throttle(TimeSpan.FromMicroseconds(50))
-           .ObserveOn(SynchronizationContext.Current)
+           .ObserveOn(SynchronizationContext.Current!)
            .Subscribe(_ => OnResume())
            .DisposeWith(disposable);
 
         touchPad.State
             .CombineLatest(atkWmi.TabletMode, (touchPadState, tabletMode) => new { touchPadState, tabletMode })
             .Throttle(TimeSpan.FromMicroseconds(2000))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => UpdateTouchPad(x.touchPadState, x.tabletMode))
             .DisposeWith(disposable);
 
         keyboard.KeyPressed
             .Throttle(TimeSpan.FromMilliseconds(50))
             .Where(x => x == AtkKey.BacklightDown)
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(_ => keyboardBacklight.LevelDown())
             .DisposeWith(disposable);
 
         keyboard.KeyPressed
             .Throttle(TimeSpan.FromMilliseconds(50))
             .Where(x => x == AtkKey.BacklightUp)
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(_ => keyboardBacklight.LevelUp())
             .DisposeWith(disposable);
     }
@@ -130,11 +130,16 @@ sealed class HardwareManager : IDisposable, IHardwareManager
         }
     }
 
-    public T Resolve<T>() where T : class
+    public T? Resolve<T>() where T : class
     {
-        var isOk = devices.TryGetValue(typeof(T), out object value);
+        var isOk = devices.TryGetValue(typeof(T), out object? value);
 
         return isOk && value is T device ? device : null;
+    }
+
+    public T ResolveNotNull<T>() where T : class
+    {
+        return Resolve<T>() ?? throw new InvalidOperationException($"Can't resolve {typeof(T).Name}");
     }
 
     private void Register<T>(T instance) where T : class

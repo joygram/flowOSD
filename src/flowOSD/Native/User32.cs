@@ -116,7 +116,7 @@ static class User32
 
     [DllImport(nameof(User32), CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool EnumDisplayDevices(
-        string lpDevice,
+        string? lpDevice,
         uint iDevNum,
         ref DISPLAY_DEVICE lpDisplayDevice,
         uint dwFlags);

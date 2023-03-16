@@ -16,6 +16,8 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
+namespace flowOSD.Hardware;
+
 using System.Management;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -23,14 +25,12 @@ using flowOSD.Api;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 
-namespace flowOSD.Hardware;
-
 sealed class Cpu : IDisposable, ICpu
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private readonly CountableSubject<uint> temperatureSubject;
-    private IDisposable updateSubscription;
+    private IDisposable? updateSubscription;
 
     public Cpu()
     {

@@ -26,7 +26,7 @@ using static flowOSD.Extensions.Forms;
 
 sealed class ConfigUI : IDisposable
 {
-    private Window instance;
+    private Window? instance;
     private IConfig config;
     private ICommandManager commandManager;
 
@@ -64,9 +64,10 @@ sealed class ConfigUI : IDisposable
 
     private sealed class Window : Form
     {
-        private CompositeDisposable disposable = new CompositeDisposable();
+        private CompositeDisposable? disposable = new CompositeDisposable();
+
         private ReadOnlyCollection<Control> pages;
-        private Control currentPage;
+        private Control? currentPage;
 
         private TableLayoutPanel layout;
         private Panel pageContainer;
@@ -75,12 +76,12 @@ sealed class ConfigUI : IDisposable
         {
             this.pages = new ReadOnlyCollection<Control>(pages);
 
-            Init();
+            layout = Init(disposable);
 
             CurrentPage = pages.FirstOrDefault();
         }
 
-        public Control CurrentPage
+        public Control? CurrentPage
         {
             get => currentPage;
             set
@@ -126,7 +127,7 @@ sealed class ConfigUI : IDisposable
             Size = this.DpiScale(new Size(600, 500));
         }
 
-        private void Init()
+        private TableLayoutPanel Init(CompositeDisposable uiDisposable)
         {
             const int listWidth = 150;
             const int listItemHeight = 30;
@@ -141,7 +142,7 @@ sealed class ConfigUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-            }).DisposeWith(disposable);
+            }).DisposeWith(uiDisposable);
 
             layout.Add<Panel>(1, 0, x =>
             {
@@ -170,6 +171,11 @@ sealed class ConfigUI : IDisposable
 
                 x.DrawItem += (_, e) =>
                 {
+                    if (e.Font == null)
+                    {
+                        return;
+                    }
+
                     var text = pages[e.Index].Text;
                     var textSize = e.Graphics.MeasureString(text, e.Font);
 
@@ -198,7 +204,7 @@ sealed class ConfigUI : IDisposable
                     x.Width = this.DpiScale(listWidth);
                 };
 
-                x.DisposeWith(disposable);
+                x.DisposeWith(uiDisposable);
             });
 
             layout.Add<Label>(0, 1, 2, 1, x =>
@@ -210,7 +216,7 @@ sealed class ConfigUI : IDisposable
                 x.Height = 2;
                 x.BorderStyle = BorderStyle.Fixed3D;
 
-                x.DisposeWith(disposable);
+                x.DisposeWith(uiDisposable);
             });
 
             layout.Add<Button>(1, 2, x =>
@@ -222,7 +228,7 @@ sealed class ConfigUI : IDisposable
                 x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
                 x.Click += (sender, e) => Close();
 
-                x.DisposeWith(disposable);
+                x.DisposeWith(uiDisposable);
             });
 
             this.Add(layout);
@@ -237,10 +243,12 @@ sealed class ConfigUI : IDisposable
             ShowInTaskbar = false;
             FormBorderStyle = FormBorderStyle.FixedSingle;
 
-            this.Font = new Font("Segoe UI", this.DpiScale(12), GraphicsUnit.Pixel);
+            Font = new Font("Segoe UI", this.DpiScale(12), GraphicsUnit.Pixel);
             UpdateSize();
 
             StartPosition = FormStartPosition.CenterScreen;
+
+            return layout;
         }
     }
 }

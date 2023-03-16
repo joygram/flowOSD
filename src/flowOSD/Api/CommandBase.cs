@@ -31,7 +31,8 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
 
     protected CommandBase()
     {
-        Text = Name;
+        text = Name;
+        description = string.Empty;
     }
 
     public string Text
@@ -80,15 +81,15 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
 
     public virtual bool CanExecuteWithHotKey => true;
 
-    protected CompositeDisposable Disposable { get; private set; } = new CompositeDisposable();
+    protected CompositeDisposable? Disposable { get; private set; } = new CompositeDisposable();
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-    public event EventHandler CanExecuteChanged;
+    public event EventHandler? CanExecuteChanged;
 
-    public abstract void Execute(object parameter = null);
+    public abstract void Execute(object? parameter = null);
 
-    public virtual bool CanExecute(object parameter)
+    public virtual bool CanExecute(object? parameter)
     {
         return Enabled;
     }
@@ -102,7 +103,7 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
         }
     }
 
-    protected void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)
+    protected void SetProperty<T>(ref T property, T value, [CallerMemberName] string? propertyName = null)
     {
         if (!Equals(property, value))
         {

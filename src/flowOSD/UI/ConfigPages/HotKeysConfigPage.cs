@@ -103,7 +103,7 @@ internal class HotKeysConfigPage : TableLayoutPanel
         });
     }
 
-    private void Add(int row, string text, Func<string> getValue, Action<string> setValue)
+    private void Add(int row, string text, Func<string?> getValue, Action<string?> setValue)
     {
         this.Add<Label>(0, row, y =>
         {
@@ -145,7 +145,7 @@ internal class HotKeysConfigPage : TableLayoutPanel
 
     private class HotKeyCommand
     {
-        public HotKeyCommand(string text, string commandName)
+        public HotKeyCommand(string text, string? commandName)
         {
             Text = text;
             CommandName = commandName;
@@ -153,6 +153,6 @@ internal class HotKeysConfigPage : TableLayoutPanel
 
         public string Text { get; }
 
-        public string CommandName { get; }
+        public string? CommandName { get; }
     }
 }

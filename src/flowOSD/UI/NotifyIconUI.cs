@@ -32,7 +32,7 @@ using static flowOSD.Native.User32;
 
 sealed class NotifyIconUI : IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private NotifyIcon notifyIcon;
     private CxContextMenu contextMenu;
@@ -53,12 +53,12 @@ sealed class NotifyIconUI : IDisposable
                 systemEvents.Dpi,
                 (tabletMode, isDarkMode, dpi) => new { tabletMode, isDarkMode, dpi })
             .Throttle(TimeSpan.FromMilliseconds(100))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => UpdateNotifyIcon(x.tabletMode, x.isDarkMode, x.dpi))
             .DisposeWith(disposable);
 
         systemEvents.SystemUI
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(UpdateContextMenu)
             .DisposeWith(disposable);
 
@@ -100,9 +100,9 @@ sealed class NotifyIconUI : IDisposable
         notifyIcon.Icon = Icon.LoadFromResource($"flowOSD.Resources.{iconName}.ico", dpi);
     }
 
-    private void ShowContextMenu(Screen screen)
+    private void ShowContextMenu(Screen? screen)
     {
-        if (contextMenu == null)
+        if (contextMenu == null || screen == null)
         {
             return;
         }
@@ -133,14 +133,14 @@ sealed class NotifyIconUI : IDisposable
         var menu = new CxContextMenu();
         menu.Font = new Font(UIParameters.FontName, 10, GraphicsUnit.Point);
 
-        menu.AddMenuItem(commandManager.Resolve<MainUICommand>()).DisposeWith(disposable);
+        menu.AddMenuItem(commandManager.ResolveNotNull<MainUICommand>()).DisposeWith(disposable!);
         menu.AddSeparator().DisposeWith(disposable);
 
-        menu.AddMenuItem(commandManager.Resolve<SettingsCommand>()).DisposeWith(disposable);
-        menu.AddMenuItem(commandManager.Resolve<AboutCommand>()).DisposeWith(disposable);
+        menu.AddMenuItem(commandManager.ResolveNotNull<SettingsCommand>()).DisposeWith(disposable!);
+        menu.AddMenuItem(commandManager.ResolveNotNull<AboutCommand>()).DisposeWith(disposable!);
         menu.AddSeparator().DisposeWith(disposable);
 
-        menu.AddMenuItem(commandManager.Resolve<ExitCommand>()).DisposeWith(disposable);
+        menu.AddMenuItem(commandManager.ResolveNotNull<ExitCommand>()).DisposeWith(disposable!);
 
         return menu;
     }

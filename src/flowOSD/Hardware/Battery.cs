@@ -44,9 +44,9 @@ sealed partial class Battery : IDisposable, IBattery
 
     private static Guid GUID_DEVICE_BATTERY = new(0x72631e54, 0x78A4, 0x11d0, 0xbc, 0xf7, 0x00, 0xaa, 0x00, 0xb7, 0xb3, 0x2a);
 
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
-    private SafeFileHandle batteryHandle;
+    private SafeFileHandle? batteryHandle;
     private uint batteryTag;
 
     private CountableSubject<int> rateSubject;
@@ -54,16 +54,13 @@ sealed partial class Battery : IDisposable, IBattery
     private CountableSubject<uint> estimatedTimeSubject;
     private CountableSubject<BatteryPowerState> powerStateSubject;
 
-    private IDisposable updateSubscription;
+    private IDisposable? updateSubscription;
 
     public Battery()
     {
-        if (!Init())
-        {
-            throw new ApplicationException("Can't connect to the battery.");
-        }
+        batteryHandle = Init();
 
-        var batteryStatus = GetBatteryStatus(batteryHandle, batteryTag);
+        var batteryStatus = GetBatteryStatus(batteryHandle!, batteryTag);
 
         rateSubject = new CountableSubject<int>(batteryStatus.Rate).DisposeWith(disposable);
         capacitySubject = new CountableSubject<uint>(batteryStatus.Capacity).DisposeWith(disposable);
@@ -73,10 +70,14 @@ sealed partial class Battery : IDisposable, IBattery
         Rate = rateSubject.AsObservable();
         Capacity = capacitySubject.AsObservable();
         EstimatedTime = estimatedTimeSubject.AsObservable();
-        PowerState = powerStateSubject.AsObservable();               
+        PowerState = powerStateSubject.AsObservable();
 
         rateSubject.Count
-            .CombineLatest(capacitySubject.Count, estimatedTimeSubject.Count, powerStateSubject.Count, (x1, x2, x3, x4) => x1 + x2 + x3 + x4)
+            .CombineLatest(
+                capacitySubject.Count,
+                estimatedTimeSubject.Count,
+                powerStateSubject.Count,
+                (x1, x2, x3, x4) => x1 + x2 + x3 + x4)
             .Subscribe(sum =>
             {
                 if (sum == 0 && updateSubscription != null)
@@ -91,21 +92,6 @@ sealed partial class Battery : IDisposable, IBattery
                 }
             })
             .DisposeWith(disposable);
-    }
-
-    void IDisposable.Dispose()
-    {
-        updateSubscription?.Dispose();
-        updateSubscription = null;
-
-        disposable?.Dispose();
-        disposable = null;
-
-        if (batteryHandle != null)
-        {
-            batteryHandle.Dispose();
-            batteryHandle = null;
-        }
     }
 
     public string Name { get; private set; }
@@ -126,12 +112,27 @@ sealed partial class Battery : IDisposable, IBattery
 
     public IObservable<BatteryPowerState> PowerState { get; }
 
-    public void Update()
+    public void Dispose()
     {
-        if (!batteryHandle.IsInvalid || batteryHandle.IsClosed)
+        updateSubscription?.Dispose();
+        updateSubscription = null;
+
+        disposable?.Dispose();
+        disposable = null;
+
+        if (batteryHandle != null)
         {
             batteryHandle.Dispose();
-            Init();
+            batteryHandle = null;
+        }
+    }
+
+    public void Update()
+    {
+        if (batteryHandle == null || batteryHandle.IsInvalid || batteryHandle.IsClosed)
+        {
+            batteryHandle?.Dispose();
+            batteryHandle = Init();
         }
 
         var batteryStatus = GetBatteryStatus(batteryHandle, batteryTag);
@@ -144,12 +145,12 @@ sealed partial class Battery : IDisposable, IBattery
         estimatedTimeSubject.OnNext(estimatedTime);
     }
 
-    private bool Init()
+    private SafeFileHandle Init()
     {
         var disHandle = SetupDiGetClassDevs(ref GUID_DEVICE_BATTERY, IntPtr.Zero, IntPtr.Zero, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
         if (disHandle == -1)
         {
-            return false;
+            throw new ApplicationException("Can't connect to the battery.");
         }
 
         try
@@ -159,15 +160,19 @@ sealed partial class Battery : IDisposable, IBattery
 
             while ((deviceInterfaceData = GetDeviceInterfaceData(disHandle, i++)) != null)
             {
-                string devicePath = GetDevicePath(disHandle, deviceInterfaceData.Value);
+                var devicePath = GetDevicePath(disHandle, deviceInterfaceData.Value);
+                if (string.IsNullOrEmpty(devicePath))
+                {
+                    continue;
+                }
 
                 var battery = CreateFile(
-                    devicePath, 
-                    FileAccess.ReadWrite, 
-                    FileShare.ReadWrite, 
-                    IntPtr.Zero, 
-                    FileMode.Open, 
-                    FILE_ATTRIBUTE_NORMAL, 
+                    devicePath,
+                    FileAccess.ReadWrite,
+                    FileShare.ReadWrite,
+                    IntPtr.Zero,
+                    FileMode.Open,
+                    FILE_ATTRIBUTE_NORMAL,
                     IntPtr.Zero);
 
                 if (!battery.IsInvalid)
@@ -185,10 +190,9 @@ sealed partial class Battery : IDisposable, IBattery
 
                         if (Name == "ASUS Battery" && ManufactureName == "ASUSTeK")
                         {
-                            this.batteryHandle = battery;
                             this.batteryTag = batteryTag;
 
-                            return true;
+                            return battery;
                         }
                     }
 
@@ -202,7 +206,7 @@ sealed partial class Battery : IDisposable, IBattery
             SetupDiDestroyDeviceInfoList(disHandle);
         }
 
-        return false;
+        throw new ApplicationException("Can't connect to the battery.");
     }
 
     private SP_DEVICE_INTERFACE_DATA? GetDeviceInterfaceData(IntPtr hdev, uint index)
@@ -225,7 +229,7 @@ sealed partial class Battery : IDisposable, IBattery
         }
     }
 
-    private string GetDevicePath(IntPtr hdev, SP_DEVICE_INTERFACE_DATA did)
+    private string? GetDevicePath(IntPtr hdev, SP_DEVICE_INTERFACE_DATA did)
     {
         SetupDiGetDeviceInterfaceDetail(hdev, did, IntPtr.Zero, 0, out uint cbRequired, IntPtr.Zero);
 
@@ -365,7 +369,7 @@ sealed partial class Battery : IDisposable, IBattery
                     outBuffer,
                     maxLoadString);
 
-                return Marshal.PtrToStringUni(outBuffer);
+                return Marshal.PtrToStringUni(outBuffer) ?? string.Empty;
             }
             finally
             {

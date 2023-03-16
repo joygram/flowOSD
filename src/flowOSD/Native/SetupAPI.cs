@@ -59,7 +59,7 @@ static class SetupAPI
     [DllImport(nameof(SetupAPI), SetLastError = true)]
     public static extern IntPtr SetupDiGetClassDevs(
         ref Guid classGuid,
-        string enumerator,
+        string? enumerator,
         IntPtr hwndParent,
         int flags);
 

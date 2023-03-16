@@ -38,7 +38,7 @@ sealed class PrintScreenCommand : CommandBase
 
     public override string Name => nameof(PrintScreenCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         keysSender.SendKeys(Keys.PrintScreen);
     }

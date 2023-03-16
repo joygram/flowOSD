@@ -24,8 +24,8 @@ using System.Reactive.Subjects;
 
 internal sealed class CountableSubject<T> : ISubject<T>, IDisposable
 {
-    private ISubject<T> baseSubject;
-    private BehaviorSubject<int> countSubject;
+    private ISubject<T>? baseSubject;
+    private BehaviorSubject<int>? countSubject;
     private int count;
 
     public CountableSubject()
@@ -50,7 +50,7 @@ internal sealed class CountableSubject<T> : ISubject<T>, IDisposable
 
     public bool IsDisposed => baseSubject == null;
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
         if (!IsDisposed)
         {
@@ -84,14 +84,14 @@ internal sealed class CountableSubject<T> : ISubject<T>, IDisposable
             throw new ObjectDisposedException(nameof(CountableSubject<T>));
         }
 
-        countSubject.OnNext(Interlocked.Increment(ref count));
+        countSubject!.OnNext(Interlocked.Increment(ref count));
 
         var decrement = Disposable.Create(() =>
         {
             countSubject.OnNext(Interlocked.Decrement(ref count));
         });
 
-        return new CompositeDisposable(baseSubject.Subscribe(observer), decrement);
+        return new CompositeDisposable(baseSubject!.Subscribe(observer), decrement);
     }
 
 }

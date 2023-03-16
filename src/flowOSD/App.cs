@@ -33,15 +33,13 @@ using static flowOSD.Extensions.Common;
 
 sealed partial class App : IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
 
     private MessageQueue messageQueue;
     private SystemEvents systemEvents;
     private KeysSender keysSender;
-
-    private NotifyIcon notifyIcon;
 
     private Osd osd;
     private MainUI mainUI;
@@ -78,12 +76,12 @@ sealed partial class App : IDisposable
 
         commandManager = new CommandManager();
         commandManager.Register(
-            new DisplayRefreshRateCommand(hardwareManager.Resolve<IPowerManagement>(), hardwareManager.Resolve<IDisplay>(), config.UserConfig),
-            new ToggleTouchPadCommand(hardwareManager.Resolve<ITouchPad>()),
-            new ToggleBoostCommand(hardwareManager.Resolve<IPowerManagement>()),
-            new ToggleGpuCommand(hardwareManager.Resolve<IAtk>(), config),
-            new PerformanceModeCommand(hardwareManager.Resolve<IAtk>()),
-            new PowerModeCommand(hardwareManager.Resolve<IPowerManagement>()),
+            new DisplayRefreshRateCommand(hardwareManager.ResolveNotNull<IPowerManagement>(), hardwareManager.ResolveNotNull<IDisplay>(), config.UserConfig),
+            new ToggleTouchPadCommand(hardwareManager.ResolveNotNull<ITouchPad>()),
+            new ToggleBoostCommand(hardwareManager.ResolveNotNull<IPowerManagement>()),
+            new ToggleGpuCommand(hardwareManager.ResolveNotNull<IAtk>(), config),
+            new PerformanceModeCommand(hardwareManager.ResolveNotNull<IAtk>()),
+            new PowerModeCommand(hardwareManager.ResolveNotNull<IPowerManagement>()),
             new SettingsCommand(config, commandManager),
             new AboutCommand(config),
             new ExitCommand(),
@@ -104,12 +102,12 @@ sealed partial class App : IDisposable
             messageQueue,
             systemEvents,
             commandManager,
-            hardwareManager.Resolve<IAtkWmi>()).DisposeWith(disposable);
+            hardwareManager.Resolve<IAtkWmi>()!).DisposeWith(disposable);
 
         new HotKeyManager(
             config,
             commandManager,
-            hardwareManager.Resolve<IKeyboard>()).DisposeWith(disposable);
+            hardwareManager.Resolve<IKeyboard>()!).DisposeWith(disposable);
     }
 
     void IDisposable.Dispose()

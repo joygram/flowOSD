@@ -30,7 +30,7 @@ sealed class AboutCommand : CommandBase
 
     public AboutCommand(IConfig config)
     {
-        aboutUI = new AboutUI(config).DisposeWith(Disposable);
+        aboutUI = new AboutUI(config).DisposeWith(Disposable!);
     
         Text = "About...";
         Enabled = true;
@@ -40,7 +40,7 @@ sealed class AboutCommand : CommandBase
 
     public override bool CanExecuteWithHotKey => false;
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         aboutUI.Show();
     }

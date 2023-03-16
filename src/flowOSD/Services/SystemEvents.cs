@@ -31,12 +31,12 @@ using flowOSD.Extensions;
 
 sealed partial class SystemEvents : ISystemEvents, IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private BehaviorSubject<bool> systemDarkModeSubject;
     private BehaviorSubject<bool> appsDarkModeSubject;
     private BehaviorSubject<Color> accentColorSubject;
-    private BehaviorSubject<Screen> primaryScreenSubject;
+    private BehaviorSubject<Screen?> primaryScreenSubject;
     private BehaviorSubject<int> dpiSubject;
     private BehaviorSubject<UIParameters> systemUISubject, appUISubject;
 
@@ -46,7 +46,7 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
         appsDarkModeSubject = new BehaviorSubject<bool>(ShouldAppsUseDarkMode());
         accentColorSubject = new BehaviorSubject<Color>(GetAccentColor());
 
-        primaryScreenSubject = new BehaviorSubject<Screen>(Screen.PrimaryScreen);
+        primaryScreenSubject = new BehaviorSubject<Screen?>(Screen.PrimaryScreen);
         dpiSubject = new BehaviorSubject<int>(GetDpiForWindow(messageQueue.Handle));
 
         systemUISubject = new BehaviorSubject<UIParameters>(
@@ -56,13 +56,13 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
 
         accentColorSubject
             .CombineLatest(systemDarkModeSubject, (accentColor, isDarkMode) => new { accentColor, isDarkMode })
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => systemUISubject.OnNext(UIParameters.Create(x.accentColor, x.isDarkMode)))
             .DisposeWith(disposable);
 
         accentColorSubject
             .CombineLatest(appsDarkModeSubject, (accentColor, isDarkMode) => new { accentColor, isDarkMode })
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => appUISubject.OnNext(UIParameters.Create(x.accentColor, x.isDarkMode)))
             .DisposeWith(disposable);
 
@@ -101,7 +101,7 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
 
     public IObservable<Color> AccentColor { get; }
 
-    public IObservable<Screen> PrimaryScreen { get; }
+    public IObservable<Screen?> PrimaryScreen { get; }
 
     public IObservable<int> Dpi { get; }
 

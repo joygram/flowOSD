@@ -37,5 +37,5 @@ internal sealed class CxTabListener
         }
     }
 
-    public event EventHandler ShowKeyboardFocusChanged;
+    public event EventHandler? ShowKeyboardFocusChanged;
 }

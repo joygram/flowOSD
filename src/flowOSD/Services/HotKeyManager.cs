@@ -30,7 +30,7 @@ using flowOSD.Extensions;
 
 sealed class HotKeyManager : IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
     private ICommandManager commandManager;
@@ -42,9 +42,15 @@ sealed class HotKeyManager : IDisposable
         this.config = config;
         this.commandManager = commandManager;
 
+        this.config.UserConfig.PropertyChanged
+            .Throttle(TimeSpan.FromMilliseconds(50))
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(UpdateBindings)
+            .DisposeWith(disposable);
+
         keyboard.KeyPressed
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ExecuteCommand)
             .DisposeWith(disposable);
     }
@@ -55,7 +61,7 @@ sealed class HotKeyManager : IDisposable
         disposable = null;
     }
 
-    private void Register(AtkKey key, string commandName, object commandParameter = null)
+    private void Register(AtkKey key, string? commandName, object? commandParameter = null)
     {
         var command = commandManager.Resolve(commandName);
 
@@ -111,7 +117,7 @@ sealed class HotKeyManager : IDisposable
 
     private void ExecuteCommand(AtkKey key)
     {
-        if (keys.TryGetValue(key, out Binding binding))
+        if (keys.TryGetValue(key, out Binding? binding))
         {
             binding.Execute();
         }
@@ -119,7 +125,7 @@ sealed class HotKeyManager : IDisposable
 
     private sealed class Binding
     {
-        public Binding(ICommand command, object commandParameter = null)
+        public Binding(ICommand command, object? commandParameter = null)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             CommandParameter = commandParameter;
@@ -127,7 +133,7 @@ sealed class HotKeyManager : IDisposable
 
         public ICommand Command { get; }
 
-        public object CommandParameter { get; }
+        public object? CommandParameter { get; }
 
         public void Execute()
         {

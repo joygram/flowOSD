@@ -35,7 +35,7 @@ sealed class ClipboardCopyPlainTextCommand : CommandBase
 
     public override string Name => nameof(ClipboardCopyPlainTextCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         keysSender.SendKeys(Keys.C, Keys.ControlKey);
     }
