@@ -37,7 +37,7 @@ sealed class Cpu : IDisposable, ICpu
         temperatureSubject = new CountableSubject<uint>(GetTemperature());
         Temperature = temperatureSubject.AsObservable();
 
-        updateSubscription = temperatureSubject.Count
+        temperatureSubject.Count
             .Subscribe(sum =>
             {
                 if (sum == 0 && updateSubscription != null)
