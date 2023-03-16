@@ -30,9 +30,6 @@ sealed class KeyboardBacklight : IKeyboardBacklight
 
     private HidDevice device;
 
-    private bool isKeyboardBacklightActive;
-    private TimeSpan backlightTimeout = TimeSpan.FromSeconds(30);
-
     private BehaviorSubject<DeviceState> stateSubject;
     private BehaviorSubject<KeyboardBacklightLevel> levelSubject;
 
@@ -47,11 +44,6 @@ sealed class KeyboardBacklight : IKeyboardBacklight
         Level = levelSubject.AsObservable();
 
         WriteLevel(level);
-
-        ////Observable.Interval(TimeSpan.FromMilliseconds(500))
-        ////    .ObserveOn(SynchronizationContext.Current)
-        ////    .Subscribe(x => UpdateBacklightState())
-        ////    .DisposeWith(disposable);
     }
 
     public IObservable<DeviceState> State { get; }
@@ -78,8 +70,13 @@ sealed class KeyboardBacklight : IKeyboardBacklight
         }
     }
 
-    public void SetLevel(KeyboardBacklightLevel value)
+    public void SetLevel(KeyboardBacklightLevel value, bool force = false)
     {
+        if (!force && value == levelSubject.Value)
+        {
+            return;
+        }
+
         var isOk = WriteLevel(value);
 
         if (isOk)
@@ -88,8 +85,13 @@ sealed class KeyboardBacklight : IKeyboardBacklight
         }
     }
 
-    public void SetState(DeviceState value)
+    public void SetState(DeviceState value, bool force = false)
     {
+        if (!force && value == stateSubject.Value)
+        {
+            return;
+        }
+
         if (value == DeviceState.Disabled)
         {
             WriteLevel(KeyboardBacklightLevel.Off);
@@ -126,27 +128,4 @@ sealed class KeyboardBacklight : IKeyboardBacklight
             0xc4,
             level);
     }
-
-    //////private void UpdateBacklightState()
-    //////{
-    //////    var lii = new LASTINPUTINFO();
-    //////    lii.cbSize = Marshal.SizeOf<LASTINPUTINFO>();
-
-    //////    if (GetLastInputInfo(ref lii))
-    //////    {
-    //////        var isIdle = backlightTimeout < TimeSpan.FromMilliseconds(GetTickCount() - Math.Max(lastSpecialKeyTime, lii.dwTime));
-
-    //////        if (isIdle && levelSubject.Value != KeyboardBacklightLevel.Off && isKeyboardBacklightActive)
-    //////        {
-    //////            isKeyboardBacklightActive = false;
-    //////            WriteLevel(KeyboardBacklightLevel.Off);
-    //////        }
-
-    //////        if (!isIdle && levelSubject.Value > KeyboardBacklightLevel.Off && !isKeyboardBacklightActive)
-    //////        {
-    //////            isKeyboardBacklightActive = true;
-    //////            WriteLevel(levelSubject.Value);
-    //////        }
-    //////    }
-    //////}
 }

@@ -45,7 +45,7 @@ sealed class Notifications : IDisposable
     private IKeyboardBacklight keyboardBacklight;
     private IMicrophone microphone;
 
-    public Notifications(IConfig config, IOsd osd, IHardwareManager hardwareManager)
+    public Notifications(IConfig config, IOsd osd, IHardwareService hardwareManager)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.osd = osd ?? throw new ArgumentNullException(nameof(osd));

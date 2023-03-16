@@ -53,7 +53,7 @@ sealed class MainUI : IDisposable
         IConfig config,
         ISystemEvents systemEvents,
         ICommandManager commandManager,
-        IHardwareManager hardwareManager)
+        IHardwareService hardwareManager)
     {
         this.config = config;
         this.systemEvents = systemEvents;

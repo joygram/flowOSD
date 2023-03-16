@@ -17,7 +17,13 @@
  *
  */
 using System.Reactive.Disposables;
+using System.Runtime.InteropServices;
 using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using flowOSD.Native;
+using static flowOSD.Native.User32;
+using static flowOSD.Native.Kernel32;
+using System.Reactive.Linq;
 
 namespace flowOSD.Services;
 
@@ -27,16 +33,58 @@ sealed class KeyboardBacklightService : IDisposable
 
     private IKeyboardBacklight keyboardBacklight;
     private IKeyboard keyboard;
+    private TimeSpan timeout;
 
-    public KeyboardBacklightService(IKeyboardBacklight keyboardBacklight, IKeyboard keyboard)
+    private volatile uint lastActivityTime;
+
+    public KeyboardBacklightService(IKeyboardBacklight keyboardBacklight, IKeyboard keyboard, TimeSpan timeout)
     {
         this.keyboardBacklight = keyboardBacklight;
         this.keyboard = keyboard;
+        this.timeout = timeout;
+
+        this.keyboard.Activity
+            .Subscribe(x =>
+            {
+                lastActivityTime = x;
+                keyboardBacklight.SetState(DeviceState.Enabled);
+            })
+            .DisposeWith(disposable);
+
+        Observable.Interval(TimeSpan.FromMilliseconds(1000))
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(x => UpdateBacklightState())
+            .DisposeWith(disposable);
+
+    }
+
+    public TimeSpan Timeout
+    {
+        get => timeout;
+        set => timeout = value;
     }
 
     public void Dispose()
     {
         disposable?.Dispose();
         disposable = null;
+    }
+
+    public void ResetTimer()
+    {
+        lastActivityTime = GetTickCount();
+    }
+
+    private void UpdateBacklightState()
+    {
+        var lii = new LASTINPUTINFO();
+        lii.cbSize = Marshal.SizeOf<LASTINPUTINFO>();
+
+        if (GetLastInputInfo(ref lii))
+        {
+            var isIdle = timeout < TimeSpan.FromMilliseconds(GetTickCount() - Math.Max(lastActivityTime, lii.dwTime));
+
+            keyboardBacklight.SetState(isIdle ? DeviceState.Disabled : DeviceState.Enabled);
+        }
     }
 }

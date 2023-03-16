@@ -44,7 +44,7 @@ sealed partial class App : IDisposable
     private Osd osd;
     private MainUI mainUI;
 
-    private HardwareManager hardwareManager;
+    private HardwareService hardwareService;
     private CommandManager commandManager;
 
     public App(IConfig config)
@@ -55,7 +55,7 @@ sealed partial class App : IDisposable
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
         messageQueue = new MessageQueue().DisposeWith(disposable);
-        hardwareManager = new HardwareManager(config, messageQueue).DisposeWith(disposable);
+        hardwareService = new HardwareService(config, messageQueue).DisposeWith(disposable);
 
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);
         systemEvents.AppException
@@ -70,18 +70,18 @@ sealed partial class App : IDisposable
         // Notifications
 
         osd = new Osd(systemEvents);
-        new Notifications(config, osd, hardwareManager).DisposeWith(disposable);
+        new Notifications(config, osd, hardwareService).DisposeWith(disposable);
 
         // Commands
 
         commandManager = new CommandManager();
         commandManager.Register(
-            new DisplayRefreshRateCommand(hardwareManager.ResolveNotNull<IPowerManagement>(), hardwareManager.ResolveNotNull<IDisplay>(), config.UserConfig),
-            new ToggleTouchPadCommand(hardwareManager.ResolveNotNull<ITouchPad>()),
-            new ToggleBoostCommand(hardwareManager.ResolveNotNull<IPowerManagement>()),
-            new ToggleGpuCommand(hardwareManager.ResolveNotNull<IAtk>(), config),
-            new PerformanceModeCommand(hardwareManager.ResolveNotNull<IAtk>()),
-            new PowerModeCommand(hardwareManager.ResolveNotNull<IPowerManagement>()),
+            new DisplayRefreshRateCommand(hardwareService.ResolveNotNull<IPowerManagement>(), hardwareService.ResolveNotNull<IDisplay>(), config.UserConfig),
+            new ToggleTouchPadCommand(hardwareService.ResolveNotNull<ITouchPad>()),
+            new ToggleBoostCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
+            new ToggleGpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),
+            new PerformanceModeCommand(hardwareService.ResolveNotNull<IAtk>()),
+            new PowerModeCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
             new SettingsCommand(config, commandManager),
             new AboutCommand(config),
             new ExitCommand(),
@@ -94,7 +94,7 @@ sealed partial class App : IDisposable
             config,
             systemEvents,
             commandManager,
-            hardwareManager).DisposeWith(disposable);
+            hardwareService).DisposeWith(disposable);
         commandManager.Register(new MainUICommand(mainUI));
 
         new NotifyIconUI(
@@ -102,12 +102,12 @@ sealed partial class App : IDisposable
             messageQueue,
             systemEvents,
             commandManager,
-            hardwareManager.Resolve<IAtkWmi>()!).DisposeWith(disposable);
+            hardwareService.ResolveNotNull<IAtkWmi>()).DisposeWith(disposable);
 
         new HotKeyManager(
             config,
             commandManager,
-            hardwareManager.Resolve<IKeyboard>()!).DisposeWith(disposable);
+            hardwareService.ResolveNotNull<IKeyboard>()).DisposeWith(disposable);
     }
 
     void IDisposable.Dispose()

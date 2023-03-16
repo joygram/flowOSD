@@ -21,5 +21,7 @@ namespace flowOSD.Api.Hardware;
 
 public interface IKeyboard
 {
+    IObservable<uint> Activity { get; }
+
     IObservable<AtkKey> KeyPressed { get; }
 }

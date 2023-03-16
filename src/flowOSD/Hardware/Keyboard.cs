@@ -31,17 +31,19 @@ sealed class Keyboard : IDisposable, IKeyboard
 
     private HidDevice device;
 
-    private volatile uint lastSpecialKeyTime;
-
     private CancellationTokenSource? cancellationTokenSource = new CancellationTokenSource();
+
+    private Subject<uint> activitySubject;
     private Subject<AtkKey> keyPressedSubject;
 
     public Keyboard(HidDevice device)
     {
         this.device = device ?? throw new ArgumentNullException(nameof(device));
 
+        activitySubject = new Subject<uint>();
         keyPressedSubject = new Subject<AtkKey>();
 
+        Activity = activitySubject.AsObservable();
         KeyPressed = keyPressedSubject.AsObservable();
 
         Task.Factory.StartNew(async () =>
@@ -52,7 +54,7 @@ sealed class Keyboard : IDisposable, IKeyboard
 
                 if (data.Length > 1)
                 {
-                    lastSpecialKeyTime = GetTickCount();
+                    activitySubject.OnNext(GetTickCount());
                 }
 
                 if (data.Length > 1 && data[0] == FEATURE_KBD_REPORT_ID && Enum.IsDefined(typeof(AtkKey), data[1]))
@@ -63,7 +65,7 @@ sealed class Keyboard : IDisposable, IKeyboard
         });
     }
 
-    public uint LastSpecialKeyTime => lastSpecialKeyTime;
+    public IObservable<uint> Activity { get; }
 
     public IObservable<AtkKey> KeyPressed { get; }
 

@@ -20,7 +20,7 @@ namespace flowOSD.Api;
 
 using System.ComponentModel;
 
-public interface IHardwareManager
+public interface IHardwareService
 {
     T? Resolve<T>() where T : class;
 

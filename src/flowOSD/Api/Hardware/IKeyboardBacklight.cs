@@ -29,7 +29,7 @@ public interface IKeyboardBacklight
 
     void LevelDown();
 
-    void SetLevel(KeyboardBacklightLevel value);
+    void SetLevel(KeyboardBacklightLevel value, bool force = false);
 
-    void SetState(DeviceState value);
+    void SetState(DeviceState value, bool force = false);
 }

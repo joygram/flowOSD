@@ -28,7 +28,7 @@ using flowOSD.Extensions;
 using flowOSD.Hardware;
 using Microsoft.Win32;
 
-sealed class HardwareManager : IDisposable, IHardwareManager
+sealed class HardwareService : IDisposable, IHardwareService
 {
     private CompositeDisposable? disposable = new CompositeDisposable();
 
@@ -50,7 +50,9 @@ sealed class HardwareManager : IDisposable, IHardwareManager
 
     private Dictionary<Type, object> devices = new Dictionary<Type, object>();
 
-    public HardwareManager(IConfig config, IMessageQueue messageQueue)
+    private KeyboardBacklightService keyboardBacklightService;
+
+    public HardwareService(IConfig config, IMessageQueue messageQueue)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.messageQueue = messageQueue ?? throw new ArgumentNullException(nameof(messageQueue));
@@ -114,6 +116,11 @@ sealed class HardwareManager : IDisposable, IHardwareManager
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(_ => keyboardBacklight.LevelUp())
             .DisposeWith(disposable);
+
+        keyboardBacklightService = new KeyboardBacklightService(
+            keyboardBacklight, 
+            keyboard, 
+            TimeSpan.FromSeconds(60)).DisposeWith(disposable);
     }
 
     public void Dispose()
@@ -162,7 +169,8 @@ sealed class HardwareManager : IDisposable, IHardwareManager
         }
 
         InitHid();
-        keyboardBacklight.SetState(DeviceState.Enabled);
+        keyboardBacklightService.ResetTimer();
+        keyboardBacklight.SetState(DeviceState.Enabled, force: true);
     }
 
     private void InitHid()
