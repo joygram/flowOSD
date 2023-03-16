@@ -27,9 +27,9 @@ sealed class SettingsCommand : CommandBase
 {
     private ConfigUI configUI;
 
-    public SettingsCommand(IConfig config, ICommandManager commandManager)
+    public SettingsCommand(IConfig config, ICommandService commandService)
     {
-        configUI = new ConfigUI(config, commandManager);
+        configUI = new ConfigUI(config, commandService);
 
         Text = "Settings...";
         Enabled = true;

@@ -45,7 +45,7 @@ sealed partial class App : IDisposable
     private MainUI mainUI;
 
     private HardwareService hardwareService;
-    private CommandManager commandManager;
+    private CommandService commandService;
 
     public App(IConfig config)
     {
@@ -74,40 +74,29 @@ sealed partial class App : IDisposable
 
         // Commands
 
-        commandManager = new CommandManager();
-        commandManager.Register(
-            new DisplayRefreshRateCommand(hardwareService.ResolveNotNull<IPowerManagement>(), hardwareService.ResolveNotNull<IDisplay>(), config.UserConfig),
-            new ToggleTouchPadCommand(hardwareService.ResolveNotNull<ITouchPad>()),
-            new ToggleBoostCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
-            new ToggleGpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),
-            new PerformanceModeCommand(hardwareService.ResolveNotNull<IAtk>()),
-            new PowerModeCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
-            new SettingsCommand(config, commandManager),
-            new AboutCommand(config),
-            new ExitCommand(),
-            new PrintScreenCommand(keysSender),
-            new ClipboardCopyPlainTextCommand(keysSender),
-            new ClipboardPastePlainTextCommand(keysSender)
-        );
-
+        commandService = new CommandService(
+            config,
+            hardwareService,
+            keysSender);
+        
         mainUI = new MainUI(
             config,
             systemEvents,
-            commandManager,
+            commandService,
             hardwareService).DisposeWith(disposable);
 
-        commandManager.Register(new MainUICommand(mainUI));
+        commandService.Register(new MainUICommand(mainUI));
 
         new NotifyIconUI(
             config,
             messageQueue,
             systemEvents,
-            commandManager,
+            commandService,
             hardwareService.ResolveNotNull<IAtkWmi>()).DisposeWith(disposable);
 
         new HotKeyService(
             config,
-            commandManager,
+            commandService,
             hardwareService.ResolveNotNull<IKeyboard>()).DisposeWith(disposable);
     }
 

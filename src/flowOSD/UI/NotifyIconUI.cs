@@ -41,11 +41,11 @@ sealed class NotifyIconUI : IDisposable
         IConfig config,
         IMessageQueue messageQueue,
         ISystemEvents systemEvents,
-        ICommandManager commandManager,
+        ICommandService commandService,
         IAtkWmi atkWmi)
     {
         notifyIcon = new NotifyIcon(messageQueue);
-        contextMenu = CreateContextMenu(commandManager);
+        contextMenu = CreateContextMenu(commandService);
 
         atkWmi.TabletMode
             .CombineLatest(
@@ -64,7 +64,7 @@ sealed class NotifyIconUI : IDisposable
 
         notifyIcon.MouseButtonAction
             .Where(x => x == MouseButtonAction.LeftButtonUp)
-            .Subscribe(x => commandManager.Resolve<MainUICommand>()?.Execute())
+            .Subscribe(x => commandService.Resolve<MainUICommand>()?.Execute())
             .DisposeWith(disposable);
 
         notifyIcon.MouseButtonAction
@@ -128,19 +128,19 @@ sealed class NotifyIconUI : IDisposable
         }
     }
 
-    private CxContextMenu CreateContextMenu(ICommandManager commandManager)
+    private CxContextMenu CreateContextMenu(ICommandService commandService)
     {
         var menu = new CxContextMenu();
         menu.Font = new Font(UIParameters.FontName, 10, GraphicsUnit.Point);
 
-        menu.AddMenuItem(commandManager.ResolveNotNull<MainUICommand>()).DisposeWith(disposable!);
+        menu.AddMenuItem(commandService.ResolveNotNull<MainUICommand>()).DisposeWith(disposable!);
         menu.AddSeparator().DisposeWith(disposable);
 
-        menu.AddMenuItem(commandManager.ResolveNotNull<SettingsCommand>()).DisposeWith(disposable!);
-        menu.AddMenuItem(commandManager.ResolveNotNull<AboutCommand>()).DisposeWith(disposable!);
+        menu.AddMenuItem(commandService.ResolveNotNull<SettingsCommand>()).DisposeWith(disposable!);
+        menu.AddMenuItem(commandService.ResolveNotNull<AboutCommand>()).DisposeWith(disposable!);
         menu.AddSeparator().DisposeWith(disposable);
 
-        menu.AddMenuItem(commandManager.ResolveNotNull<ExitCommand>()).DisposeWith(disposable!);
+        menu.AddMenuItem(commandService.ResolveNotNull<ExitCommand>()).DisposeWith(disposable!);
 
         return menu;
     }

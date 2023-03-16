@@ -22,13 +22,40 @@ using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.UI.Commands;
 
-sealed class CommandManager : ICommandManager
+sealed class CommandService : ICommandService
 {
+    private IConfig config;
+    private IHardwareService hardwareService;
+    private IKeysSender keysSender;
+
     private Dictionary<string, CommandBase> names = new Dictionary<string, CommandBase>();
 
-    public CommandManager()
+    public CommandService(IConfig config, IHardwareService hardwareService, IKeysSender keysSender)
     {
+        this.config = config ?? throw new ArgumentNullException(nameof(config));
+        this.hardwareService = hardwareService ?? throw new ArgumentNullException(nameof(hardwareService));
+        this.keysSender = keysSender ?? throw new ArgumentNullException(nameof(keysSender));
+
+        Register(
+            new DisplayRefreshRateCommand(
+                hardwareService.ResolveNotNull<IPowerManagement>(), 
+                hardwareService.ResolveNotNull<IDisplay>(), 
+                config.UserConfig),
+            new ToggleTouchPadCommand(hardwareService.ResolveNotNull<ITouchPad>()),
+            new ToggleBoostCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
+            new ToggleGpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),
+            new PerformanceModeCommand(hardwareService.ResolveNotNull<IAtk>()),
+            new PowerModeCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
+            new SettingsCommand(config, this),
+            new AboutCommand(config),
+            new ExitCommand(),
+            new PrintScreenCommand(keysSender),
+            new ClipboardCopyPlainTextCommand(keysSender),
+            new ClipboardPastePlainTextCommand(keysSender)
+        );
     }
 
     public void Register(CommandBase command, params CommandBase[] commands)

@@ -42,7 +42,7 @@ sealed class MainUI : IDisposable
     private Window? form;
     private IConfig config;
     private ISystemEvents systemEvents;
-    private ICommandManager commandManager;
+    private ICommandService commandService;
     private IPowerManagement powerManagement;
     private ICpu cpu;
     private IAtk atk;
@@ -52,19 +52,19 @@ sealed class MainUI : IDisposable
     public MainUI(
         IConfig config,
         ISystemEvents systemEvents,
-        ICommandManager commandManager,
-        IHardwareService hardwareManager)
+        ICommandService commandService,
+        IHardwareService hardwareService)
     {
         this.config = config;
         this.systemEvents = systemEvents;
         this.systemEvents.Dpi.Subscribe(x => { form?.Dispose(); form = null; });
 
-        this.commandManager = commandManager;
+        this.commandService = commandService;
 
-        battery = hardwareManager.ResolveNotNull<IBattery>();
-        powerManagement = hardwareManager.ResolveNotNull<IPowerManagement>();
-        cpu = hardwareManager.ResolveNotNull<ICpu>();
-        atk = hardwareManager.ResolveNotNull<IAtk>();
+        battery = hardwareService.ResolveNotNull<IBattery>();
+        powerManagement = hardwareService.ResolveNotNull<IPowerManagement>();
+        cpu = hardwareService.ResolveNotNull<ICpu>();
+        atk = hardwareService.ResolveNotNull<IAtk>();
     }
 
     void IDisposable.Dispose()
@@ -272,31 +272,31 @@ sealed class MainUI : IDisposable
 
                 boostButton = CreateButton(iconFont,
                     UIImages.Hardware_Cpu,
-                    command: owner.commandManager.Resolve<ToggleBoostCommand>())
+                    command: owner.commandService.Resolve<ToggleBoostCommand>())
                 .To(ref buttonList).DisposeWith(disposable!);
 
                 refreshRateButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_Screen,
-                    command: owner.commandManager.Resolve<DisplayRefreshRateCommand>())
+                    command: owner.commandService.Resolve<DisplayRefreshRateCommand>())
                 .To(ref buttonList).DisposeWith(disposable!);
 
                 dGpuButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_Gpu,
-                    command: owner.commandManager.Resolve<ToggleGpuCommand>())
+                    command: owner.commandService.Resolve<ToggleGpuCommand>())
                 .To(ref buttonList).DisposeWith(disposable!);
 
                 touchPadButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_TouchPad,
-                    command: owner.commandManager.Resolve<ToggleTouchPadCommand>())
+                    command: owner.commandService.Resolve<ToggleTouchPadCommand>())
                 .To(ref buttonList).DisposeWith(disposable!);
 
                 performanceModeButton = CreateButton(
                     iconFont,
                     "",
-                    command: owner.commandManager.Resolve<PerformanceModeCommand>(),
+                    command: owner.commandService.Resolve<PerformanceModeCommand>(),
                     commandParameter: owner.config.UserConfig.PerformanceModeOverride)
                     .To(ref buttonList).DisposeWith(disposable!);
 
@@ -304,7 +304,7 @@ sealed class MainUI : IDisposable
                 {
                     if (x is PerformanceMode performanceMode)
                     {
-                        owner.commandManager.Resolve<PerformanceModeCommand>()?.Execute(x);
+                        owner.commandService.Resolve<PerformanceModeCommand>()?.Execute(x);
                         owner.config.UserConfig.PerformanceModeOverride = performanceMode;
                         owner.config.UserConfig.PerformanceModeOverrideEnabled = performanceMode != PerformanceMode.Default;
                     }
@@ -333,15 +333,15 @@ sealed class MainUI : IDisposable
 
                 powerModeMenu.AddMenuItem(
                     PowerMode.BestPowerEfficiency.ToText(),
-                    owner.commandManager.ResolveNotNull<PowerModeCommand>(),
+                    owner.commandService.ResolveNotNull<PowerModeCommand>(),
                     PowerMode.BestPowerEfficiency);
                 powerModeMenu.AddMenuItem(
                     PowerMode.Balanced.ToText(),
-                    owner.commandManager.ResolveNotNull<PowerModeCommand>(),
+                    owner.commandService.ResolveNotNull<PowerModeCommand>(),
                     PowerMode.Balanced);
                 powerModeMenu.AddMenuItem(
                     PowerMode.BestPerformance.ToText(),
-                    owner.commandManager.ResolveNotNull<PowerModeCommand>(),
+                    owner.commandService.ResolveNotNull<PowerModeCommand>(),
                     PowerMode.BestPerformance);
 
                 powerModeButton.DropDownMenu = powerModeMenu;
@@ -426,7 +426,7 @@ sealed class MainUI : IDisposable
                     button.To(ref buttonList);
                     button.DisposeWith(disposable!);
 
-                    button.Command = owner.commandManager.Resolve<SettingsCommand>();
+                    button.Command = owner.commandService.Resolve<SettingsCommand>();
                 });
             });
 

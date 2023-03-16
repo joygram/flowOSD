@@ -29,10 +29,10 @@ internal class HotKeysConfigPage : TableLayoutPanel
 {
     private CompositeDisposable disposable = new CompositeDisposable();
     private IConfig config;
-    private ICommandManager commandManager;
+    private ICommandService commandService;
     private HotKeyCommand[] hotKeyCommands;
 
-    public HotKeysConfigPage(IConfig config, ICommandManager commandManager)
+    public HotKeysConfigPage(IConfig config, ICommandService commandService)
     {
         Dock = DockStyle.Top;
         AutoScroll = false;
@@ -40,11 +40,11 @@ internal class HotKeysConfigPage : TableLayoutPanel
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
         this.config = config ?? throw new ArgumentNullException(nameof(config));
-        this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
+        this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
         var c = new List<HotKeyCommand>();
         c.Add(new HotKeyCommand("", null));
-        c.AddRange(commandManager.Commands.Select(i => new HotKeyCommand(i.Description, i.Name)));
+        c.AddRange(commandService.Commands.Select(i => new HotKeyCommand(i.Description, i.Name)));
         hotKeyCommands = c.ToArray();
 
         Text = "HotKeys";

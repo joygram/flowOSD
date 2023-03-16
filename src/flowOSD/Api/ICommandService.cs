@@ -20,7 +20,7 @@ namespace flowOSD.Api;
 
 using System.ComponentModel;
 
-public interface ICommandManager
+public interface ICommandService
 {
     CommandBase? Resolve(string? commandName);
 

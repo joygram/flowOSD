@@ -33,15 +33,15 @@ sealed class HotKeyService : IDisposable
     private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
-    private ICommandManager commandManager;
+    private ICommandService commandService;
     private IKeyboard keyboard;
 
     private Dictionary<AtkKey, Binding> keys = new Dictionary<AtkKey, Binding>();
 
-    public HotKeyService(IConfig config, ICommandManager commandManager, IKeyboard keyboard)
+    public HotKeyService(IConfig config, ICommandService commandService, IKeyboard keyboard)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
-        this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
+        this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
         this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
 
         this.config.UserConfig.PropertyChanged
@@ -67,7 +67,7 @@ sealed class HotKeyService : IDisposable
 
     private void Register(AtkKey key, string? commandName, object? commandParameter = null)
     {
-        var command = commandManager.Resolve(commandName);
+        var command = commandService.Resolve(commandName);
 
         if (command != null)
         {

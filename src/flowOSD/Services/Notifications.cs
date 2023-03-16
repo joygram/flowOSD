@@ -45,23 +45,23 @@ sealed class Notifications : IDisposable
     private IKeyboardBacklight keyboardBacklight;
     private IMicrophone microphone;
 
-    public Notifications(IConfig config, IOsd osd, IHardwareService hardwareManager)
+    public Notifications(IConfig config, IOsd osd, IHardwareService hardwareService)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.osd = osd ?? throw new ArgumentNullException(nameof(osd));
 
-        if (hardwareManager == null)
+        if (hardwareService == null)
         {
-            throw new ArgumentNullException("hardwareManager");
+            throw new ArgumentNullException("hardwareService");
         }
 
-        atk = hardwareManager.ResolveNotNull<IAtk>();
-        powerManagement = hardwareManager.ResolveNotNull<IPowerManagement>();
-        touchPad = hardwareManager.ResolveNotNull<ITouchPad>();
-        display = hardwareManager.ResolveNotNull<IDisplay>();
-        keyboard = hardwareManager.ResolveNotNull<IKeyboard>();
-        keyboardBacklight = hardwareManager.ResolveNotNull<IKeyboardBacklight>();
-        microphone = hardwareManager.ResolveNotNull<IMicrophone>();
+        atk = hardwareService.ResolveNotNull<IAtk>();
+        powerManagement = hardwareService.ResolveNotNull<IPowerManagement>();
+        touchPad = hardwareService.ResolveNotNull<ITouchPad>();
+        display = hardwareService.ResolveNotNull<IDisplay>();
+        keyboard = hardwareService.ResolveNotNull<IKeyboard>();
+        keyboardBacklight = hardwareService.ResolveNotNull<IKeyboardBacklight>();
+        microphone = hardwareService.ResolveNotNull<IMicrophone>();
 
         Init(disposable);
     }
