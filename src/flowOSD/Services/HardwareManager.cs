@@ -167,9 +167,11 @@ sealed class HardwareManager : IDisposable, IHardwareManager
 
     private void InitHid()
     {
+#if !DEBUG
         hidDevice.WriteFeatureData(0x5a, 0x89);
         hidDevice.WriteFeatureData(0x5a, 0x41, 0x53, 0x55, 0x53, 0x20, 0x54, 0x65, 0x63, 0x68, 0x2e, 0x49, 0x6e, 0x63, 0x2e);
         hidDevice.WriteFeatureData(0x5a, 0x05, 0x20, 0x31, 0x00, 0x08);
+#endif
     }
 
     private void UpdateTouchPad(DeviceState touchPadState, TabletMode tabletMode)

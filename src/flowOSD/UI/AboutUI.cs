@@ -38,7 +38,7 @@ sealed class AboutUI : IDisposable
         this.config = config;
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
         if (instance != null && !instance.IsDisposed)
         {
@@ -69,17 +69,17 @@ sealed class AboutUI : IDisposable
         {
             this.config = config;
 
-            this.Text = "About";
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.ShowIcon = false;
-            this.ShowInTaskbar = false;
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            Text = "About";
+            MaximizeBox = false;
+            MinimizeBox = false;
+            ShowIcon = false;
+            ShowInTaskbar = false;
+            FormBorderStyle = FormBorderStyle.FixedSingle;
             StartPosition = FormStartPosition.CenterScreen;
 
-            this.Font = new Font("Segoe UI", this.DpiScale(12), GraphicsUnit.Pixel);
+            Font = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel).DisposeWith(disposable);
 
-            this.Add(Create<TableLayoutPanel>(x =>
+            var layout = Create<TableLayoutPanel>(x =>
             {
                 x.Dock = DockStyle.Fill;
                 x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -89,69 +89,75 @@ sealed class AboutUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            }).DisposeWith(disposable)
-                .Add<PictureBox>(0, 0, 1, 3, x =>
-                {
-                    x.Image = System.Drawing.Icon
-                        .ExtractAssociatedIcon(Assembly.GetCallingAssembly().Location)?
-                        .ToBitmap().DisposeWith(disposable);
+            }).DisposeWith(disposable);
 
-                    x.Size = new Size(64, 64);
-                    x.Margin = new Padding(20);
-                    x.SizeMode = PictureBoxSizeMode.Zoom;
-                    x.DisposeWith(disposable);
-                })
-                .Add<Label>(1, 0, x =>
-                {
-                    x.Text = $"{config.AppFileInfo.ProductName}";
-                    x.Font = new Font(Font.FontFamily, 20);
-                    x.AutoSize = true;
-                    x.Margin = new Padding(0, 3, 0, 3);
-                    x.DisposeWith(disposable);
-                })
-                .Add<Label>(1, 1, x =>
-                {
-                    x.Text = "https://github.com/albertakhmetov/flowOSD";
-                    x.ForeColor = Color.Blue;
-                    x.Cursor = Cursors.Hand;
-                    x.Click += (sender, e) => { Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = x.Text }); };
+            layout.Add<PictureBox>(0, 0, 1, 3, x =>
+            {
+                x.Image = System.Drawing.Icon
+                    .ExtractAssociatedIcon(Assembly.GetCallingAssembly().Location)?
+                    .ToBitmap().DisposeWith(disposable);
 
-                    x.AutoSize = true;
+                x.Size = new Size(64, 64);
+                x.Margin = new Padding(20);
+                x.SizeMode = PictureBoxSizeMode.Zoom;
+                x.DisposeWith(disposable);
+            });
 
-                    x.Margin = new Padding(5, 3, 0, 3);
-                    x.DisposeWith(disposable);
-                })
-                .Add<Label>(1, 2, x =>
-                {
-                    var sb = new StringBuilder();
+            layout.Add<Label>(1, 0, x =>
+            {
+                x.Text = $"{config.AppFileInfo.ProductName}";
+                x.Font = new Font(Font.FontFamily, 20);
+                x.AutoSize = true;
+                x.Margin = new Padding(0, 3, 0, 3);
+                x.DisposeWith(disposable);
+            });
+
+            layout.Add<Label>(1, 1, x =>
+            {
+                x.Text = "https://github.com/albertakhmetov/flowOSD";
+                x.ForeColor = Color.Blue;
+                x.Cursor = Cursors.Hand;
+                x.Click += (sender, e) => { Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = x.Text }); };
+
+                x.AutoSize = true;
+
+                x.Margin = new Padding(5, 3, 0, 3);
+                x.DisposeWith(disposable);
+            });
+
+            layout.Add<Label>(1, 2, x =>
+            {
+                var sb = new StringBuilder();
 #if !DEBUG
-                    sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion}");
+                sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion}");
 #else
-                    sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion} [DEBUG BUILD]");
+                sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion} [DEBUG BUILD]");
 #endif
-                    sb.AppendLine($"{config.AppFileInfo.LegalCopyright}");
-                    sb.AppendLine();
-                    sb.AppendLine($"{config.AppFileInfo.Comments}");
-                    sb.AppendLine();
-                    sb.AppendLine($"Runtime: {Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName}");
+                sb.AppendLine($"{config.AppFileInfo.LegalCopyright}");
+                sb.AppendLine();
+                sb.AppendLine($"{config.AppFileInfo.Comments}");
+                sb.AppendLine();
+                sb.AppendLine($"Runtime: {Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName}");
 
-                    x.Text = sb.ToString();
-                    x.AutoSize = true;
-                    x.Margin = new Padding(5, 15, 20, 3);
-                    x.DisposeWith(disposable);
-                })
-                .Add<Button>(1, 3, x =>
-                {
-                    x.Text = "OK";
-                    x.AutoSize = true;
-                    x.Padding = new Padding(15, 3, 15, 3);
-                    x.Margin = new Padding(0, 0, 20, 20);
-                    x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
-                    x.Click += (sender, e) => Close();
+                x.Text = sb.ToString();
+                x.AutoSize = true;
+                x.Margin = new Padding(5, 15, 20, 3);
+                x.DisposeWith(disposable);
+            });
 
-                    x.DisposeWith(disposable);
-                })
-            );
+            layout.Add<Button>(1, 3, x =>
+            {
+                x.Text = "OK";
+                x.AutoSize = true;
+                x.Padding = new Padding(15, 3, 15, 3);
+                x.Margin = new Padding(0, 0, 20, 20);
+                x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
+                x.Click += (sender, e) => Close();
+
+                x.DisposeWith(disposable);
+            });
+
+            Controls.Add(layout);
         }
 
         private void UpdateSize()

@@ -36,7 +36,7 @@ sealed class ConfigUI : IDisposable
         this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
         if (instance != null && !instance.IsDisposed)
         {
@@ -69,14 +69,13 @@ sealed class ConfigUI : IDisposable
         private ReadOnlyCollection<Control> pages;
         private Control? currentPage;
 
-        private TableLayoutPanel layout;
         private Panel pageContainer;
 
         public Window(params Control[] pages)
         {
             this.pages = new ReadOnlyCollection<Control>(pages);
 
-            layout = Init(disposable);
+            pageContainer = Init(disposable);
 
             CurrentPage = pages.FirstOrDefault();
         }
@@ -127,12 +126,12 @@ sealed class ConfigUI : IDisposable
             Size = this.DpiScale(new Size(600, 500));
         }
 
-        private TableLayoutPanel Init(CompositeDisposable uiDisposable)
+        private Panel Init(CompositeDisposable uiDisposable)
         {
             const int listWidth = 150;
             const int listItemHeight = 30;
 
-            layout = Create<TableLayoutPanel>(x =>
+            var layout = Create<TableLayoutPanel>(x =>
             {
                 x.Dock = DockStyle.Fill;
 
@@ -144,7 +143,7 @@ sealed class ConfigUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
             }).DisposeWith(uiDisposable);
 
-            layout.Add<Panel>(1, 0, x =>
+            var container = Create<Panel>(x =>
             {
                 x.Dock = DockStyle.Fill;
                 x.AutoScroll = true;
@@ -152,6 +151,7 @@ sealed class ConfigUI : IDisposable
 
                 x.LinkAs(ref pageContainer);
             });
+            layout.Add(1, 0, container);
 
             layout.Add<ListBox>(0, 0, x =>
             {
@@ -243,12 +243,12 @@ sealed class ConfigUI : IDisposable
             ShowInTaskbar = false;
             FormBorderStyle = FormBorderStyle.FixedSingle;
 
-            Font = new Font("Segoe UI", this.DpiScale(12), GraphicsUnit.Pixel);
+            Font = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel);
             UpdateSize();
 
             StartPosition = FormStartPosition.CenterScreen;
 
-            return layout;
+            return container;
         }
     }
 }
