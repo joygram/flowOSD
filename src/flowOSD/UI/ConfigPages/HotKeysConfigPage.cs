@@ -21,138 +21,149 @@ namespace flowOSD.UI.ConfigPages;
 using flowOSD.Api;
 using flowOSD.Extensions;
 using flowOSD.UI.Commands;
+using flowOSD.UI.Components;
 using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 
-internal class HotKeysConfigPage : TableLayoutPanel
+internal class HotKeysConfigPage : ConfigPageBase
 {
     private CompositeDisposable disposable = new CompositeDisposable();
-    private IConfig config;
     private ICommandService commandService;
-    private HotKeyCommand[] hotKeyCommands;
 
-    public HotKeysConfigPage(IConfig config, ICommandService commandService)
+    public HotKeysConfigPage(IConfig config, CxTabListener tabListener, ICommandService commandService)
+        : base(config, tabListener)
     {
+        this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
+
         Dock = DockStyle.Top;
         AutoScroll = false;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-        this.config = config ?? throw new ArgumentNullException(nameof(config));
-        this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
-
-        var c = new List<HotKeyCommand>();
-        c.Add(new HotKeyCommand("", null));
-        c.AddRange(commandService.Commands.Select(i => new HotKeyCommand(i.Description, i.Name)));
-        hotKeyCommands = c.ToArray();
-
         Text = "HotKeys";
 
-        ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-
-        Add(0, "AURA", () => config.UserConfig.AuraCommand, value => config.UserConfig.AuraCommand = value);
-        Add(1, "FAN", () => config.UserConfig.FanCommand, value => config.UserConfig.FanCommand = value);
-        Add(2, "ROG", () => config.UserConfig.RogCommand, value => config.UserConfig.RogCommand = value);
-        Add(3, "Fn + C", () => config.UserConfig.CopyCommand, value => config.UserConfig.CopyCommand = value);
-        Add(4, "Fn + V", () => config.UserConfig.PasteCommand, value => config.UserConfig.PasteCommand = value);
-
-        this.Add<FlowLayoutPanel>(0, 5, 2, 1, x =>
+        this.Add<CxGrid>(0, 0, grid =>
         {
-            x.Dock = DockStyle.Right;
-            x.AutoSize = true;
-            x.Margin = new Padding(0);
+            RegisterCxItem(grid);
 
-            x.Add<Button>(y =>
-            {
-                y.Text = "Disable all";
-                y.AutoSize = true;
-                y.Margin = new Padding(5, 0, 0, 0);
-                y.Click += (sender, e) =>
-                {
-                    config.UserConfig.AuraCommand = null;
-                    config.UserConfig.FanCommand = null;
-                    config.UserConfig.RogCommand = null;
-                    config.UserConfig.CopyCommand = null;
-                    config.UserConfig.PasteCommand = null;
-                };
-            });
+            grid.MouseClick += OnMouseClick;
+            grid.Padding = new Padding(20, 20, 20, 10);
+            grid.Dock = DockStyle.Top;
+            grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            grid.AutoSize = true;
 
-            x.Add<Button>(y =>
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+            Add(grid, "AURA", nameof(config.UserConfig.AuraCommand), value => config.UserConfig.AuraCommand = value);
+            Add(grid, "FAN", nameof(config.UserConfig.FanCommand), value => config.UserConfig.FanCommand = value);
+            Add(grid, "ROG", nameof(config.UserConfig.RogCommand), value => config.UserConfig.RogCommand = value);
+            Add(grid, "Fn + C", nameof(config.UserConfig.CopyCommand), value => config.UserConfig.CopyCommand = value);
+            Add(grid, "Fn + V", nameof(config.UserConfig.PasteCommand), value => config.UserConfig.PasteCommand = value);
+
+            grid.Add<FlowLayoutPanel>(0, 5, 2, 1, x =>
             {
-                y.Text = "Reset";
-                y.AutoSize = true;
-                y.Margin = new Padding(5, 0, 0, 0);
-                y.Click += (sender, e) =>
+                x.MouseClick += OnMouseClick;
+                x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
+                x.AutoSize = true;
+                x.Margin = new Padding(0, 0, 0, 10);
+                x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                x.AutoSize = true;
+
+                x.Add<CxButton>(y =>
                 {
-                    config.UserConfig.AuraCommand = nameof(DisplayRefreshRateCommand);
-                    config.UserConfig.FanCommand = nameof(ToggleBoostCommand);
-                    config.UserConfig.RogCommand = nameof(PrintScreenCommand);
-                    config.UserConfig.CopyCommand = null;
-                    config.UserConfig.PasteCommand = null;
-                };
+                    y.Padding = new Padding(20, 5, 20, 5);
+
+                    y.Text = "Disable all";
+                    y.AutoSize = true;
+                    y.Margin = new Padding(5, 0, 0, 0);
+                    y.Click += (sender, e) =>
+                    {
+                        config.UserConfig.AuraCommand = null;
+                        config.UserConfig.FanCommand = null;
+                        config.UserConfig.RogCommand = null;
+                        config.UserConfig.CopyCommand = null;
+                        config.UserConfig.PasteCommand = null;
+                    };
+
+                    y.DisposeWith(disposable);
+                    RegisterCxItem(y);
+                });
+
+                x.Add<CxButton>(y =>
+                {
+                    y.Padding = new Padding(20, 5, 20, 5);
+
+                    y.Text = "Reset";
+                    y.AutoSize = true;
+                    y.Margin = new Padding(5, 0, 0, 0);
+                    y.Click += (sender, e) =>
+                    {
+                        config.UserConfig.AuraCommand = nameof(DisplayRefreshRateCommand);
+                        config.UserConfig.FanCommand = nameof(ToggleBoostCommand);
+                        config.UserConfig.RogCommand = nameof(PrintScreenCommand);
+                        config.UserConfig.CopyCommand = null;
+                        config.UserConfig.PasteCommand = null;
+                    };
+
+                    y.DisposeWith(disposable);
+                    RegisterCxItem(y);
+                });
             });
         });
     }
 
-    private void Add(int row, string text, Func<string?> getValue, Action<string?> setValue)
+    private void Add(CxGrid grid, string text, string propertyName, Action<string?> setValue)
     {
-        this.Add<Label>(0, row, y =>
+        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        grid.Add<CxLabel>(0, grid.RowCount - 1, y =>
         {
             y.AutoSize = true;
-            y.Margin = new Padding(15, 5, 0, 15);
+            y.Margin = new Padding(5, 20, 20, 20);
             y.Text = text;
-            y.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            y.Anchor = AnchorStyles.Left;
             y.ForeColor = SystemColors.ControlText;
+            y.UseClearType = true;
 
             y.DisposeWith(disposable);
+            RegisterCxItem(y);
         });
 
-        this.Add<ComboBox>(1, row, y =>
+        grid.Add<CxButton>(y =>
         {
-            y.AutoSize = true;
-            y.Margin = new Padding(15, 5, 0, 15);
-            y.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            y.ForeColor = SystemColors.ControlText;
+            y.Padding = new Padding(20, 10, 15, 10);
+            y.Dock = DockStyle.Fill;
+            y.DropDownMenu = CreateContextMenu(
+                commandService.Commands.Where(i => i.CanExecuteWithHotKey),
+                setValue);
 
-            y.Items.AddRange(hotKeyCommands);
-            y.DisplayMember = nameof(HotKeyCommand.Text);
-            y.ValueMember = nameof(HotKeyCommand.CommandName);
+            RegisterCxItem(y);
+            RegisterCxItem(y.DropDownMenu);
 
-            y.DropDownStyle = ComboBoxStyle.DropDownList;
+            y.IconFont = IconFont;
 
-            y.SelectedItem = hotKeyCommands.FirstOrDefault(x => x.CommandName == getValue());
-            y.SelectedIndexChanged += (sender, e) =>
-            {
-                setValue((y.SelectedItem as HotKeyCommand)?.CommandName);
-            };
+            var binding = new Binding("Text", Config.UserConfig, propertyName, true, DataSourceUpdateMode.Never);
+            binding.Format += (_, e) => e.Value = commandService.Commands
+                .FirstOrDefault(x => x.Name == e.Value as string)?.Description ?? "[ BLANK ]";
 
-            config.UserConfig.PropertyChanged
-                .Subscribe(_ => y.SelectedItem = hotKeyCommands.FirstOrDefault(x => x.CommandName == getValue()))
-                .DisposeWith(disposable);
-
-            y.DisposeWith(disposable);
+            y.DataBindings.Add(binding);
         });
     }
 
-    private class HotKeyCommand
+    private CxContextMenu CreateContextMenu(IEnumerable<CommandBase> commands, Action<string?> setValue)
     {
-        public HotKeyCommand(string text, string? commandName)
+        var menu = new CxContextMenu();
+        var relayCommand = new RelayCommand(x => setValue((x as CommandBase)?.Name));
+
+        menu.AddMenuItem("[ BLANK ]", relayCommand, null);
+        menu.AddSeparator();
+
+        foreach (var c in commands)
         {
-            Text = text;
-            CommandName = commandName;
+            menu.AddMenuItem(c.Description, relayCommand, c);
         }
 
-        public string Text { get; }
-
-        public string? CommandName { get; }
+        return menu;
     }
 }

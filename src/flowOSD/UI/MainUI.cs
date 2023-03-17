@@ -542,8 +542,8 @@ sealed class MainUI : IDisposable
         {
             var x = new CxButton();
 
-            x.Margin = this.DpiScale(new Padding(10, 8, 10, 8));
-            x.Size = this.DpiScale(new Size(100, 50));
+            x.Margin = this.DpiScale(new Padding(4));
+            x.Size = this.DpiScale(new Size(120, 50));
             x.Icon = icon;
             x.IconFont = iconFont;
             x.Text = text;
@@ -598,7 +598,7 @@ sealed class MainUI : IDisposable
             }
 
             BackColor = parameters.BackgroundColor;
-            Acrylic.EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(230));
+            Acrylic.EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(210));
 
             Invalidate();
         }

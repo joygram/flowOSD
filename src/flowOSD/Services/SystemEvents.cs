@@ -28,9 +28,14 @@ using static Native.UxTheme;
 using static Native.User32;
 using static Native.Messages;
 using flowOSD.Extensions;
+using Microsoft.Win32;
 
 sealed partial class SystemEvents : ISystemEvents, IDisposable
 {
+    private const string PERSONALIZE_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    private const string PERSONALIZE_APP_VALUE = "AppsUseLightTheme";
+    private const string PERSONALIZE_SYSTEM_VALUE = "SystemUsesLightTheme";
+
     private CompositeDisposable? disposable = new CompositeDisposable();
 
     private BehaviorSubject<bool> systemDarkModeSubject;
@@ -42,8 +47,8 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
 
     public SystemEvents(IMessageQueue messageQueue)
     { 
-        systemDarkModeSubject = new BehaviorSubject<bool>(ShouldSystemUseDarkMode());
-        appsDarkModeSubject = new BehaviorSubject<bool>(ShouldAppsUseDarkMode());
+        systemDarkModeSubject = new BehaviorSubject<bool>(IsSystemUseDarkMode());
+        appsDarkModeSubject = new BehaviorSubject<bool>(IsAppUseDarkMode());
         accentColorSubject = new BehaviorSubject<Color>(GetAccentColor());
 
         primaryScreenSubject = new BehaviorSubject<Screen?>(Screen.PrimaryScreen);
@@ -117,8 +122,8 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
     {
         if (messageId == WM_WININICHANGE && Marshal.PtrToStringUni(lParam) == "ImmersiveColorSet")
         {
-            systemDarkModeSubject.OnNext(ShouldSystemUseDarkMode());
-            appsDarkModeSubject.OnNext(ShouldAppsUseDarkMode());
+            systemDarkModeSubject.OnNext(IsSystemUseDarkMode());
+            appsDarkModeSubject.OnNext(IsAppUseDarkMode());
             accentColorSubject.OnNext(GetAccentColor());
         }
 
@@ -130,6 +135,22 @@ sealed partial class SystemEvents : ISystemEvents, IDisposable
         if (messageId == WM_DPICHANGED)
         {
             dpiSubject.OnNext(HiWord(wParam));
+        }
+    }
+
+    private bool IsAppUseDarkMode()
+    {
+        using (var key = Registry.CurrentUser.OpenSubKey(PERSONALIZE_KEY, false))
+        {
+            return key?.GetValue(PERSONALIZE_APP_VALUE)?.ToString() != "1";
+        }
+    }
+
+    private bool IsSystemUseDarkMode()
+    {
+        using (var key = Registry.CurrentUser.OpenSubKey(PERSONALIZE_KEY, false))
+        {
+            return key?.GetValue(PERSONALIZE_SYSTEM_VALUE)?.ToString() != "1";
         }
     }
 }

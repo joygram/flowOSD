@@ -25,6 +25,20 @@ namespace flowOSD.Native;
 static class Dwmapi
 {
     public const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    public const uint DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+    public static void UseDarkMode(IntPtr hWnd, bool enabled)
+    {
+        var isDark = enabled ? 1 : 0;
+
+        var value = GCHandle.Alloc(isDark, GCHandleType.Pinned);
+        var result = DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, value.AddrOfPinnedObject(), sizeof(uint));
+        value.Free();
+        if (result != 0)
+        {
+            throw Marshal.GetExceptionForHR(result);
+        }
+    }
 
     public static void SetCornerPreference(IntPtr hWnd, DWM_WINDOW_CORNER_PREFERENCE cornerPreference)
     {

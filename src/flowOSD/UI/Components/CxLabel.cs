@@ -25,11 +25,13 @@ internal sealed class CxLabel : Label
 {
     private string? icon;
     private Font? iconFont;
+    private bool useClearType;
 
     public CxLabel()
     {
         icon = null;
         iconFont = null;
+        useClearType = false;
     }
 
     public string? Icon
@@ -62,10 +64,66 @@ internal sealed class CxLabel : Label
         }
     }
 
+    public bool UseClearType
+    {
+        get => useClearType;
+        set
+        {
+            if (useClearType == value)
+            {
+                return;
+            }
+
+            useClearType = value;
+            Invalidate();
+        }
+    }
+
+    public CxTabListener? TabListener
+    {
+        get; set;
+    }
+
+    public override Size GetPreferredSize(Size proposedSize)
+    {
+        if (IsDisposed)
+        {
+            return Size.Empty;
+        }
+
+        using var g = Graphics.FromHwnd(Handle);
+
+        var symbolSize = IconFont == null
+            ? new SizeF(0, 0)
+            : g.MeasureString(Icon ?? string.Empty, IconFont);
+
+        var textSize = g.MeasureString(Text, Font);
+
+        var totalSize = new Size(
+            (int)(symbolSize.Width + textSize.Width),
+            (int)Math.Max(symbolSize.Height, textSize.Height));
+
+        return new Size(
+            Padding.Left + Padding.Right + totalSize.Width,
+            Padding.Top + Padding.Bottom + totalSize.Height);
+    }
+
+    protected override void OnMouseClick(MouseEventArgs e)
+    {
+        if (TabListener != null)
+        {
+            TabListener.ShowKeyboardFocus = false;
+        }
+
+        base.OnMouseClick(e);
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-        e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+        e.Graphics.TextRenderingHint = UseClearType
+            ? TextRenderingHint.ClearTypeGridFit
+            : TextRenderingHint.AntiAliasGridFit;
 
         var symbolSize = IconFont == null
             ? new SizeF(0, 0)
@@ -75,7 +133,7 @@ internal sealed class CxLabel : Label
             symbolSize.Width + textSize.Width,
             Math.Max(symbolSize.Height, textSize.Height));
 
-        var dY = (symbolSize.Height - textSize.Height)/2;
+        var dY = (symbolSize.Height - textSize.Height) / 2;
 
         using var brush = new SolidBrush(ForeColor);
 

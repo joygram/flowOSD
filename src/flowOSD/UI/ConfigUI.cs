@@ -19,25 +19,41 @@
 namespace flowOSD.UI;
 
 using System.Collections.ObjectModel;
+using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using flowOSD.Api;
 using flowOSD.Extensions;
+using flowOSD.Native;
+using flowOSD.UI.Components;
+using flowOSD.UI.ConfigPages;
 using static flowOSD.Extensions.Forms;
 
 sealed class ConfigUI : IDisposable
 {
+    private CompositeDisposable? disposable = new CompositeDisposable();
+
     private Window? instance;
     private IConfig config;
     private ICommandService commandService;
+    private ISystemEvents systemEvents;
 
-    public ConfigUI(IConfig config, ICommandService commandService)
+    public ConfigUI(IConfig config, ICommandService commandService, ISystemEvents systemEvents)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
+        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
+
+        systemEvents?.AppUI
+            .Subscribe(x => instance?.UpdateUI(x))
+            .DisposeWith(disposable);
     }
 
     public void Dispose()
     {
+        disposable?.Dispose();
+        disposable = null;
+
         if (instance != null && !instance.IsDisposed)
         {
             instance.Dispose();
@@ -45,7 +61,7 @@ sealed class ConfigUI : IDisposable
         }
     }
 
-    public void Show()
+    public async void Show()
     {
         if (instance != null && !instance.IsDisposed)
         {
@@ -53,11 +69,14 @@ sealed class ConfigUI : IDisposable
         }
         else
         {
-            instance = new Window(
-                new ConfigPages.GeneralConfigPage(config),
-                new ConfigPages.NotificationsConfigPage(config),
-                new ConfigPages.HotKeysConfigPage(config, commandService),
-                new ConfigPages.MonitoringConfigPage(config));
+            var tabListener = new CxTabListener();
+            instance = new Window(tabListener,
+                new ConfigPages.GeneralConfigPage(config, tabListener),
+                new ConfigPages.NotificationsConfigPage(config, tabListener),
+                new ConfigPages.HotKeysConfigPage(config, tabListener, commandService),
+                new ConfigPages.MonitoringConfigPage(config, tabListener));
+
+            instance.UpdateUI(await systemEvents.AppUI.FirstOrDefaultAsync());
             instance.Show();
         }
     }
@@ -66,18 +85,28 @@ sealed class ConfigUI : IDisposable
     {
         private CompositeDisposable? disposable = new CompositeDisposable();
 
-        private ReadOnlyCollection<Control> pages;
+        private ReadOnlyCollection<ConfigPageBase> pages;
         private Control? currentPage;
 
         private Panel pageContainer;
+        private ListBox listBox;
+        private UIParameters? uiParameters;
+        private CxTabListener tabListener;
 
-        public Window(params Control[] pages)
+        public Window(CxTabListener tabListener, params ConfigPageBase[] pages)
         {
-            this.pages = new ReadOnlyCollection<Control>(pages);
+            this.tabListener = tabListener;
+            this.tabListener.ShowKeyboardFocusChanged += TabListener_ShowKeyboardFocusChanged;
+            this.pages = new ReadOnlyCollection<ConfigPageBase>(pages);
 
             pageContainer = Init(disposable);
 
             CurrentPage = pages.FirstOrDefault();
+        }
+
+        private void TabListener_ShowKeyboardFocusChanged(object? sender, EventArgs e)
+        {
+            listBox?.Invalidate();
         }
 
         public Control? CurrentPage
@@ -97,6 +126,38 @@ sealed class ConfigUI : IDisposable
                     pageContainer.Controls.Add(currentPage);
                 }
             }
+        }
+
+        public void UpdateUI(UIParameters uiParameters)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            this.uiParameters = uiParameters;
+
+            foreach (var page in pages)
+            {
+                page.UIParameters = uiParameters;
+            }
+
+            if (uiParameters == null)
+            {
+                return;
+            }
+
+            BackColor = uiParameters.BackgroundColor;
+            ForeColor = uiParameters.TextColor;
+
+            listBox.BackColor = uiParameters.BackgroundColor;
+
+            Native.Dwmapi.UseDarkMode(Handle, uiParameters.IsDarkMode);
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
         }
 
         protected override void OnClosed(EventArgs e)
@@ -123,13 +184,13 @@ sealed class ConfigUI : IDisposable
 
         private void UpdateSize()
         {
-            Size = this.DpiScale(new Size(600, 500));
+            Size = this.DpiScale(new Size(600, 600));
         }
 
         private Panel Init(CompositeDisposable uiDisposable)
         {
             const int listWidth = 150;
-            const int listItemHeight = 30;
+            const int listItemHeight = 40;
 
             var layout = Create<TableLayoutPanel>(x =>
             {
@@ -155,8 +216,8 @@ sealed class ConfigUI : IDisposable
 
             layout.Add<ListBox>(0, 0, x =>
             {
+                x.BorderStyle = BorderStyle.None;
                 x.Width = this.DpiScale(listWidth);
-
                 x.DrawMode = DrawMode.OwnerDrawVariable;
                 x.IntegralHeight = false;
                 x.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom;
@@ -169,28 +230,86 @@ sealed class ConfigUI : IDisposable
                     CurrentPage = x.SelectedIndex < 0 ? null : pages[x.SelectedIndex];
                 };
 
+                x.PreviewKeyDown += (_, e) =>
+                {
+                    if (tabListener != null && e.KeyCode == Keys.Tab)
+                    {
+                        tabListener.ShowKeyboardFocus = true;
+                    }
+                };
+
+                x.MouseClick += (_, _) =>
+                {
+                    if (tabListener != null)
+                    {
+                        tabListener.ShowKeyboardFocus = false;
+                    }
+                };
+
                 x.DrawItem += (_, e) =>
                 {
-                    if (e.Font == null)
+                    if (uiParameters == null || e.Font == null)
                     {
                         return;
                     }
 
+                    // Clear
+                    using var backgroundBrush = new SolidBrush(uiParameters.BackgroundColor);
+                    e.Graphics.FillRectangle(backgroundBrush, e.Bounds);
+
+                    const int FOCUS_SPACE = 6;
+
                     var text = pages[e.Index].Text;
                     var textSize = e.Graphics.MeasureString(text, e.Font);
 
-                    e.DrawBackground();
-                    e.DrawFocusRectangle();
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-                    using var brush = new SolidBrush(e.State == DrawItemState.Selected ? e.BackColor : e.ForeColor);
+                    var drawingAreaRect = new Rectangle(
+                         e.Bounds.Left + FOCUS_SPACE,
+                         e.Bounds.Top + FOCUS_SPACE,
+                         e.Bounds.Width - 1 - FOCUS_SPACE * 2,
+                         e.Bounds.Height - 1 - FOCUS_SPACE * 2);
+
+                    var color = (e.State & DrawItemState.Selected) == DrawItemState.Selected
+                        ? uiParameters.NavigationMenuBackgroundHoverColor
+                        : uiParameters.BackgroundColor;
+
+                    using var brush = new SolidBrush(color);
+                    e.Graphics.FillRoundedRectangle(brush, drawingAreaRect, 4);
+
+                    if ((e.State & DrawItemState.Selected) == DrawItemState.Selected)
+                    {
+                        using var accentBrush = new SolidBrush(uiParameters.AccentColor);
+                        e.Graphics.FillRoundedRectangle(accentBrush,
+                            drawingAreaRect.Left,
+                            drawingAreaRect.Top + drawingAreaRect.Height / 8,
+                            8,
+                            drawingAreaRect.Height - drawingAreaRect.Height / 4,
+                            4);
+                    }
+
+                    if ((e.State & DrawItemState.Focus) == DrawItemState.Focus && tabListener?.ShowKeyboardFocus == true)
+                    {
+                        using var pen = new Pen(uiParameters.FocusColor, 2);
+                        e.Graphics.DrawRoundedRectangle(pen,
+                            e.Bounds.Left + 1,
+                            e.Bounds.Top + 1,
+                            e.Bounds.Width - 3,
+                            e.Bounds.Height - 3,
+                            4);
+                    }
+
+                    var textBrush = color.IsBright()
+                        ? new SolidBrush(uiParameters.MenuTextBrightColor)
+                        : new SolidBrush(uiParameters.MenuTextColor);
 
                     e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                     e.Graphics.DrawString(
                         text,
                         e.Font,
-                        brush,
-                        e.Bounds.Left + (e.Bounds.Height - textSize.Height) / 2,
-                        e.Bounds.Top + (e.Bounds.Height - textSize.Height) / 2);
+                        textBrush,
+                        drawingAreaRect.Left + drawingAreaRect.Height / 2,
+                        drawingAreaRect.Top + (drawingAreaRect.Height - textSize.Height) / 2);
                 };
 
                 x.MeasureItem += (_, e) =>
@@ -205,30 +324,7 @@ sealed class ConfigUI : IDisposable
                 };
 
                 x.DisposeWith(uiDisposable);
-            });
-
-            layout.Add<Label>(0, 1, 2, 1, x =>
-            {
-                x.Dock = DockStyle.Fill;
-                x.Margin = new Padding(5, 10, 5, 10);
-                x.AutoSize = false;
-
-                x.Height = 2;
-                x.BorderStyle = BorderStyle.Fixed3D;
-
-                x.DisposeWith(uiDisposable);
-            });
-
-            layout.Add<Button>(1, 2, x =>
-            {
-                x.Text = "Close";
-                x.AutoSize = true;
-                x.Padding = new Padding(15, 3, 15, 3);
-                x.Margin = new Padding(5);
-                x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
-                x.Click += (sender, e) => Close();
-
-                x.DisposeWith(uiDisposable);
+                x.LinkAs(ref listBox);
             });
 
             this.Add(layout);
@@ -246,7 +342,9 @@ sealed class ConfigUI : IDisposable
             Font = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel);
             UpdateSize();
 
-            StartPosition = FormStartPosition.CenterScreen;
+            Location = new Point(
+                (Screen.PrimaryScreen.WorkingArea.Width - Width) / 2,
+                (Screen.PrimaryScreen.WorkingArea.Height - Height) / 2);
 
             return container;
         }

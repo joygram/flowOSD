@@ -16,32 +16,32 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.UI.Commands;
+namespace flowOSD.UI.Components;
 
-using System.ComponentModel;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Reactive.Disposables;
-using System.Runtime.CompilerServices;
-using flowOSD.Api;
+using System.ComponentModel;
+using static flowOSD.Extensions.Drawing;
 using flowOSD.Extensions;
+using System.Windows.Forms;
+using System.Drawing;
+using System;
 
-sealed class AboutCommand : CommandBase
+class CxGrid : TableLayoutPanel
 {
-    private AboutUI aboutUI;
-
-    public AboutCommand(IConfig config)
+    protected override void OnPaint(PaintEventArgs e)
     {
-        aboutUI = new AboutUI(config).DisposeWith(Disposable!);
-    
-        Text = "About...";
-        Enabled = true;
-    }
+        e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
 
-    public override string Name => nameof(AboutCommand);
+        e.Graphics.Clear(Parent?.BackColor ?? BackColor);
 
-    public override bool CanExecuteWithHotKey => false;
+        var drawingRect = new Rectangle(1, 1, Width - 3, Height - 3);
 
-    public override void Execute(object? parameter = null)
-    {
-        aboutUI.Show();
+        using var brush = new SolidBrush(BackColor);
+        e.Graphics.FillRoundedRectangle(brush, drawingRect, 4);
+
+        using var pen = new Pen(BackColor.IsBright() ? BackColor.Luminance(-.2f) : BackColor.Luminance(+.2f), 1);
+        e.Graphics.DrawRoundedRectangle(pen, drawingRect, 4);
     }
 }

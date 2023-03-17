@@ -20,59 +20,47 @@ namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
 using flowOSD.Extensions;
+using flowOSD.UI.Components;
 using System.Reactive.Disposables;
 
 internal class NotificationsConfigPage : ConfigPageBase
 {
-    public NotificationsConfigPage(IConfig config)
-        :base(config)
+    public NotificationsConfigPage(IConfig config, CxTabListener tabListener)
+        :base(config, tabListener)
     {
         Text = "Notifications";
 
         AddConfig(
+            UIImages.Hardware_AC,
             "Show power source notifications",
-            "Indicates whether notification shows when notebook power source changes.",
             nameof(UserConfig.ShowPowerSourceNotification));
         AddConfig(
+            UIImages.Hardware_Cpu,
             "Show CPU boost mode notifications",
-            "Indicates whether notification shows when CPU boost mode is disabled or enabled.",
             nameof(UserConfig.ShowBoostNotification));
         AddConfig(
+            UIImages.Performance_Turbo,
             "Show performance mode notifications",
-            "Indicates whether notification shows when performance override mode changes.",
             nameof(UserConfig.ShowPerformanceModeNotification));
         AddConfig(
+            UIImages.Power_Balanced,
             "Show power mode notifications",
-            "Indicates whether notification shows when power mode changes.",
             nameof(UserConfig.ShowPowerModeNotification));
         AddConfig(
+            UIImages.Hardware_TouchPad,
             "Show TouchPad notifications",
-            "Indicates whether notification shows when TochPad is disabled or enabled.",
             nameof(UserConfig.ShowTouchPadNotification));
         AddConfig(
+            UIImages.Hardware_Screen,
             "Show display refesh rate notifications",
-            "Indicates whether notification shows when display refresh rate changes.",
             nameof(UserConfig.ShowDisplayRateNotification));
         AddConfig(
+            UIImages.Hardware_Mic,
             "Show microphone status notifications",
-            "Indicates whether notification shows when microphone state changes.",
             nameof(UserConfig.ShowMicNotification));
         AddConfig(
+            UIImages.Hardware_Gpu,
             "Show dGPU notifications",
-            "Indicates whether notification shows when dGPU is disabled or enabled.",
             nameof(UserConfig.ShowGpuNotification));
-
-        // workaround:
-        RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
-        this.Add<Label>(0, RowStyles.Count - 1, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = ConfigPageBase.LabelMargin;
-            y.Text = "";
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
-
-            y.DisposeWith(Disposable);
-        });
     }
 }

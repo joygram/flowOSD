@@ -19,34 +19,142 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Extensions;
+using flowOSD.UI.Components;
+using System;
+using System.Diagnostics;
 using System.Reactive.Disposables;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.Text;
 
 internal class GeneralConfigPage : ConfigPageBase
 {
-    public GeneralConfigPage(IConfig config)
-        : base(config)
+    private CxLabel platformLabel, siteLink;
+
+    public GeneralConfigPage(IConfig config, CxTabListener cxTabListener)
+        : base(config, cxTabListener)
     {
         Text = "General";
 
+        AddAbout();
+
         AddConfig(
+            "",
             "Run at logon",
-            "Indicates whether the app starts when a user is logged on.",
             nameof(UserConfig.RunAtStartup));
 
         AddConfig(
+            "",
             "Disable TouchPad in tablet mode",
-            "Indicates whether TouchPad is disabled when the notebook goes into the tablet mode.",
             nameof(UserConfig.DisableTouchPadInTabletMode));
 
         AddConfig(
+            "",
             "Control display refresh rate",
-            "Indicates whether display refresh rate is dependent on the power source.",
             nameof(UserConfig.ControlDisplayRefreshRate));
 
         AddConfig(
+            "",
             "Confirm GPU change",
-            "Indicates whether confirmation is required for GPU change.",
             nameof(UserConfig.ConfirmGpuModeChange));
 
+    }
+
+    protected override void UpdateUI()
+    {
+        base.UpdateUI();
+
+        if (siteLink != null && UIParameters != null)
+        {
+            siteLink.ForeColor = UIParameters.AccentColor;
+        }
+
+        if (platformLabel != null && UIParameters != null)
+        {
+            platformLabel.ForeColor = UIParameters.TextGrayColor;
+        }
+    }
+
+    private void AddAbout()
+    {
+        RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        this.Add<CxGrid>(0, 0, grid =>
+        {
+            RegisterCxItem(grid);
+
+            grid.MouseClick += OnMouseClick;
+            grid.Padding = new Padding(20, 20, 20, 20);
+            grid.Dock = DockStyle.Top;
+            grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            grid.AutoSize = true;
+
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            grid.Add<CxLabel>(0, 0, 1, 2, x =>
+            {
+                x.UseClearType = true;
+                x.AutoSize = true;
+                x.Margin = new Padding(5, 5, 20, 20);
+                x.Text = Config.AppFileInfo.ProductName;
+                x.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+                x.ForeColor = SystemColors.ControlText;
+                x.Font = new Font(Font.FontFamily, 20);
+
+                x.DisposeWith(Disposable!);
+                RegisterCxItem(x);
+            });
+
+            grid.Add<CxLabel>(1, 0, x =>
+            {
+                var sb = new StringBuilder();
+#if !DEBUG
+                sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion}");
+#else
+                sb.AppendLine($"Version: {Config.AppFileInfo.ProductVersion} [DEBUG BUILD]");
+#endif
+                sb.AppendLine($"{Config.AppFileInfo.LegalCopyright}");
+                
+                x.UseClearType = true;
+                x.Text = sb.ToString();
+                x.AutoSize = true;
+                x.Margin = new Padding(5, 15, 20, 3);
+                x.DisposeWith(Disposable!);
+                RegisterCxItem(x);
+            });
+
+            grid.Add<CxLabel>(1, 1, x =>
+            {
+                x.Text =$"Runtime: {Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName}";
+
+                x.UseClearType = true;
+                x.AutoSize = true;
+                x.Margin = new Padding(5, 15, 20, 3);
+                x.DisposeWith(Disposable!);
+                RegisterCxItem(x);
+                x.LinkAs(ref platformLabel);
+            });
+
+            grid.Add<CxLabel>(1, 2, x =>
+            {
+                x.UseClearType = true;
+                x.Text = "https://github.com/albertakhmetov/flowOSD";
+                x.ForeColor = Color.Blue;
+                x.Cursor = Cursors.Hand;
+                x.Click += (sender, e) => { Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = x.Text }); };
+
+                x.AutoSize = true;
+
+                x.Margin = new Padding(5, 3, 0, 3);
+                x.DisposeWith(Disposable!);
+                RegisterCxItem(x);
+                x.LinkAs(ref siteLink);
+            });
+        });
     }
 }

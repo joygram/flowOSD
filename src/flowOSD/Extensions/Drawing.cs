@@ -35,10 +35,10 @@ static class Drawing
     }
 
     public static void DrawRoundedRectangle(
-        this Graphics g, 
+        this Graphics g,
         Pen pen,
         Rectangle rect,
-        int r, 
+        int r,
         Corners corners = Corners.All)
     {
         DrawRoundedRectangle(g, pen, rect.X, rect.Y, rect.Width, rect.Height, r, corners);
@@ -46,15 +46,15 @@ static class Drawing
 
     public static void DrawRoundedRectangle(
         this Graphics g,
-        Pen pen, 
+        Pen pen,
         int x,
-        int y, 
+        int y,
         int width,
-        int height, 
-        int r, 
+        int height,
+        int r,
         Corners corners = Corners.All)
     {
-        using var path = GetRoundedRectPath(x, y, width, height, r,corners);
+        using var path = GetRoundedRectPath(x, y, width, height, r, corners);
 
         g.DrawPath(pen, path);
     }
@@ -148,16 +148,10 @@ static class Drawing
 
     public static Color Luminance(this Color color, float factor)
     {
-        ColorRGBToHLS(
-            ColorTranslator.ToWin32(color),
-            out int hue,
-            out int luminance,
-            out int saturation);
-
-        return ColorTranslator.FromWin32(
-            ColorHLSToRGB(
-                hue,
-                (int)Math.Round(luminance * (1 + factor)),
-                saturation));
+        return Color.FromArgb(
+            255,
+            (int)Math.Max(byte.MinValue, Math.Min(byte.MaxValue, color.R + (255 * factor))),
+            (int)Math.Max(byte.MinValue, Math.Min(byte.MaxValue, color.G + (255 * factor))),
+            (int)Math.Max(byte.MinValue, Math.Min(byte.MaxValue, color.B + (255 * factor))));
     }
 }

@@ -25,27 +25,14 @@ using System.ComponentModel;
 using static flowOSD.Extensions.Drawing;
 using flowOSD.Extensions;
 
-internal sealed class CxButton : ButtonBase
+internal sealed class CxButton : CxButtonBase
 {
-    private CompositeDisposable? disposable = new CompositeDisposable();
-
-    private const float BACKGROUND_HOVER = -.1f;
-    private const float BACKGROUND_PRESSED = -.2f;
-    private const float BACKGROUND_DISABLED = .4f;
     private const float TEXT_HOVER = 0;
-    private const float TEXT_PRESSED = -.3f;
+    private const float TEXT_PRESSED = -.1f;
     private const float TEXT_DISABLED = -.3f;
-    private const float BORDER = .2f;
-    private const int FOCUS_SPACE = 3;
 
-
-    private ButtonState state;
-    private CxTabListener? tabListener;
-
-    private Pen? focusPen;
-
-    private Color accentColor, textColor, textBrightColor;
-    private bool isToggle, isTransparent, isChecked;
+    private Color textColor, textBrightColor;
+    private bool isToggle, isChecked, isTransparent;
 
     private string icon;
     private Font? iconFont;
@@ -59,13 +46,9 @@ internal sealed class CxButton : ButtonBase
         isTransparent = false;
 
         FocusColor = Color.White;
-        accentColor = Color.FromArgb(255, 25, 110, 191).Luminance(0.2f);
 
         textColor = Color.White;
         textBrightColor = Color.Black;
-
-        state = 0;
-        tabListener = null;
 
         icon = string.Empty;
         iconFont = null;
@@ -83,42 +66,6 @@ internal sealed class CxButton : ButtonBase
 
             dropDownMenu = value;
             IsToggle = IsToggle && value != null;
-        }
-    }
-
-    public Color AccentColor
-    {
-        get => accentColor;
-        set
-        {
-            if (accentColor == value)
-            {
-                return;
-            }
-
-            accentColor = value;
-            Invalidate();
-        }
-    }
-
-    public Color FocusColor
-    {
-        get => (focusPen?.Color) ?? Color.Empty;
-        set
-        {
-            if (focusPen?.Color == value)
-            {
-                return;
-            }
-
-            if (focusPen != null)
-            {
-                disposable?.Remove(focusPen);
-                focusPen.Dispose();
-            }
-
-            focusPen = new Pen(value, 2);
-            Invalidate();
         }
     }
 
@@ -148,32 +95,6 @@ internal sealed class CxButton : ButtonBase
             }
 
             textBrightColor = value;
-            Invalidate();
-        }
-    }
-
-    public CxTabListener? TabListener
-    {
-        get => tabListener;
-        set
-        {
-            if (tabListener == value)
-            {
-                return;
-            }
-
-            if (tabListener != null)
-            {
-                tabListener.ShowKeyboardFocusChanged -= OnShowKeyboardFocusChanged;
-            }
-
-            tabListener = value;
-
-            if (tabListener != null)
-            {
-                tabListener.ShowKeyboardFocusChanged += OnShowKeyboardFocusChanged;
-            }
-
             Invalidate();
         }
     }
@@ -235,23 +156,6 @@ internal sealed class CxButton : ButtonBase
 
     [Bindable(true)]
     [DefaultValue(false)]
-    public bool IsTransparent
-    {
-        get => isTransparent;
-        set
-        {
-            if (isTransparent == value)
-            {
-                return;
-            }
-
-            isTransparent = value;
-            Invalidate();
-        }
-    }
-
-    [Bindable(true)]
-    [DefaultValue(false)]
     public bool IsChecked
     {
         get => isChecked;
@@ -267,35 +171,53 @@ internal sealed class CxButton : ButtonBase
         }
     }
 
-    private ButtonState State
+    [Bindable(true)]
+    [DefaultValue(false)]
+    public bool IsTransparent
     {
-        get => state;
+        get => isTransparent;
         set
         {
-            if (state == value)
+            if (isTransparent == value)
             {
                 return;
             }
 
-            state = value;
+            isTransparent = value;
             Invalidate();
         }
     }
 
     private bool IsDropDownToggle => DropDownMenu != null && IsToggle;
 
-    protected override void OnMouseEnter(EventArgs e)
+    public override Size GetPreferredSize(Size proposedSize)
     {
-        State |= ButtonState.MouseHover;
+        if (IsDisposed)
+        {
+            return Size.Empty;
+        }
 
-        base.OnMouseEnter(e);
-    }
+        using var g = Graphics.FromHwnd(Handle);
+        var symbolSize = IconFont == null
+            ? new Size(0, 0)
+            : g.MeasureString(Icon ?? string.Empty, IconFont);
 
-    protected override void OnMouseLeave(EventArgs e)
-    {
-        State &= ~ButtonState.MouseHover;
+        var textSize = g.MeasureString(Text ?? string.Empty, Font);
 
-        base.OnMouseLeave(e);
+        var width = symbolSize.Width + textSize.Width;
+        var height = Math.Max(symbolSize.Height, textSize.Height);
+
+        if (DropDownMenu != null && IconFont != null)
+        {
+            var arrowSymbol = "\ue972";
+            var arrowSymbolSize = g.MeasureString(arrowSymbol ?? string.Empty, IconFont);
+
+            width += arrowSymbolSize.Width;
+        }
+
+        return new Size(
+            FOCUS_SPACE * 2 + (int)(Padding.Left + Padding.Right + width),
+            FOCUS_SPACE * 2 + (int)(Padding.Top + Padding.Bottom + height));
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -313,79 +235,6 @@ internal sealed class CxButton : ButtonBase
         }
 
         base.OnMouseMove(e);
-    }
-
-    protected override void OnMouseDown(MouseEventArgs e)
-    {
-        if (e.Button == MouseButtons.Left)
-        {
-            State |= ButtonState.Pressed;
-        }
-
-        if (TabListener != null)
-        {
-            TabListener.ShowKeyboardFocus = false;
-        };
-
-        base.OnMouseDown(e);
-    }
-
-    protected override void OnMouseUp(MouseEventArgs e)
-    {
-        if (e.Button == MouseButtons.Left)
-        {
-            State &= ~ButtonState.Pressed;
-        }
-
-        base.OnMouseUp(e);
-    }
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        if (e.KeyCode == Keys.Space || (Command != null && e.KeyCode == Keys.Enter))
-        {
-            State |= ButtonState.Pressed;
-        }
-
-        base.OnKeyDown(e);
-    }
-
-    protected override void OnKeyUp(KeyEventArgs e)
-    {
-        if (e.KeyCode == Keys.Space || (Command != null && e.KeyCode == Keys.Enter))
-        {
-            State &= ~ButtonState.Pressed;
-        }
-
-        if (e.KeyCode == Keys.Enter)
-        {
-            Command?.Execute(CommandParameter);
-
-            return;
-        }
-
-        base.OnKeyUp(e);
-    }
-
-    protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
-    {
-        if ((e.KeyCode == Keys.Tab || e.KeyCode == Keys.Space) && TabListener != null)
-        {
-            TabListener.ShowKeyboardFocus = true;
-        }
-
-        base.OnPreviewKeyDown(e);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            disposable?.Dispose();
-            disposable = null;
-        }
-
-        base.Dispose(disposing);
     }
 
     protected override void OnClick(EventArgs e)
@@ -428,16 +277,16 @@ internal sealed class CxButton : ButtonBase
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
-        e.Graphics.Clear(Color.Transparent);
+        e.Graphics.Clear(Parent?.BackColor ?? Color.Transparent);
 
         var baseColor = IsChecked ? AccentColor : BackColor;
         var backgroundColor = GetBackgroundColor(baseColor, !IsDropDownToggle);
 
         var drawingAreaRect = new Rectangle(
-                FOCUS_SPACE,
-                FOCUS_SPACE,
-                Width - 1 - FOCUS_SPACE * 2,
-                Height - 1 - FOCUS_SPACE * 2);
+            FOCUS_SPACE,
+            FOCUS_SPACE,
+            Width - 1 - FOCUS_SPACE * 2,
+            Height - 1 - FOCUS_SPACE * 2);
 
         if (backgroundColor != Color.Transparent || (State & ButtonState.MouseHover) == ButtonState.MouseHover)
         {
@@ -461,12 +310,7 @@ internal sealed class CxButton : ButtonBase
 
         if (TabListener?.ShowKeyboardFocus == true && Focused)
         {
-            if (focusPen == null)
-            {
-                throw new InvalidOperationException("focusPen is null");
-            }
-
-            e.Graphics.DrawRoundedRectangle(focusPen, 0, 0, Width - 1, Height - 1, 8);
+            e.Graphics.DrawRoundedRectangle(FocusPen, 1, 1, Width - 3, Height - 3, 8);
         }
 
         using var textBrush = new SolidBrush(GetTextColor(baseColor, (State & ButtonState.DropDownHover) == 0));
@@ -503,10 +347,10 @@ internal sealed class CxButton : ButtonBase
                 GetTextColor(baseColor, !IsDropDownToggle || (State & ButtonState.DropDownHover) == ButtonState.DropDownHover));
 
             var arrowSymbol = "\ue972";
-            var arrowSymbolSize = e.Graphics.MeasureString(Icon ?? string.Empty, IconFont);
+            var arrowSymbolSize = e.Graphics.MeasureString(arrowSymbol, IconFont);
             var arrowSymbolPoint = new PointF(
-                drawingAreaRect.X + drawingAreaRect.Width * 3 / 4 - (symbolSize.Width + textSize.Width) / 2,
-                (Height - symbolSize.Height) / 2 + 2);
+                drawingAreaRect.Right - (Height - arrowSymbolSize.Height) / 3 - arrowSymbolSize.Width,
+                (Height - arrowSymbolSize.Height) / 2 + 2);
 
             e.Graphics.DrawString(arrowSymbol, IconFont, arrowBrush, arrowSymbolPoint);
 
@@ -564,11 +408,11 @@ internal sealed class CxButton : ButtonBase
 
         if (!Enabled)
         {
-            return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED * 2) : TextColor.Luminance(TEXT_DISABLED);
+            return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED) : TextColor.Luminance(TEXT_DISABLED);
         }
         else if (isHoveredPart && (State & ButtonState.Pressed) == ButtonState.Pressed)
         {
-            return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED * 2) : TextColor.Luminance(TEXT_PRESSED);
+            return isBright ? TextBrightColor.Luminance(-TEXT_DISABLED) : TextColor.Luminance(TEXT_PRESSED);
         }
         else
         {
@@ -578,19 +422,19 @@ internal sealed class CxButton : ButtonBase
 
     private Color GetBackgroundColor(Color color, bool isHoveredPart)
     {
+        var sign = color.IsBright() ? -1 : +1;
+
         if (!Enabled)
         {
-            return color.IsBright()
-                ? color.Luminance(-BACKGROUND_DISABLED / 2)
-                : color.Luminance(BACKGROUND_DISABLED);
+            return color.Luminance(sign * BACKGROUND_DISABLED);
         }
         else if (isHoveredPart && (State & ButtonState.Pressed) == ButtonState.Pressed)
         {
-            return color.Luminance(BACKGROUND_PRESSED);
+            return color.Luminance(sign * BACKGROUND_PRESSED);
         }
         else if (isHoveredPart && (State & ButtonState.MouseHover) == ButtonState.MouseHover)
         {
-            return color.Luminance(BACKGROUND_HOVER);
+            return color.Luminance(sign * BACKGROUND_HOVER);
         }
         else if (IsTransparent)
         {
@@ -600,19 +444,5 @@ internal sealed class CxButton : ButtonBase
         {
             return color;
         }
-    }
-
-    private void OnShowKeyboardFocusChanged(object? sender, EventArgs e)
-    {
-        Invalidate();
-    }
-
-    [Flags]
-    private enum ButtonState
-    {
-        Default = 1,
-        MouseHover = 2,
-        Pressed = 4,
-        DropDownHover = 8
     }
 }

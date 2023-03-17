@@ -134,11 +134,8 @@ sealed class NotifyIconUI : IDisposable
         menu.Font = new Font(UIParameters.FontName, 10, GraphicsUnit.Point);
 
         menu.AddMenuItem(commandService.ResolveNotNull<MainUICommand>()).DisposeWith(disposable!);
-        menu.AddSeparator().DisposeWith(disposable);
-
         menu.AddMenuItem(commandService.ResolveNotNull<SettingsCommand>()).DisposeWith(disposable!);
-        menu.AddMenuItem(commandService.ResolveNotNull<AboutCommand>()).DisposeWith(disposable!);
-        menu.AddSeparator().DisposeWith(disposable);
+        menu.AddSeparator().DisposeWith(disposable!);
 
         menu.AddMenuItem(commandService.ResolveNotNull<ExitCommand>()).DisposeWith(disposable!);
 

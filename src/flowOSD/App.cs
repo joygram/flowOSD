@@ -77,7 +77,8 @@ sealed partial class App : IDisposable
         commandService = new CommandService(
             config,
             hardwareService,
-            keysSender);
+            keysSender,
+            systemEvents);
         
         mainUI = new MainUI(
             config,

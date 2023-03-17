@@ -33,7 +33,7 @@ sealed class CommandService : ICommandService
 
     private Dictionary<string, CommandBase> names = new Dictionary<string, CommandBase>();
 
-    public CommandService(IConfig config, IHardwareService hardwareService, IKeysSender keysSender)
+    public CommandService(IConfig config, IHardwareService hardwareService, IKeysSender keysSender, ISystemEvents systemEvents)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.hardwareService = hardwareService ?? throw new ArgumentNullException(nameof(hardwareService));
@@ -49,8 +49,7 @@ sealed class CommandService : ICommandService
             new ToggleGpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),
             new PerformanceModeCommand(hardwareService.ResolveNotNull<IAtk>()),
             new PowerModeCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
-            new SettingsCommand(config, this),
-            new AboutCommand(config),
+            new SettingsCommand(config, this, systemEvents),
             new ExitCommand(),
             new PrintScreenCommand(keysSender),
             new ClipboardCopyPlainTextCommand(keysSender),
