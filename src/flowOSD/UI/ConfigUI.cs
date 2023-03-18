@@ -227,7 +227,11 @@ sealed class ConfigUI : IDisposable
 
                 x.SelectedIndexChanged += (_, _) =>
                 {
-                    CurrentPage = x.SelectedIndex < 0 ? null : pages[x.SelectedIndex];
+                    var page = x.SelectedIndex < 0 ? null : pages[x.SelectedIndex];
+                    if (page != CurrentPage)
+                    {
+                        CurrentPage = page;
+                    }
                 };
 
                 x.PreviewKeyDown += (_, e) =>

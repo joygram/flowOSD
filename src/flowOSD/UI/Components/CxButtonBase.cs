@@ -30,7 +30,7 @@ abstract class CxButtonBase : ButtonBase
     protected const float BACKGROUND_HOVER = +.1f;
     protected const float BACKGROUND_PRESSED = +.15f;
     protected const float BACKGROUND_DISABLED = .4f;
-    protected const float BORDER = +.1f;
+    protected const float BORDER = +.2f;
     protected const int FOCUS_SPACE = 8;
 
     private ButtonState state;
@@ -43,7 +43,6 @@ abstract class CxButtonBase : ButtonBase
         tabListener = null;
 
         accentColor = Color.FromArgb(255, 25, 110, 191).Luminance(0.2f);
-
     }
 
     public Color AccentColor

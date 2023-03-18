@@ -166,8 +166,6 @@ sealed class MainUI : IDisposable
         private IDisposable? batteryUpdate, cpuTemperatureUpdate;
 
         private CxTabListener tabListener = new CxTabListener();
-        private IList<CxButton> buttonList = new List<CxButton>();
-        private IList<CxLabel> labelList = new List<CxLabel>();
 
         private MainUI owner;
 
@@ -268,37 +266,32 @@ sealed class MainUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-                var iconFont = new Font(UIParameters.IconFontName, this.DpiScale(16), GraphicsUnit.Pixel).DisposeWith(disposable!);
+                var iconFont = new Font(UIParameters.IconFontName, this.DpiScale(16), GraphicsUnit.Pixel);
 
                 boostButton = CreateButton(iconFont,
                     UIImages.Hardware_Cpu,
-                    command: owner.commandService.Resolve<ToggleBoostCommand>())
-                .To(ref buttonList).DisposeWith(disposable!);
+                    command: owner.commandService.Resolve<ToggleBoostCommand>());
 
                 refreshRateButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_Screen,
-                    command: owner.commandService.Resolve<DisplayRefreshRateCommand>())
-                .To(ref buttonList).DisposeWith(disposable!);
+                    command: owner.commandService.Resolve<DisplayRefreshRateCommand>());
 
                 dGpuButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_Gpu,
-                    command: owner.commandService.Resolve<ToggleGpuCommand>())
-                .To(ref buttonList).DisposeWith(disposable!);
+                    command: owner.commandService.Resolve<ToggleGpuCommand>());
 
                 touchPadButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_TouchPad,
-                    command: owner.commandService.Resolve<ToggleTouchPadCommand>())
-                .To(ref buttonList).DisposeWith(disposable!);
+                    command: owner.commandService.Resolve<ToggleTouchPadCommand>());
 
                 performanceModeButton = CreateButton(
                     iconFont,
                     "",
                     command: owner.commandService.Resolve<PerformanceModeCommand>(),
-                    commandParameter: owner.config.UserConfig.PerformanceModeOverride)
-                    .To(ref buttonList).DisposeWith(disposable!);
+                    commandParameter: owner.config.UserConfig.PerformanceModeOverride);
 
                 performanceMenuItemCommand = new RelayCommand(x =>
                 {
@@ -310,7 +303,7 @@ sealed class MainUI : IDisposable
                     }
                 });
 
-                performanceModeMenu = new CxContextMenu().DisposeWith(disposable!);
+                performanceModeMenu = new CxContextMenu();
                 performanceModeMenu.Font = new Font(UIParameters.FontName, this.DpiScale(13), GraphicsUnit.Pixel);
                 performanceModeMenu.AddMenuItem(
                     PerformanceMode.Silent.ToText(),
@@ -324,11 +317,10 @@ sealed class MainUI : IDisposable
 
                 powerModeButton = CreateButton(
                     iconFont,
-                    "")
-                    .To(ref buttonList).DisposeWith(disposable!);
+                    "");
                 powerModeButton.IsToggle = false;
 
-                powerModeMenu = new CxContextMenu().DisposeWith(disposable!);
+                powerModeMenu = new CxContextMenu();
                 powerModeMenu.Font = new Font(UIParameters.FontName, this.DpiScale(13), GraphicsUnit.Pixel);
 
                 powerModeMenu.AddMenuItem(
@@ -353,14 +345,14 @@ sealed class MainUI : IDisposable
                 x.Add(1, 2, dGpuButton);
                 x.Add(2, 2, touchPadButton);
 
-                var textFont = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel).DisposeWith(disposable!);
+                var textFont = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel);
 
-                boostLabel = CreateLabel(textFont, UIText.MainUI_CpuBoost).To(ref labelList).DisposeWith(disposable!);
-                refreshRateLabel = CreateLabel(textFont, UIText.MainUI_HighRefreshRate).To(ref labelList).DisposeWith(disposable!);
-                dGpuLabel = CreateLabel(textFont, UIText.MainUI_Gpu).To(ref labelList).DisposeWith(disposable!);
-                touchPadLabel = CreateLabel(textFont, UIText.MainUI_TouchPad).To(ref labelList).DisposeWith(disposable!);
-                performanceModeLabel = CreateLabel(textFont, "<performance mode>").To(ref labelList).DisposeWith(disposable!);
-                powerModeLabel = CreateLabel(textFont, "<power mode>").To(ref labelList).DisposeWith(disposable!);
+                boostLabel = CreateLabel(textFont, UIText.MainUI_CpuBoost);
+                refreshRateLabel = CreateLabel(textFont, UIText.MainUI_HighRefreshRate);
+                dGpuLabel = CreateLabel(textFont, UIText.MainUI_Gpu);
+                touchPadLabel = CreateLabel(textFont, UIText.MainUI_TouchPad);
+                performanceModeLabel = CreateLabel(textFont, "<performance mode>");
+                powerModeLabel = CreateLabel(textFont, "<power mode>");
 
                 x.Add(0, 1, boostLabel);
                 x.Add(1, 1, performanceModeLabel);
@@ -390,12 +382,10 @@ sealed class MainUI : IDisposable
                 {
                     label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
                     label.TextAlign = ContentAlignment.MiddleLeft;
-                    label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable!);
-                    label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel).DisposeWith(disposable!);
+                    label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel);
+                    label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel);
 
-                    label.To(ref labelList);
                     label.LinkAs(ref batteryLabel);
-                    label.DisposeWith(disposable!);
                 });
 
                 x.Add<CxLabel>(1, 0, label =>
@@ -403,28 +393,23 @@ sealed class MainUI : IDisposable
                     label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
                     label.TextAlign = ContentAlignment.MiddleLeft;
                     label.Size = this.DpiScale(new Size(60, 40));
-                    label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel).DisposeWith(disposable!);
+                    label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel);
                     label.Icon = UIImages.Temperature;
-                    label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel).DisposeWith(disposable!);
+                    label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel);
 
-                    label.To(ref labelList);
                     label.LinkAs(ref cpuTemperatureLabel);
-                    label.DisposeWith(disposable!);
                 });
 
                 x.Add<CxButton>(3, 0, button =>
                 {
                     button.Margin = this.DpiScale(new Padding(3));
 
-                    button.Size = this.DpiScale(new Size(40, 40));
+                    button.Size = this.DpiScale(new Size(48, 48));
                     button.Icon = UIImages.Settings;
-                    button.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(17), GraphicsUnit.Pixel).DisposeWith(disposable!);
+                    button.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(17), GraphicsUnit.Pixel);
                     button.IsToggle = false;
                     button.IsTransparent = true;
                     button.TabListener = tabListener;
-
-                    button.To(ref buttonList);
-                    button.DisposeWith(disposable!);
 
                     button.Command = owner.commandService.Resolve<SettingsCommand>();
                 });
@@ -528,6 +513,7 @@ sealed class MainUI : IDisposable
             x.Dock = DockStyle.Fill;
             x.Text = text;
             x.Font = textFont;
+            x.TabListener = tabListener;
 
             return x;
         }
@@ -543,7 +529,7 @@ sealed class MainUI : IDisposable
             var x = new CxButton();
 
             x.Margin = this.DpiScale(new Padding(4));
-            x.Size = this.DpiScale(new Size(120, 50));
+            x.Size = this.DpiScale(new Size(120, 55));
             x.Icon = icon;
             x.IconFont = iconFont;
             x.Text = text;
@@ -562,43 +548,17 @@ sealed class MainUI : IDisposable
             return x;
         }
 
-        private void UpdateTheme(UIParameters parameters)
+        private void UpdateTheme(UIParameters uiParameters)
         {
-            foreach (var button in buttonList)
+            if (uiParameters == null)
             {
-                button.AccentColor = parameters.AccentColor;
-                button.FocusColor = parameters.FocusColor;
-
-                button.BackColor = parameters.ButtonBackgroundColor;
-                button.TextColor = parameters.ButtonTextColor;
-                button.TextBrightColor = parameters.ButtonTextBrightColor;
+                return;
             }
 
-            foreach (var label in labelList)
-            {
-                label.ForeColor = parameters.TextColor;
-            }
+            BackColor = uiParameters.BackgroundColor;
+            Acrylic.EnableAcrylic(this, uiParameters.BackgroundColor.SetAlpha(210));
 
-            if (powerModeMenu != null)
-            {
-                powerModeMenu.BackgroundColor = parameters.MenuBackgroundColor;
-                powerModeMenu.BackgroundHoverColor = parameters.MenuBackgroundHoverColor;
-                powerModeMenu.TextColor = parameters.MenuTextColor;
-                powerModeMenu.TextBrightColor = parameters.MenuTextBrightColor;
-                powerModeMenu.TextDisabledColor = parameters.MenuTextDisabledColor;
-            }
-
-            if (performanceModeMenu != null)
-            {
-                performanceModeMenu.BackgroundColor = parameters.MenuBackgroundColor;
-                performanceModeMenu.BackgroundHoverColor = parameters.MenuBackgroundHoverColor;
-                performanceModeMenu.TextColor = parameters.MenuTextColor;
-                performanceModeMenu.TextBrightColor = parameters.MenuTextBrightColor;
-                performanceModeMenu.TextDisabledColor = parameters.MenuTextDisabledColor;
-            }
-
-            BackColor = parameters.BackgroundColor;
-            Acrylic.EnableAcrylic(this, parameters.BackgroundColor.SetAlpha(210));
+            CxTheme.Apply(this, uiParameters);
 
             Invalidate();
         }

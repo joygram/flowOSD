@@ -26,7 +26,7 @@ using System.Reactive.Disposables;
 internal class NotificationsConfigPage : ConfigPageBase
 {
     public NotificationsConfigPage(IConfig config, CxTabListener tabListener)
-        :base(config, tabListener)
+        : base(config, tabListener)
     {
         Text = "Notifications";
 

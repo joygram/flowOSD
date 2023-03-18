@@ -31,17 +31,38 @@ sealed class CxContextMenu : ContextMenuStrip
 {
     private CompositeDisposable? disposable = new CompositeDisposable();
 
+    private CornerRadius borderRadius;
+
     public CxContextMenu()
     {
         base.Renderer = new MenuRenderer().DisposeWith(disposable);
+
+        borderRadius = CornerRadius.Round;
 
         BackgroundHoverColor = Color.FromArgb(255, 25, 110, 191);
         SeparatorColor = Color.FromArgb(255, 96, 96, 96);
         TextColor = Color.White;
         TextBrightColor = Color.Black;
         TextDisabledColor = Color.LightGray;
+    }
 
-        SetCornerPreference(Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+    public CornerRadius BorderRadius
+    {
+        get => borderRadius;
+        set
+        {
+            if (borderRadius == value)
+            {
+                return;
+            }
+
+            borderRadius = value;
+
+            if (IsHandleCreated)
+            {
+                SetCornerRadius();
+            }
+        }
     }
 
     public Color BackgroundColor
@@ -225,6 +246,47 @@ sealed class CxContextMenu : ContextMenuStrip
     protected override void OnPaintBackground(PaintEventArgs e)
     {
         e.Graphics.Clear(Color.Transparent);
+    }
+
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        SetCornerRadius();
+
+        base.OnHandleCreated(e);
+    }
+
+    private void SetCornerRadius()
+    {
+        DWM_WINDOW_CORNER_PREFERENCE corner;
+        switch (BorderRadius)
+        {
+            case CornerRadius.Off:
+                {
+                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_DONOTROUND;
+                    break;
+                }
+
+            case CornerRadius.Small:
+                {
+                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUNDSMALL;
+                    break;
+                }
+
+            case CornerRadius.Round:
+                {
+                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
+                    break;
+                }
+
+            default:
+                {
+                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_DEFAULT;
+                    break;
+                }
+        }
+
+        SetCornerPreference(Handle, corner);
     }
 
     private class MenuRenderer : ToolStripRenderer, IDisposable

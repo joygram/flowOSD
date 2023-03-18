@@ -30,12 +30,11 @@ internal class ConfigPageBase : TableLayoutPanel
     protected static readonly Padding LabelMargin = new Padding(15, 10, 0, 15);
 
     private UIParameters? uiParameters;
-    private IList<object> cxItems = new List<object>();
 
     protected ConfigPageBase(IConfig config, CxTabListener? tabListener = null)
     {
         Config = config ?? throw new ArgumentNullException(nameof(config));
-        TabListener = tabListener;// ?? throw new ArgumentNullException(nameof(tabListener));
+        TabListener = tabListener ?? throw new ArgumentNullException(nameof(tabListener));
 
         Dock = DockStyle.Top;
         AutoScroll = false;
@@ -59,8 +58,6 @@ internal class ConfigPageBase : TableLayoutPanel
         }
     }
 
-    protected CompositeDisposable? Disposable { get; private set; } = new CompositeDisposable();
-
     protected IConfig Config { get; }
 
     protected CxTabListener? TabListener { get; }
@@ -80,7 +77,7 @@ internal class ConfigPageBase : TableLayoutPanel
         RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
         this.Add<CxGrid>(0, RowStyles.Count - 1, x =>
         {
-            x.MouseClick += OnMouseClick;
+            x.TabListener = TabListener;
             x.Padding = new Padding(10, 5, 10, 5);
             x.Dock = DockStyle.Top;
             x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -90,37 +87,36 @@ internal class ConfigPageBase : TableLayoutPanel
             x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            RegisterCxItem(x);
 
-            x.Add<CxLabel>(0, 0, y =>
+            if (!string.IsNullOrEmpty(icon))
             {
-                y.AutoSize = true;
-                y.Margin = LabelMargin;
-                y.Padding = new Padding(0, 10, 0, 0);
-                y.Anchor = AnchorStyles.Left;
-                y.ForeColor = Color.Wheat;
-                y.Icon = icon;
-                y.IconFont = IconFont;
-
-                y.DisposeWith(Disposable!);
-                RegisterCxItem(y);
-            });
+                x.Add<CxLabel>(0, 0, y =>
+                {
+                    y.TabListener = TabListener;
+                    y.AutoSize = true;
+                    y.Margin = LabelMargin;
+                    y.Padding = new Padding(0, 10, 0, 0);
+                    y.Anchor = AnchorStyles.Left;
+                    y.ForeColor = Color.Wheat;
+                    y.Icon = icon;
+                    y.IconFont = IconFont;
+                });
+            }
 
             x.Add<CxLabel>(1, 0, y =>
             {
+                y.TabListener = TabListener;
                 y.AutoSize = true;
                 y.Margin = LabelMargin;
                 y.Text = text;
                 y.Anchor = AnchorStyles.Left;
                 y.ForeColor = SystemColors.ControlDarkDark;
                 y.UseClearType = true;
-
-                y.DisposeWith(Disposable!);
-                RegisterCxItem(y);
             });
 
             x.Add<CxToggle>(2, 0, y =>
             {
+                y.TabListener = TabListener;
                 y.BackColor = SystemColors.Control;
                 y.ForeColor = SystemColors.WindowText;
                 y.Margin = CheckBoxMargin;
@@ -131,9 +127,6 @@ internal class ConfigPageBase : TableLayoutPanel
                     propertyName,
                     false,
                     DataSourceUpdateMode.OnPropertyChanged);
-
-                y.DisposeWith(Disposable!);
-                RegisterCxItem(y);
             });
         });
     }
@@ -148,29 +141,6 @@ internal class ConfigPageBase : TableLayoutPanel
         base.OnVisibleChanged(e);
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        Disposable?.Dispose();
-        Disposable = null;
-
-        base.Dispose(disposing);
-    }
-
-    protected void RegisterCxItem(object item)
-    {
-        if (item is CxLabel label)
-        {
-            label.TabListener = TabListener;
-        }
-
-        if (item is CxButtonBase button)
-        {
-            button.TabListener = TabListener;
-        }
-
-        cxItems.Add(item);
-    }
-
     protected virtual void UpdateUI()
     {
         if (UIParameters == null)
@@ -180,43 +150,6 @@ internal class ConfigPageBase : TableLayoutPanel
 
         BackColor = UIParameters.BackgroundColor;
 
-        foreach (var i in cxItems)
-        {
-            if (i is CxButtonBase b)
-            {
-                b.AccentColor = UIParameters.AccentColor;
-                b.ForeColor = UIParameters.TextGrayColor;
-                b.BackColor = UIParameters.BackgroundColor;
-                b.FocusColor = UIParameters.FocusColor;
-            }
-
-            if (i is CxButton btn)
-            {
-                btn.TextColor = UIParameters.ButtonTextColor;
-                btn.TextBrightColor = UIParameters.ButtonTextBrightColor;
-                btn.BackColor = UIParameters.ButtonBackgroundColor;
-            }
-
-            if (i is CxLabel l)
-            {
-                l.ForeColor = UIParameters.TextColor;
-                l.BackColor = UIParameters.MenuBackgroundColor;
-            }
-
-            if (i is CxGrid g)
-            {
-                g.ForeColor = UIParameters.TextColor;
-                g.BackColor = UIParameters.PanelBackgroundColor;
-            }
-
-            if (i is CxContextMenu m)
-            {
-                m.BackgroundColor = UIParameters.MenuBackgroundColor;
-                m.BackgroundHoverColor = UIParameters.MenuBackgroundHoverColor;
-                m.TextColor = UIParameters.MenuTextColor;
-                m.TextBrightColor = UIParameters.MenuTextBrightColor;
-                m.TextDisabledColor = UIParameters.MenuTextDisabledColor;
-            }
-        }
+        CxTheme.Apply(this, UIParameters);
     }
 }

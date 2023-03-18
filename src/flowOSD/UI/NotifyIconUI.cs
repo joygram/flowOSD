@@ -36,6 +36,7 @@ sealed class NotifyIconUI : IDisposable
 
     private NotifyIcon notifyIcon;
     private CxContextMenu contextMenu;
+    private ISystemEvents systemEvents;
 
     public NotifyIconUI(
         IConfig config,
@@ -44,8 +45,10 @@ sealed class NotifyIconUI : IDisposable
         ICommandService commandService,
         IAtkWmi atkWmi)
     {
+        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
+
         notifyIcon = new NotifyIcon(messageQueue);
-        contextMenu = CreateContextMenu(commandService);
+        contextMenu = CreateContextMenu(commandService).DisposeWith(disposable);
 
         atkWmi.TabletMode
             .CombineLatest(
@@ -59,7 +62,7 @@ sealed class NotifyIconUI : IDisposable
 
         systemEvents.SystemUI
             .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(UpdateContextMenu)
+            .Subscribe(uiParameters => CxTheme.Apply(contextMenu, uiParameters))
             .DisposeWith(disposable);
 
         notifyIcon.MouseButtonAction
@@ -69,8 +72,7 @@ sealed class NotifyIconUI : IDisposable
 
         notifyIcon.MouseButtonAction
             .Where(x => x == MouseButtonAction.RightButtonUp)
-            .CombineLatest(systemEvents.PrimaryScreen, (_, screen) => screen)
-            .Subscribe(ShowContextMenu)
+            .Subscribe(_ => ShowContextMenu())
             .DisposeWith(disposable);
 
         notifyIcon.Text = $"{config.AppFileInfo.ProductName} ({config.AppFileInfo.ProductVersion})";
@@ -100,9 +102,15 @@ sealed class NotifyIconUI : IDisposable
         notifyIcon.Icon = Icon.LoadFromResource($"flowOSD.Resources.{iconName}.ico", dpi);
     }
 
-    private void ShowContextMenu(Screen? screen)
+    private async void ShowContextMenu()
     {
-        if (contextMenu == null || screen == null)
+        if (contextMenu == null)
+        {
+            return;
+        }
+
+        var screen = await systemEvents.PrimaryScreen.FirstOrDefaultAsync();
+        if (screen == null)
         {
             return;
         }
@@ -140,16 +148,5 @@ sealed class NotifyIconUI : IDisposable
         menu.AddMenuItem(commandService.ResolveNotNull<ExitCommand>()).DisposeWith(disposable!);
 
         return menu;
-    }
-
-    private void UpdateContextMenu(UIParameters uiParameters)
-    {
-        if (contextMenu is CxContextMenu menu)
-        {
-            menu.BackgroundColor = uiParameters.MenuBackgroundColor;
-            menu.BackgroundHoverColor = uiParameters.MenuBackgroundHoverColor;
-            menu.TextColor = uiParameters.MenuTextColor;
-            menu.TextBrightColor = uiParameters.MenuTextBrightColor;
-        }
     }
 }

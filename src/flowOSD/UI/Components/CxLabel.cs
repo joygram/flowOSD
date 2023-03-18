@@ -104,8 +104,8 @@ internal sealed class CxLabel : Label
             (int)Math.Max(symbolSize.Height, textSize.Height));
 
         return new Size(
-            Padding.Left + Padding.Right + totalSize.Width,
-            Padding.Top + Padding.Bottom + totalSize.Height);
+           Math.Max(MinimumSize.Width, Padding.Left + Padding.Right + totalSize.Width),
+           Math.Max(MinimumSize.Height, Padding.Top + Padding.Bottom + totalSize.Height));
     }
 
     protected override void OnMouseClick(MouseEventArgs e)

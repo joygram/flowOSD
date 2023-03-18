@@ -81,8 +81,7 @@ internal class GeneralConfigPage : ConfigPageBase
         RowStyles.Add(new RowStyle(SizeType.AutoSize));
         this.Add<CxGrid>(0, 0, grid =>
         {
-            RegisterCxItem(grid);
-
+            grid.TabListener = TabListener;
             grid.MouseClick += OnMouseClick;
             grid.Padding = new Padding(20, 20, 20, 20);
             grid.Dock = DockStyle.Top;
@@ -98,6 +97,7 @@ internal class GeneralConfigPage : ConfigPageBase
 
             grid.Add<CxLabel>(0, 0, 1, 2, x =>
             {
+                x.TabListener = TabListener;
                 x.UseClearType = true;
                 x.AutoSize = true;
                 x.Margin = new Padding(5, 5, 20, 20);
@@ -105,38 +105,34 @@ internal class GeneralConfigPage : ConfigPageBase
                 x.Anchor = AnchorStyles.Left | AnchorStyles.Top;
                 x.ForeColor = SystemColors.ControlText;
                 x.Font = new Font(Font.FontFamily, 20);
-
-                x.DisposeWith(Disposable!);
-                RegisterCxItem(x);
             });
 
             grid.Add<CxLabel>(1, 0, x =>
             {
                 var sb = new StringBuilder();
 #if !DEBUG
-                sb.AppendLine($"Version: {config.AppFileInfo.ProductVersion}");
+                sb.AppendLine($"Version: {Config.AppFileInfo.ProductVersion}");
 #else
                 sb.AppendLine($"Version: {Config.AppFileInfo.ProductVersion} [DEBUG BUILD]");
 #endif
                 sb.AppendLine($"{Config.AppFileInfo.LegalCopyright}");
-                
+
+                x.TabListener = TabListener;
                 x.UseClearType = true;
                 x.Text = sb.ToString();
                 x.AutoSize = true;
                 x.Margin = new Padding(5, 15, 20, 3);
-                x.DisposeWith(Disposable!);
-                RegisterCxItem(x);
             });
 
             grid.Add<CxLabel>(1, 1, x =>
             {
                 x.Text =$"Runtime: {Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName}";
 
+                x.TabListener = TabListener;
                 x.UseClearType = true;
                 x.AutoSize = true;
                 x.Margin = new Padding(5, 15, 20, 3);
-                x.DisposeWith(Disposable!);
-                RegisterCxItem(x);
+
                 x.LinkAs(ref platformLabel);
             });
 
@@ -148,11 +144,10 @@ internal class GeneralConfigPage : ConfigPageBase
                 x.Cursor = Cursors.Hand;
                 x.Click += (sender, e) => { Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = x.Text }); };
 
+                x.TabListener = TabListener;
                 x.AutoSize = true;
-
                 x.Margin = new Padding(5, 3, 0, 3);
-                x.DisposeWith(Disposable!);
-                RegisterCxItem(x);
+
                 x.LinkAs(ref siteLink);
             });
         });

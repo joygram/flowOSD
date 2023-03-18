@@ -30,6 +30,21 @@ using System;
 
 class CxGrid : TableLayoutPanel
 {
+    public CxTabListener? TabListener
+    {
+        get; set;
+    }
+
+    protected override void OnMouseClick(MouseEventArgs e)
+    {
+        if (TabListener != null)
+        {
+            TabListener.ShowKeyboardFocus = false;
+        }
+
+        base.OnMouseClick(e);
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.SmoothingMode = SmoothingMode.HighQuality;

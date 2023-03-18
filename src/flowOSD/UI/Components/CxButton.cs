@@ -37,6 +37,8 @@ internal sealed class CxButton : CxButtonBase
     private string icon;
     private Font? iconFont;
 
+    private CornerRadius borderRadius;
+
     private CxContextMenu? dropDownMenu;
 
     public CxButton()
@@ -52,6 +54,24 @@ internal sealed class CxButton : CxButtonBase
 
         icon = string.Empty;
         iconFont = null;
+
+        borderRadius = CornerRadius.Round;
+    }
+
+    [DefaultValue(CornerRadius.Round)]
+    public CornerRadius BorderRadius
+    {
+        get => borderRadius;
+        set
+        {
+            if (borderRadius == value)
+            {
+                return;
+            }
+
+            borderRadius = value;
+            Invalidate();
+        }
     }
 
     public CxContextMenu? DropDownMenu
@@ -272,6 +292,17 @@ internal sealed class CxButton : CxButtonBase
         base.OnClick(e);
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && DropDownMenu != null)
+        {
+            DropDownMenu.Dispose();
+            DropDownMenu = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -291,7 +322,7 @@ internal sealed class CxButton : CxButtonBase
         if (backgroundColor != Color.Transparent || (State & ButtonState.MouseHover) == ButtonState.MouseHover)
         {
             using var brush = new SolidBrush(backgroundColor);
-            e.Graphics.FillRoundedRectangle(brush, drawingAreaRect, 8);
+            e.Graphics.FillRoundedRectangle(brush, drawingAreaRect, (int)BorderRadius);
 
             DrawDropDownHover(e, baseColor, drawingAreaRect);
 
@@ -305,7 +336,7 @@ internal sealed class CxButton : CxButtonBase
                     drawingAreaRect.Bottom);
             }
 
-            e.Graphics.DrawRoundedRectangle(pen, drawingAreaRect, 8);
+            e.Graphics.DrawRoundedRectangle(pen, drawingAreaRect, (int)BorderRadius);
         }
 
         if (TabListener?.ShowKeyboardFocus == true && Focused)
@@ -324,7 +355,7 @@ internal sealed class CxButton : CxButtonBase
         drawingAreaRect = DrawDropDownArrow(e, baseColor, drawingAreaRect, symbolSize, textSize);
 
         var symbolPoint = new PointF(
-            drawingAreaRect.X + drawingAreaRect.Width / 2 - (symbolSize.Width + textSize.Width) / 2,
+            GetContentX(drawingAreaRect, symbolSize.Width + textSize.Width),
             (Height - symbolSize.Height) / 2 + 2);
 
         var textPoint = new PointF(
@@ -337,6 +368,29 @@ internal sealed class CxButton : CxButtonBase
         }
 
         e.Graphics.DrawString(Text, Font, textBrush, textPoint);
+    }
+
+    private float GetContentX(Rectangle drawingAreaRect, float contentWidth)
+    {
+        switch (TextAlign)
+        {
+            case ContentAlignment.TopCenter:
+            case ContentAlignment.MiddleCenter:
+            case ContentAlignment.BottomCenter:
+                return drawingAreaRect.X + drawingAreaRect.Width / 2 - contentWidth / 2;
+
+            case ContentAlignment.TopRight:
+            case ContentAlignment.MiddleRight:
+            case ContentAlignment.BottomRight:
+                return drawingAreaRect.X + drawingAreaRect.Width - contentWidth - Padding.Right;
+
+            case ContentAlignment.TopLeft:
+            case ContentAlignment.MiddleLeft:
+            case ContentAlignment.BottomLeft:
+                return drawingAreaRect.X + Padding.Left;
+        }
+
+        throw new NotSupportedException($"Content Alignment {TextAlign} isn't supported");
     }
 
     private Rectangle DrawDropDownArrow(PaintEventArgs e, Color baseColor, Rectangle drawingAreaRect, SizeF symbolSize, SizeF textSize)

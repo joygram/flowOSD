@@ -28,7 +28,6 @@ using System.Reactive.Linq;
 
 internal class HotKeysConfigPage : ConfigPageBase
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
     private ICommandService commandService;
 
     public HotKeysConfigPage(IConfig config, CxTabListener tabListener, ICommandService commandService)
@@ -36,19 +35,14 @@ internal class HotKeysConfigPage : ConfigPageBase
     {
         this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
-        Dock = DockStyle.Top;
-        AutoScroll = false;
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
-
         Text = "HotKeys";
 
         this.Add<CxGrid>(0, 0, grid =>
         {
-            RegisterCxItem(grid);
+            grid.TabListener = TabListener;
 
             grid.MouseClick += OnMouseClick;
-            grid.Padding = new Padding(20, 20, 20, 10);
+            grid.Padding = new Padding(10, 10, 10, 10);
             grid.Dock = DockStyle.Top;
             grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             grid.AutoSize = true;
@@ -62,23 +56,26 @@ internal class HotKeysConfigPage : ConfigPageBase
             Add(grid, "Fn + C", nameof(config.UserConfig.CopyCommand), value => config.UserConfig.CopyCommand = value);
             Add(grid, "Fn + V", nameof(config.UserConfig.PasteCommand), value => config.UserConfig.PasteCommand = value);
 
-            grid.Add<FlowLayoutPanel>(0, 5, 2, 1, x =>
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            grid.Add<FlowLayoutPanel>(0, grid.RowStyles.Count - 1, 2, 1, panel =>
             {
-                x.MouseClick += OnMouseClick;
-                x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
-                x.AutoSize = true;
-                x.Margin = new Padding(0, 0, 0, 10);
-                x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-                x.AutoSize = true;
+                panel.MouseClick += OnMouseClick;
+                panel.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+                panel.AutoSize = true;
+                panel.Margin = new Padding(0, 10, 5, 5);
+                panel.Padding = new Padding(0);
+                panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                panel.AutoSize = true;
 
-                x.Add<CxButton>(y =>
+                panel.Add<CxButton>(x =>
                 {
-                    y.Padding = new Padding(20, 5, 20, 5);
+                    x.TabListener = TabListener;
+                    x.Padding = new Padding(20, 5, 20, 5);
+                    x.Margin = new Padding(-2);
 
-                    y.Text = "Disable all";
-                    y.AutoSize = true;
-                    y.Margin = new Padding(5, 0, 0, 0);
-                    y.Click += (sender, e) =>
+                    x.Text = "Disable all";
+                    x.AutoSize = true;
+                    x.Click += (sender, e) =>
                     {
                         config.UserConfig.AuraCommand = null;
                         config.UserConfig.FanCommand = null;
@@ -86,19 +83,17 @@ internal class HotKeysConfigPage : ConfigPageBase
                         config.UserConfig.CopyCommand = null;
                         config.UserConfig.PasteCommand = null;
                     };
-
-                    y.DisposeWith(disposable);
-                    RegisterCxItem(y);
                 });
 
-                x.Add<CxButton>(y =>
+                panel.Add<CxButton>(x =>
                 {
-                    y.Padding = new Padding(20, 5, 20, 5);
+                    x.TabListener = TabListener;
+                    x.Padding = new Padding(20, 5, 20, 5);
+                    x.Margin = new Padding(-2);
 
-                    y.Text = "Reset";
-                    y.AutoSize = true;
-                    y.Margin = new Padding(5, 0, 0, 0);
-                    y.Click += (sender, e) =>
+                    x.Text = "Reset";
+                    x.AutoSize = true;
+                    x.Click += (sender, e) =>
                     {
                         config.UserConfig.AuraCommand = nameof(DisplayRefreshRateCommand);
                         config.UserConfig.FanCommand = nameof(ToggleBoostCommand);
@@ -106,9 +101,6 @@ internal class HotKeysConfigPage : ConfigPageBase
                         config.UserConfig.CopyCommand = null;
                         config.UserConfig.PasteCommand = null;
                     };
-
-                    y.DisposeWith(disposable);
-                    RegisterCxItem(y);
                 });
             });
         });
@@ -117,43 +109,45 @@ internal class HotKeysConfigPage : ConfigPageBase
     private void Add(CxGrid grid, string text, string propertyName, Action<string?> setValue)
     {
         grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        grid.Add<CxLabel>(0, grid.RowCount - 1, y =>
+        grid.Add<CxLabel>(0, grid.RowCount - 1, x =>
         {
-            y.AutoSize = true;
-            y.Margin = new Padding(5, 20, 20, 20);
-            y.Text = text;
-            y.Anchor = AnchorStyles.Left;
-            y.ForeColor = SystemColors.ControlText;
-            y.UseClearType = true;
-
-            y.DisposeWith(disposable);
-            RegisterCxItem(y);
+            x.MinimumSize = new Size(100, 30);
+            x.TabListener = TabListener;
+            x.AutoSize = true;
+            x.Margin = new Padding(5, 20, 20, 20);
+            x.Text = text;
+            x.Anchor = AnchorStyles.Left;
+            x.ForeColor = SystemColors.ControlText;
+            x.UseClearType = true;
+            x.TextAlign = ContentAlignment.MiddleCenter;
         });
 
-        grid.Add<CxButton>(y =>
+        grid.Add<CxButton>(x =>
         {
-            y.Padding = new Padding(20, 10, 15, 10);
-            y.Dock = DockStyle.Fill;
-            y.DropDownMenu = CreateContextMenu(
+            x.TabListener = TabListener;
+            x.Padding = new Padding(10, 10, 15, 10);
+            x.Dock = DockStyle.Fill;
+            x.DropDownMenu = CreateContextMenu(
                 commandService.Commands.Where(i => i.CanExecuteWithHotKey),
                 setValue);
 
-            RegisterCxItem(y);
-            RegisterCxItem(y.DropDownMenu);
-
-            y.IconFont = IconFont;
+            x.BorderRadius = CornerRadius.Small;
+            x.TextAlign = ContentAlignment.MiddleLeft;
+            x.IconFont = IconFont;
 
             var binding = new Binding("Text", Config.UserConfig, propertyName, true, DataSourceUpdateMode.Never);
             binding.Format += (_, e) => e.Value = commandService.Commands
                 .FirstOrDefault(x => x.Name == e.Value as string)?.Description ?? "[ BLANK ]";
 
-            y.DataBindings.Add(binding);
+            x.DataBindings.Add(binding);
         });
     }
 
     private CxContextMenu CreateContextMenu(IEnumerable<CommandBase> commands, Action<string?> setValue)
     {
         var menu = new CxContextMenu();
+        menu.BorderRadius = CornerRadius.Small;
+
         var relayCommand = new RelayCommand(x => setValue((x as CommandBase)?.Name));
 
         menu.AddMenuItem("[ BLANK ]", relayCommand, null);
