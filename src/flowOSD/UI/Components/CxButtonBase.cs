@@ -37,6 +37,7 @@ abstract class CxButtonBase : ButtonBase
     private CxTabListener? tabListener;
     private Pen? focusPen;
     private Color accentColor;
+
     protected CxButtonBase()
     {
         state = 0;

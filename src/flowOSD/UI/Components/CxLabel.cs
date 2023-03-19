@@ -22,6 +22,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Text.RegularExpressions;
 using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 internal sealed class CxLabel : Label
 {
@@ -178,8 +179,9 @@ internal sealed class CxLabel : Label
             {
                 var rect = new RectangleF(dX - 4, y - 4, p.Size.Width + 8, p.Size.Height + 8);
 
-                e.Graphics.FillRoundedRectangle(brush, rect, 4);
-                e.Graphics.DrawRoundedRectangle(pen, rect, 4);
+                var r = IsWindows11 ? 4 : 0;
+                e.Graphics.FillRoundedRectangle(brush, rect, r);
+                e.Graphics.DrawRoundedRectangle(pen, rect, r);
             }
 
             e.Graphics.DrawString(p.Text, Font, textBrush, dX, y + Math.Max(0, dY));

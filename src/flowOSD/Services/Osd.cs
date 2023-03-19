@@ -30,6 +30,7 @@ using flowOSD.Extensions;
 using flowOSD.Native;
 using static flowOSD.Native.Dwmapi;
 using static Native.User32;
+using static flowOSD.Extensions.Common;
 
 sealed partial class Osd : IOsd, IDisposable
 {
@@ -61,7 +62,11 @@ sealed partial class Osd : IOsd, IDisposable
             .DisposeWith(disposable);
 
         form = new OsdForm(systemEvents).DisposeWith(disposable);
-        SetCornerPreference(form.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+
+        if (IsWindows11)
+        {
+            SetCornerPreference(form.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+        }
     }
 
     void IDisposable.Dispose()
@@ -200,6 +205,7 @@ sealed partial class Osd : IOsd, IDisposable
         private static Pen CreateIndicatorBackgroundPen(Color color, int width)
         {
             var pen = new Pen(color, width);
+            
             pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
             pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
 

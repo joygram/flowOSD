@@ -341,7 +341,7 @@ internal sealed class CxButton : CxButtonBase
 
         if (TabListener?.ShowKeyboardFocus == true && Focused)
         {
-            e.Graphics.DrawRoundedRectangle(FocusPen, 1, 1, Width - 3, Height - 3, 8);
+            e.Graphics.DrawRoundedRectangle(FocusPen, 1, 1, Width - 3, Height - 3, (int)BorderRadius);
         }
 
         using var textBrush = new SolidBrush(GetTextColor(baseColor, (State & ButtonState.DropDownHover) == 0));
@@ -434,7 +434,7 @@ internal sealed class CxButton : CxButtonBase
                     drawingAreaRect.Y,
                     drawingAreaRect.Width / 2,
                     drawingAreaRect.Height),
-                8,
+                (int)BorderRadius,
                 Drawing.Corners.BottomRight | Drawing.Corners.TopRight);
         }
         else
@@ -446,7 +446,7 @@ internal sealed class CxButton : CxButtonBase
                     drawingAreaRect.Y,
                     drawingAreaRect.Width / 2,
                     drawingAreaRect.Height),
-                8,
+                (int)BorderRadius,
                 Drawing.Corners.BottomLeft | Drawing.Corners.TopLeft);
         }
     }

@@ -22,6 +22,7 @@ using System.Reactive.Disposables;
 using flowOSD.Api;
 using System.Windows.Input;
 using static flowOSD.Native.Dwmapi;
+using static flowOSD.Extensions.Common;
 using flowOSD.Native;
 using flowOSD.Extensions;
 
@@ -248,6 +249,16 @@ sealed class CxContextMenu : ContextMenuStrip
         e.Graphics.Clear(Color.Transparent);
     }
 
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        if (!IsWindows11)
+        {
+            using var pen = new Pen(BackColor.IsBright() ? BackColor.Luminance(-.3f) : BackColor.Luminance(+.2f), 1);
+            e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        }
+
+        base.OnPaint(e);
+    }
 
     protected override void OnHandleCreated(EventArgs e)
     {
@@ -258,6 +269,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
     private void SetCornerRadius()
     {
+        if (!IsWindows11)
+        {
+            return;
+        }
+
         DWM_WINDOW_CORNER_PREFERENCE corner;
         switch (BorderRadius)
         {
@@ -472,7 +488,13 @@ sealed class CxContextMenu : ContextMenuStrip
                 var height = e.Item.ContentRectangle.Height - 2;
 
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                e.Graphics.FillRoundedRectangle(backgroundHoverBrush, x, y, width, height, 4);
+                e.Graphics.FillRoundedRectangle(
+                    backgroundHoverBrush, 
+                    x, 
+                    y, 
+                    width, 
+                    height, 
+                    (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
             }
         }
 

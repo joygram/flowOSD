@@ -25,6 +25,7 @@ using flowOSD.UI.Components;
 using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using static flowOSD.Extensions.Common;
 
 internal class HotKeysConfigPage : ConfigPageBase
 {
@@ -69,10 +70,11 @@ internal class HotKeysConfigPage : ConfigPageBase
 
                 panel.Add<CxButton>(x =>
                 {
+                    x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
                     x.TabListener = TabListener;
                     x.Padding = new Padding(20, 5, 20, 5);
                     x.Margin = new Padding(-2);
-
+                   
                     x.Text = "Disable all";
                     x.AutoSize = true;
                     x.Click += (sender, e) =>
@@ -87,6 +89,7 @@ internal class HotKeysConfigPage : ConfigPageBase
 
                 panel.Add<CxButton>(x =>
                 {
+                    x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
                     x.TabListener = TabListener;
                     x.Padding = new Padding(20, 5, 20, 5);
                     x.Margin = new Padding(-2);
@@ -125,6 +128,7 @@ internal class HotKeysConfigPage : ConfigPageBase
 
         grid.Add<CxButton>(x =>
         {
+            x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
             x.TabListener = TabListener;
             x.Padding = new Padding(10, 10, 15, 10);
             x.Dock = DockStyle.Fill;
@@ -132,7 +136,6 @@ internal class HotKeysConfigPage : ConfigPageBase
                 commandService.Commands.Where(i => i.CanExecuteWithHotKey),
                 setValue);
 
-            x.BorderRadius = CornerRadius.Small;
             x.TextAlign = ContentAlignment.MiddleLeft;
             x.IconFont = IconFont;
 

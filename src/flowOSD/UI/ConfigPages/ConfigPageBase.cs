@@ -23,6 +23,7 @@ using flowOSD.Extensions;
 using flowOSD.UI.Components;
 using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
+using static flowOSD.Extensions.Common;
 
 internal class ConfigPageBase : TableLayoutPanel
 {
@@ -82,6 +83,7 @@ internal class ConfigPageBase : TableLayoutPanel
             x.Dock = DockStyle.Top;
             x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             x.AutoSize = true;
+            x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
 
             x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));

@@ -24,6 +24,8 @@ namespace flowOSD.Extensions;
 
 static class Common
 {
+    public static bool IsWindows11 => Environment.OSVersion.Version.Build >= 22000;
+
     public static short Hi(this IntPtr value) => BitConverter.ToInt16(BitConverter.GetBytes(value), 2);
 
     public static short Low(this IntPtr value) => BitConverter.ToInt16(BitConverter.GetBytes(value), 0);

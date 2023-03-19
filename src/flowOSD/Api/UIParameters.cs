@@ -24,12 +24,13 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using static flowOSD.Extensions.Common;
 
 public sealed class UIParameters
 {
     public static string FontName => "Segoe UI";
 
-    public static string IconFontName => "Segoe Fluent Icons";
+    public static string IconFontName => IsWindows11 ? "Segoe Fluent Icons" : "Segoe MDL2 Assets";
 
     public bool IsDarkMode { get; private set; }
 

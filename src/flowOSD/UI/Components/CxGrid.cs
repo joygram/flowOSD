@@ -30,9 +30,32 @@ using System;
 
 class CxGrid : TableLayoutPanel
 {
+    private CornerRadius borderRadius;
+
+    public CxGrid()
+    {
+        borderRadius = CornerRadius.Small;
+    }
+
     public CxTabListener? TabListener
     {
         get; set;
+    }
+
+    [DefaultValue(CornerRadius.Small)]
+    public CornerRadius BorderRadius
+    {
+        get => borderRadius;
+        set
+        {
+            if (borderRadius == value)
+            {
+                return;
+            }
+
+            borderRadius = value;
+            Invalidate();
+        }
     }
 
     protected override void OnMouseClick(MouseEventArgs e)
@@ -54,9 +77,9 @@ class CxGrid : TableLayoutPanel
         var drawingRect = new Rectangle(1, 1, Width - 3, Height - 3);
 
         using var brush = new SolidBrush(BackColor);
-        e.Graphics.FillRoundedRectangle(brush, drawingRect, 4);
+        e.Graphics.FillRoundedRectangle(brush, drawingRect, (int)BorderRadius);
 
         using var pen = new Pen(BackColor.IsBright() ? BackColor.Luminance(-.2f) : BackColor.Luminance(+.2f), 1);
-        e.Graphics.DrawRoundedRectangle(pen, drawingRect, 4);
+        e.Graphics.DrawRoundedRectangle(pen, drawingRect, (int)BorderRadius);
     }
 }

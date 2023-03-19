@@ -28,6 +28,7 @@ using flowOSD.Native;
 using flowOSD.UI.Components;
 using flowOSD.UI.ConfigPages;
 using static flowOSD.Extensions.Forms;
+using static flowOSD.Extensions.Common;
 
 sealed class ConfigUI : IDisposable
 {
@@ -279,7 +280,10 @@ sealed class ConfigUI : IDisposable
                         : uiParameters.BackgroundColor;
 
                     using var brush = new SolidBrush(color);
-                    e.Graphics.FillRoundedRectangle(brush, drawingAreaRect, 4);
+                    e.Graphics.FillRoundedRectangle(
+                        brush, 
+                        drawingAreaRect,
+                        (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
 
                     if ((e.State & DrawItemState.Selected) == DrawItemState.Selected)
                     {
@@ -289,7 +293,8 @@ sealed class ConfigUI : IDisposable
                             drawingAreaRect.Top + drawingAreaRect.Height / 8,
                             8,
                             drawingAreaRect.Height - drawingAreaRect.Height / 4,
-                            4);
+                            (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
+
                     }
 
                     if ((e.State & DrawItemState.Focus) == DrawItemState.Focus && tabListener?.ShowKeyboardFocus == true)
@@ -300,7 +305,8 @@ sealed class ConfigUI : IDisposable
                             e.Bounds.Top + 1,
                             e.Bounds.Width - 3,
                             e.Bounds.Height - 3,
-                            4);
+                            (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
+
                     }
 
                     var textBrush = color.IsBright()

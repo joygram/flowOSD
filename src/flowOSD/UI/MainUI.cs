@@ -410,6 +410,7 @@ sealed class MainUI : IDisposable
                     button.IsToggle = false;
                     button.IsTransparent = true;
                     button.TabListener = tabListener;
+                    button.BorderRadius = IsWindows11 ? CornerRadius.Round : CornerRadius.Off;
 
                     button.Command = owner.commandService.Resolve<SettingsCommand>();
                 });
@@ -434,7 +435,10 @@ sealed class MainUI : IDisposable
 
         protected override void OnHandleCreated(EventArgs e)
         {
-            SetCornerPreference(Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+            if (IsWindows11)
+            {
+                SetCornerPreference(Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+            }
 
             base.OnHandleCreated(e);
         }
@@ -537,6 +541,7 @@ sealed class MainUI : IDisposable
             x.IsToggle = true;
             x.IsTransparent = false;
             x.TabListener = tabListener;
+            x.BorderRadius = IsWindows11 ? CornerRadius.Round : CornerRadius.Off;
 
             if (command != null)
             {

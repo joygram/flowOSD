@@ -109,6 +109,12 @@ static class Drawing
         var arc = new RectangleF(x, y, r * 2, r * 2);
         var path = new GraphicsPath();
 
+        if (r == 0)
+        {
+            path.AddRectangle(new RectangleF(x, y, width, height));
+            return path;
+        }
+
         if ((corners & Corners.TopLeft) == Corners.TopLeft)
         {
             path.AddArc(arc, 180, 90);

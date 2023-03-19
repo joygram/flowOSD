@@ -56,17 +56,6 @@ public static class Program
 
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
-            if (Environment.OSVersion.Version.Build < 22621)
-            {
-                MessageBox.Show(
-                    "This version of flowOSD supports only Windows 11 22H2. Please, use an older version of flowOSD instead.\r\n\r\nFor details, see https://github.com/albertakhmetov/flowOSD",
-                    "Not supported OS version",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-
-                return;
-            }
-
             var app = new App(config).DisposeWith(disposable);
 
             Application.Run(app.ApplicationContext);

@@ -27,18 +27,17 @@ using flowOSD.Extensions;
 using System.Windows.Forms;
 using System.Drawing;
 using System;
+using static flowOSD.Extensions.Common;
 
 [DefaultBindingProperty(nameof(IsChecked))]
 internal sealed class CxToggle : CxButtonBase
 {
     private static readonly object EVENT_ISCHECKEDCHANGED = new object();
 
-
     private bool isChecked;
 
     public CxToggle()
     {
-       
     }
 
     public event EventHandler? IsCheckedChanged
@@ -77,7 +76,7 @@ internal sealed class CxToggle : CxButtonBase
         base.OnClick(e);
     }
 
-    protected override Size DefaultSize => new Size(60+FOCUS_SPACE*2, 30+FOCUS_SPACE*2);
+    protected override Size DefaultSize => new Size(60 + FOCUS_SPACE * 2, 30 + FOCUS_SPACE * 2);
 
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -103,7 +102,13 @@ internal sealed class CxToggle : CxButtonBase
 
         if (TabListener?.ShowKeyboardFocus == true && Focused)
         {
-            e.Graphics.DrawRoundedRectangle(FocusPen, 1, 1, Width - 3, Height - 3, 8);
+            e.Graphics.DrawRoundedRectangle(
+                FocusPen,
+                1,
+                1,
+                Width - 3,
+                Height - 3,
+                (int)(IsWindows11 ? CornerRadius.Round : CornerRadius.Off));
         }
 
         using var toggleBrush = new SolidBrush(GetToggleColor());
