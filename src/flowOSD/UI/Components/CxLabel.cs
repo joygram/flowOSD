@@ -16,22 +16,25 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
+namespace flowOSD.UI.Components;
+
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
-
-namespace flowOSD.UI.Components;
+using System.Text.RegularExpressions;
+using flowOSD.Extensions;
 
 internal sealed class CxLabel : Label
 {
     private string? icon;
     private Font? iconFont;
-    private bool useClearType;
+    private bool useClearType, showKeys;
 
     public CxLabel()
     {
         icon = null;
         iconFont = null;
         useClearType = false;
+        showKeys = false;
     }
 
     public string? Icon
@@ -79,6 +82,21 @@ internal sealed class CxLabel : Label
         }
     }
 
+    public bool ShowKeys
+    {
+        get => showKeys;
+        set
+        {
+            if (showKeys == value)
+            {
+                return;
+            }
+
+            showKeys = value;
+            Invalidate();
+        }
+    }
+
     public CxTabListener? TabListener
     {
         get; set;
@@ -120,6 +138,9 @@ internal sealed class CxLabel : Label
 
     protected override void OnPaint(PaintEventArgs e)
     {
+        var parts = GetParts(e.Graphics);
+
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
         e.Graphics.TextRenderingHint = UseClearType
             ? TextRenderingHint.ClearTypeGridFit
@@ -128,24 +149,89 @@ internal sealed class CxLabel : Label
         var symbolSize = IconFont == null
             ? new SizeF(0, 0)
             : e.Graphics.MeasureString(Icon ?? string.Empty, IconFont);
-        var textSize = e.Graphics.MeasureString(Text, Font);
+        var textSize = parts.Count == 0
+            ? SizeF.Empty
+            : new SizeF(parts.Sum(i => i.Size.Width), parts.Max(i => i.Size.Height));
         var totalSize = new SizeF(
             symbolSize.Width + textSize.Width,
             Math.Max(symbolSize.Height, textSize.Height));
 
         var dY = (symbolSize.Height - textSize.Height) / 2;
 
-        using var brush = new SolidBrush(ForeColor);
+        using var textBrush = new SolidBrush(ForeColor);
 
         var x = GetX(totalSize);
         var y = GetY(totalSize);
 
         if (IconFont != null)
         {
-            e.Graphics.DrawString(Icon, IconFont, brush, x, y + Math.Max(0, -dY));
+            e.Graphics.DrawString(Icon, IconFont, textBrush, x, y + Math.Max(0, -dY));
         }
 
-        e.Graphics.DrawString(Text, Font, brush, x + symbolSize.Width, y + Math.Max(0, dY));
+        using var pen = new Pen(ForeColor.Luminance(ForeColor.IsBright() ? -.5f : +.5f), 1);
+        using var brush = new SolidBrush(ForeColor.Luminance(ForeColor.IsBright() ? -.7f : +.8f));
+
+        var dX = x + symbolSize.Width;
+        foreach (var p in parts)
+        {
+            if (p.IsKey)
+            {
+                var rect = new RectangleF(dX - 4, y - 4, p.Size.Width + 8, p.Size.Height + 8);
+
+                e.Graphics.FillRoundedRectangle(brush, rect, 4);
+                e.Graphics.DrawRoundedRectangle(pen, rect, 4);
+            }
+
+            e.Graphics.DrawString(p.Text, Font, textBrush, dX, y + Math.Max(0, dY));
+            dX += p.Size.Width;
+        }
+    }
+
+    private IList<TextPart> GetParts(Graphics g)
+    {
+        var format = new StringFormat(StringFormat.GenericTypographic);
+        format.FormatFlags = StringFormatFlags.MeasureTrailingSpaces;
+
+        var r = new List<TextPart>();
+
+        var spaceWidth = g.MeasureString(" ", Font, 0, format).Width;
+
+        var m = Regex.Matches(Text, "`[A-Za-z0-9]+`");
+
+        var pos = 0;
+
+        if (ShowKeys)
+        {
+            for (var i = 0; i < m.Count; i++)
+            {
+                if (m[i].Index - pos > 0)
+                {
+                    var preText = Text.Substring(pos, m[i].Index - pos);
+                    var preSize = g.MeasureString(preText, Font, 0, format);
+                    preSize.Width += spaceWidth;
+
+                    r.Add(new TextPart(preText, preSize, false));
+                }
+
+                var keyText = Text.Substring(m[i].Index + 1, m[i].Length - 2);
+                var keySize = g.MeasureString(keyText, Font, 0, format);
+                keySize.Width += spaceWidth;
+
+                var part = new TextPart(keyText, keySize, true);
+                r.Add(part);
+
+                pos = m[i].Index + m[i].Length;
+            }
+        }
+
+        if (pos < Text.Length)
+        {
+            var postText = Text.Substring(pos);
+            var postSize = g.MeasureString(postText, Font, 0, format);
+            r.Add(new TextPart(postText, postSize, false));
+        }
+
+        return r;
     }
 
     private float GetX(SizeF textSize)
@@ -195,4 +281,6 @@ internal sealed class CxLabel : Label
                 return 0;
         }
     }
+
+    private readonly record struct TextPart(string Text, SizeF Size, bool IsKey);
 }

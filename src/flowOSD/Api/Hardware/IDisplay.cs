@@ -27,5 +27,5 @@ public interface IDisplay
 
     IObservable<uint> RefreshRate { get; }
 
-    bool SetRefreshRate(uint value);
+    bool SetRefreshRate(uint? value);
 }

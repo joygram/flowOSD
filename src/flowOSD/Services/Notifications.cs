@@ -92,7 +92,7 @@ sealed class Notifications : IDisposable
             .Subscribe(ShowPowerModeNotification)
             .DisposeWith(disposable);
 
-        powerManagement.IsDC
+        powerManagement.PowerSource
             .Skip(1)
             .DistinctUntilChanged()
             .Throttle(TimeSpan.FromSeconds(2))
@@ -258,14 +258,16 @@ sealed class Notifications : IDisposable
         }
     }
 
-    private void ShowPowerSourceNotification(bool isBattery)
+    private void ShowPowerSourceNotification(PowerSource powerSource)
     {
         if (!config.UserConfig.ShowPowerSourceNotification)
         {
             return;
         }
 
-        osd.Show(new OsdData(isBattery ? UIImages.Hardware_DC : UIImages.Hardware_AC, isBattery ? "On Battery" : "Plugged In"));
+        osd.Show(new OsdData(
+            powerSource == PowerSource.Battery ? UIImages.Hardware_DC : UIImages.Hardware_AC,
+            powerSource == PowerSource.Battery ? "On Battery" : "Plugged In"));
     }
 
     private void ShowDisplayRefreshRateNotification(uint refreshRate)

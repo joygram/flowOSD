@@ -33,7 +33,6 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool disableTouchPadInTabletMode;
     private bool controlDisplayRefreshRate;
     private bool confirmGpuModeChange;
-    private bool highDisplayRefreshRateAC, highDisplayRefreshRateDC;
 
     private bool showPerformanceModeNotification;
     private bool showPowerModeNotification;
@@ -57,8 +56,6 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         // Default values
 
         controlDisplayRefreshRate = true;
-        highDisplayRefreshRateAC = true;
-        highDisplayRefreshRateDC = false;
         disableTouchPadInTabletMode = true;
         confirmGpuModeChange = true;
 
@@ -151,18 +148,6 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => confirmGpuModeChange;
         set => SetProperty(ref confirmGpuModeChange, value);
-    }
-
-    public bool HighDisplayRefreshRateAC
-    {
-        get => highDisplayRefreshRateAC;
-        set => SetProperty(ref highDisplayRefreshRateAC, value);
-    }
-
-    public bool HighDisplayRefreshRateDC
-    {
-        get => highDisplayRefreshRateDC;
-        set => SetProperty(ref highDisplayRefreshRateDC, value);
     }
 
     public bool ShowPerformanceModeNotification

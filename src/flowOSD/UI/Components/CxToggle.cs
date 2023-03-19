@@ -97,7 +97,7 @@ internal sealed class CxToggle : CxButtonBase
 
         if (!IsChecked)
         {
-            using var pen = new Pen(ForeColor, 2);
+            using var pen = new Pen(ForeColor, 1);
             e.Graphics.DrawRoundedRectangle(pen, drawingAreaRect, drawingAreaRect.Height / 2);
         }
 

@@ -65,15 +65,6 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         messageQueue.Subscribe(MessageId, ProcessMessage).DisposeWith(disposable);
     }
 
-    void IDisposable.Dispose()
-    {
-        icon?.Dispose();
-        icon = null;
-
-        disposable?.Dispose();
-        disposable = null;
-    }
-
     public string? Text
     {
         get => text;
@@ -122,6 +113,15 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         {
             return new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
         }
+    }
+
+    public void Dispose()
+    {
+        icon?.Dispose();
+        icon = null;
+
+        disposable?.Dispose();
+        disposable = null;
     }
 
     public void Show()

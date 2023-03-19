@@ -365,7 +365,7 @@ sealed class MainUI : IDisposable
 
             layout.Add<TableLayoutPanel>(0, 1, x =>
             {
-                x.Margin = this.DpiScale(new Padding(3));
+                x.Margin = this.DpiScale(new Padding(5));
 
                 x.Dock = DockStyle.Fill;
                 x.AutoSize = true;
@@ -380,7 +380,7 @@ sealed class MainUI : IDisposable
 
                 x.Add<CxLabel>(0, 0, label =>
                 {
-                    label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
+                    label.Margin = this.DpiScale(new Padding(10, 15, 0, 0));
                     label.TextAlign = ContentAlignment.MiddleLeft;
                     label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel);
                     label.IconFont = new Font(UIParameters.IconFontName, this.DpiScale(13), GraphicsUnit.Pixel);
@@ -390,7 +390,7 @@ sealed class MainUI : IDisposable
 
                 x.Add<CxLabel>(1, 0, label =>
                 {
-                    label.Margin = this.DpiScale(new Padding(10, 5, 0, 0));
+                    label.Margin = this.DpiScale(new Padding(10, 15, 0, 0));
                     label.TextAlign = ContentAlignment.MiddleLeft;
                     label.Size = this.DpiScale(new Size(60, 40));
                     label.Font = new Font(UIParameters.FontName, this.DpiScale(10), GraphicsUnit.Pixel);

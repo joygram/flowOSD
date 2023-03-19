@@ -50,11 +50,11 @@ internal class HotKeysConfigPage : ConfigPageBase
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            Add(grid, "AURA", nameof(config.UserConfig.AuraCommand), value => config.UserConfig.AuraCommand = value);
-            Add(grid, "FAN", nameof(config.UserConfig.FanCommand), value => config.UserConfig.FanCommand = value);
-            Add(grid, "ROG", nameof(config.UserConfig.RogCommand), value => config.UserConfig.RogCommand = value);
-            Add(grid, "Fn + C", nameof(config.UserConfig.CopyCommand), value => config.UserConfig.CopyCommand = value);
-            Add(grid, "Fn + V", nameof(config.UserConfig.PasteCommand), value => config.UserConfig.PasteCommand = value);
+            Add(grid, "`AURA`", nameof(config.UserConfig.AuraCommand), value => config.UserConfig.AuraCommand = value);
+            Add(grid, "`FAN`", nameof(config.UserConfig.FanCommand), value => config.UserConfig.FanCommand = value);
+            Add(grid, "`ROG`", nameof(config.UserConfig.RogCommand), value => config.UserConfig.RogCommand = value);
+            Add(grid, "`Fn` + `C`", nameof(config.UserConfig.CopyCommand), value => config.UserConfig.CopyCommand = value);
+            Add(grid, "`Fn` + `V`", nameof(config.UserConfig.PasteCommand), value => config.UserConfig.PasteCommand = value);
 
             grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             grid.Add<FlowLayoutPanel>(0, grid.RowStyles.Count - 1, 2, 1, panel =>
@@ -97,7 +97,7 @@ internal class HotKeysConfigPage : ConfigPageBase
                     {
                         config.UserConfig.AuraCommand = nameof(DisplayRefreshRateCommand);
                         config.UserConfig.FanCommand = nameof(ToggleBoostCommand);
-                        config.UserConfig.RogCommand = nameof(PrintScreenCommand);
+                        config.UserConfig.RogCommand = nameof(MainUICommand);
                         config.UserConfig.CopyCommand = null;
                         config.UserConfig.PasteCommand = null;
                     };
@@ -114,12 +114,13 @@ internal class HotKeysConfigPage : ConfigPageBase
             x.MinimumSize = new Size(100, 30);
             x.TabListener = TabListener;
             x.AutoSize = true;
-            x.Margin = new Padding(5, 20, 20, 20);
+            x.Margin = new Padding(5, 10, 20, 10);
+            x.Padding = new Padding(10);
             x.Text = text;
             x.Anchor = AnchorStyles.Left;
             x.ForeColor = SystemColors.ControlText;
             x.UseClearType = true;
-            x.TextAlign = ContentAlignment.MiddleCenter;
+            x.ShowKeys = true;
         });
 
         grid.Add<CxButton>(x =>

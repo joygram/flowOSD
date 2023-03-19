@@ -53,6 +53,7 @@ sealed class HardwareService : IDisposable, IHardwareService
     private Dictionary<Type, object> devices = new Dictionary<Type, object>();
 
     private KeyboardBacklightService keyboardBacklightService;
+    private RefreshRateService refreshRateService;
 
     public HardwareService(IConfig config, IMessageQueue messageQueue)
     {
@@ -92,6 +93,13 @@ sealed class HardwareService : IDisposable, IHardwareService
         Register<IBattery>(battery);
         Register<IPowerManagement>(powerManagement);
         Register<IMicrophone>(microphone);
+
+        powerManagement.PowerEvent
+           .Where(x => x == PowerEvent.Suspend)
+           .Throttle(TimeSpan.FromMicroseconds(50))
+           .ObserveOn(SynchronizationContext.Current!)
+           .Subscribe(_ => OnSuspend())
+           .DisposeWith(disposable);
 
         powerManagement.PowerEvent
            .Where(x => x == PowerEvent.Resume)
@@ -152,9 +160,14 @@ sealed class HardwareService : IDisposable, IHardwareService
             .DisposeWith(disposable);
 
         keyboardBacklightService = new KeyboardBacklightService(
-            keyboardBacklight, 
-            keyboard, 
+            keyboardBacklight,
+            keyboard,
             TimeSpan.FromSeconds(60)).DisposeWith(disposable);
+
+        refreshRateService = new RefreshRateService(
+            this.config,
+            display,
+            powerManagement).DisposeWith(disposable);
     }
 
     public void Dispose()
@@ -195,6 +208,11 @@ sealed class HardwareService : IDisposable, IHardwareService
         }
     }
 
+    private void OnSuspend()
+    {
+        keyboardBacklight.SetState(DeviceState.Disabled, force: true);
+    }
+
     private void OnResume()
     {
         if (config.UserConfig.PerformanceModeOverrideEnabled)
@@ -205,6 +223,8 @@ sealed class HardwareService : IDisposable, IHardwareService
         InitHid();
         keyboardBacklightService.ResetTimer();
         keyboardBacklight.SetState(DeviceState.Enabled, force: true);
+
+        refreshRateService.Update();
     }
 
     private void InitHid()

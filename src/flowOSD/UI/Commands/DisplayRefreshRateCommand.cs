@@ -80,15 +80,6 @@ sealed class DisplayRefreshRateCommand : CommandBase
                 {
                     return;
                 }
-
-                if (await powerManagement.IsDC.FirstAsync())
-                {
-                    userConfig.HighDisplayRefreshRateDC = !DisplayRefreshRates.IsHigh(newRefreshRate.Value);
-                }
-                else
-                {
-                    userConfig.HighDisplayRefreshRateAC = !DisplayRefreshRates.IsHigh(newRefreshRate.Value);
-                }
             }
         }
         catch (Exception ex)

@@ -46,7 +46,8 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
 
     private CompositeDisposable? disposable = new CompositeDisposable();
 
-    private BehaviorSubject<bool> isBoostSubject, isDCSubject, isBatterySaverSubject;
+    private BehaviorSubject<bool> isBoostSubject, isBatterySaverSubject;
+    private BehaviorSubject<PowerSource> powerSourceSubject;
     private BehaviorSubject<PowerMode> powerModeSubject;
     private Subject<PowerEvent> powerEventSubject;
 
@@ -61,8 +62,11 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
-        var isDC = powerStatus.ACLineStatus == 0;
-        isDCSubject = new BehaviorSubject<bool>(isDC);
+        var powerSource = powerStatus.ACLineStatus == 0
+            ? Api.Hardware.PowerSource.Battery
+            : Api.Hardware.PowerSource.Charger;
+
+        powerSourceSubject = new BehaviorSubject<PowerSource>(powerSource);
 
         var isBoostEnabled = ReadValueIndex(ref PROCESSOR_SUBGROUP, ref BOOST_SETTING) != 0;
         isBoostSubject = new BehaviorSubject<bool>(isBoostEnabled);
@@ -73,7 +77,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
         powerEventSubject = new Subject<PowerEvent>();
 
         IsBoost = isBoostSubject.AsObservable();
-        IsDC = isDCSubject.AsObservable();
+        PowerSource = powerSourceSubject.AsObservable();
 
         IsBatterySaver = isBatterySaverSubject.AsObservable();
 
@@ -88,7 +92,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
 
     public IObservable<bool> IsBoost { get; }
 
-    public IObservable<bool> IsDC { get; }
+    public IObservable<PowerSource> PowerSource { get; }
 
     public IObservable<bool> IsBatterySaver { get; }
 
@@ -202,7 +206,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
     private uint ReadValueIndex(ref Guid subgroup, ref Guid setting)
     {
         var value = default(uint);
-        var errorCode = isDCSubject.Value
+        var errorCode = powerSourceSubject.Value == Api.Hardware.PowerSource.Battery
             ? PowerReadDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, ref value)
             : PowerReadACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, ref value);
 
@@ -216,7 +220,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
 
     private void WriteValueIndex(ref Guid subgroup, ref Guid setting, uint value)
     {
-        var errorCode = isDCSubject.Value
+        var errorCode = powerSourceSubject.Value == Api.Hardware.PowerSource.Battery
             ? PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, value)
             : PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref setting, value);
 
@@ -253,7 +257,11 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
 
                     if (pbs.PowerSetting == GUID_ACDC_POWER_SOURCE)
                     {
-                        isDCSubject.OnNext(pbs.Data == 1);
+                        var powerSource = pbs.Data == 1
+                            ? Api.Hardware.PowerSource.Battery
+                            : Api.Hardware.PowerSource.Charger;
+
+                        powerSourceSubject.OnNext(powerSource);
                     }
 
                     break;

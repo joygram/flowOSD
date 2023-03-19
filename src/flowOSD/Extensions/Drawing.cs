@@ -38,7 +38,7 @@ static class Drawing
         this Graphics g,
         Pen pen,
         Rectangle rect,
-        int r,
+        float r,
         Corners corners = Corners.All)
     {
         DrawRoundedRectangle(g, pen, rect.X, rect.Y, rect.Width, rect.Height, r, corners);
@@ -47,11 +47,21 @@ static class Drawing
     public static void DrawRoundedRectangle(
         this Graphics g,
         Pen pen,
-        int x,
-        int y,
-        int width,
-        int height,
-        int r,
+        RectangleF rect,
+        float r,
+        Corners corners = Corners.All)
+    {
+        DrawRoundedRectangle(g, pen, rect.X, rect.Y, rect.Width, rect.Height, r, corners);
+    }
+
+    public static void DrawRoundedRectangle(
+        this Graphics g,
+        Pen pen,
+        float x,
+        float y,
+        float width,
+        float height,
+        float r,
         Corners corners = Corners.All)
     {
         using var path = GetRoundedRectPath(x, y, width, height, r, corners);
@@ -63,7 +73,7 @@ static class Drawing
         this Graphics g,
         Brush brush,
         Rectangle rect,
-        int r,
+        float r,
         Corners corners = Corners.All)
     {
         FillRoundedRectangle(g, brush, rect.X, rect.Y, rect.Width, rect.Height, r, corners);
@@ -72,11 +82,21 @@ static class Drawing
     public static void FillRoundedRectangle(
         this Graphics g,
         Brush brush,
-        int x,
-        int y,
-        int width,
-        int height,
-        int r,
+        RectangleF rect,
+        float r,
+        Corners corners = Corners.All)
+    {
+        FillRoundedRectangle(g, brush, rect.X, rect.Y, rect.Width, rect.Height, r, corners);
+    }
+
+    public static void FillRoundedRectangle(
+        this Graphics g,
+        Brush brush,
+        float x,
+        float y,
+        float width,
+        float height,
+        float r,
         Corners corners = Corners.All)
     {
         using var path = GetRoundedRectPath(x, y, width, height, r, corners);
@@ -84,9 +104,9 @@ static class Drawing
         g.FillPath(brush, path);
     }
 
-    public static GraphicsPath GetRoundedRectPath(int x, int y, int width, int height, int r, Corners corners = Corners.All)
+    public static GraphicsPath GetRoundedRectPath(float x, float y, float width, float height, float r, Corners corners = Corners.All)
     {
-        var arc = new Rectangle(x, y, r * 2, r * 2);
+        var arc = new RectangleF(x, y, r * 2, r * 2);
         var path = new GraphicsPath();
 
         if ((corners & Corners.TopLeft) == Corners.TopLeft)

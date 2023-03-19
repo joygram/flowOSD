@@ -60,8 +60,13 @@ sealed partial class Display : IDisposable, IDisplay
 
     public IObservable<uint> RefreshRate { get; }
 
-    public bool SetRefreshRate(uint value)
+    public bool SetRefreshRate(uint? value)
     {
+        if(value == null)
+        {
+            return false;
+        }
+
         if (!GetDeviceName(out var deviceName))
         {
             return false;
@@ -81,7 +86,7 @@ sealed partial class Display : IDisposable, IDisplay
 
         var mode = new DEVMODE();
         mode.dmSize = (ushort)Marshal.SizeOf(mode);
-        mode.dmDisplayFrequency = value;
+        mode.dmDisplayFrequency = value.Value;
         mode.dmFields = DM_DISPLAYFREQUENCY;
 
         var result = ChangeDisplaySettingsEx(deviceName!, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);

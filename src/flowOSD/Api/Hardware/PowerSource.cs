@@ -1,4 +1,4 @@
-/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
+﻿/*  Copyright © 2021-2023, Albert Akhmetov <akhmetov@live.com>   
  *
  *  This file is part of flowOSD.
  *
@@ -19,23 +19,8 @@
 
 namespace flowOSD.Api.Hardware;
 
-public interface IPowerManagement
+public enum PowerSource
 {
-    IObservable<bool> IsBoost { get; }
-
-    IObservable<PowerSource> PowerSource { get; }
-
-    IObservable<bool> IsBatterySaver { get; }
-
-    IObservable<PowerMode> PowerMode { get; }
-
-    IObservable<PowerEvent> PowerEvent { get; }
-
-    void EnableBoost();
-
-    void DisableBoost();
-
-    void ToggleBoost();
-
-    void SetPowerMode(PowerMode powerMode);
+    Battery,
+    Charger,
 }
