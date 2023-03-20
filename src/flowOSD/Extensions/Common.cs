@@ -64,11 +64,11 @@ static class Common
         return obj;
     }
 
-    public static void TraceException(Exception ex, string message)
+    public static void TraceException(Exception? ex, string message)
     {
         Trace.WriteLine($"{DateTime.Now} EXCEPTION: {message}");
         Trace.Indent();
-        Trace.WriteLine(ex);
+        Trace.WriteLine(ex ?? (object)"ex is NULL");
         Trace.Unindent();
         Trace.Flush();
     }

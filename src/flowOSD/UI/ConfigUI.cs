@@ -175,6 +175,7 @@ sealed class ConfigUI : IDisposable
         private void UpdateSize()
         {
             MinimumSize = this.DpiScale(new Size(600, 400));
+            Size = this.DpiScale(new Size(600, 500));
         }
 
         private CxPanel Init(CompositeDisposable uiDisposable)

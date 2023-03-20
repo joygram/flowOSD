@@ -129,20 +129,44 @@ sealed partial class Battery : IDisposable, IBattery
 
     public void Update()
     {
+        CheckHandler();
+
+        var batteryStatus = default(BATTERY_STATUS);
+        try
+        {
+            batteryStatus = GetBatteryStatus(batteryHandle!, batteryTag);
+        }
+        catch (Win32Exception)
+        {
+            System.Diagnostics.Trace.WriteLine("RECONNECTING");
+
+            // try to reconnect
+            batteryHandle = Init();
+            CheckHandler();
+
+            batteryStatus = GetBatteryStatus(batteryHandle!, batteryTag);
+        }
+
+        rateSubject.OnNext(batteryStatus.Rate);
+        capacitySubject.OnNext(batteryStatus.Capacity);
+        powerStateSubject.OnNext((BatteryPowerState)batteryStatus.PowerState);
+
+        var estimatedTime = GetEstimatedTime(batteryHandle!, batteryTag);
+        estimatedTimeSubject.OnNext(estimatedTime);
+    }
+
+    private void CheckHandler()
+    {
         if (batteryHandle == null || batteryHandle.IsInvalid || batteryHandle.IsClosed)
         {
             batteryHandle?.Dispose();
             batteryHandle = Init();
         }
 
-        var batteryStatus = GetBatteryStatus(batteryHandle, batteryTag);
-
-        rateSubject.OnNext(batteryStatus.Rate);
-        capacitySubject.OnNext(batteryStatus.Capacity);
-        powerStateSubject.OnNext((BatteryPowerState)batteryStatus.PowerState);
-
-        var estimatedTime = GetEstimatedTime(batteryHandle, batteryTag);
-        estimatedTimeSubject.OnNext(estimatedTime);
+        if (batteryHandle.IsInvalid)
+        {
+            throw new Win32Exception("Can't connect to battery device.");
+        }
     }
 
     private SafeFileHandle Init()
