@@ -103,7 +103,7 @@ sealed class HardwareService : IDisposable, IHardwareService
 
         powerManagement.PowerEvent
            .Where(x => x == PowerEvent.Resume)
-           .Throttle(TimeSpan.FromMicroseconds(50))
+           .Throttle(TimeSpan.FromSeconds(5))
            .ObserveOn(SynchronizationContext.Current!)
            .Subscribe(_ => OnResume())
            .DisposeWith(disposable);

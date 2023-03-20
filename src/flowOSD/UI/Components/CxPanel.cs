@@ -20,6 +20,7 @@ using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 namespace flowOSD.UI.Components;
 
@@ -222,9 +223,9 @@ internal sealed class CxPanel : Panel
             using var brush = new SolidBrush(BackColor.Luminance(BackColor.IsBright() ? -.2f : +.2f));
 
             var rect = new Rectangle(1, 1, Width - 3, Height - 3);
-
-            e.Graphics.FillRoundedRectangle(brush, rect, 4);
-            e.Graphics.DrawRoundedRectangle(pen, rect, 4);
+            var r = (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off);
+            e.Graphics.FillRoundedRectangle(brush, rect, r);
+            e.Graphics.DrawRoundedRectangle(pen, rect, r);
         }
 
         protected override void Dispose(bool disposing)
