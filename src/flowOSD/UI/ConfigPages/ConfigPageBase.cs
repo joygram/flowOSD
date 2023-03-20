@@ -37,10 +37,9 @@ internal class ConfigPageBase : TableLayoutPanel
         Config = config ?? throw new ArgumentNullException(nameof(config));
         TabListener = tabListener ?? throw new ArgumentNullException(nameof(tabListener));
 
-        Dock = DockStyle.Top;
         AutoScroll = false;
         AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+       // AutoSizeMode = AutoSizeMode.GrowAndShrink;
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         Padding = new Padding(3);

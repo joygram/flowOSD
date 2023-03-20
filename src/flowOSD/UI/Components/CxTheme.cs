@@ -77,5 +77,10 @@ internal static class CxTheme
             menu.TextBrightColor = uiParameters.MenuTextBrightColor;
             menu.TextDisabledColor = uiParameters.MenuTextDisabledColor;
         }
+
+        if(control is CxPanel panel)
+        {
+            panel.ScrollerColor = uiParameters.BackgroundColor;
+        }
     }
 }

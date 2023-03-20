@@ -87,9 +87,8 @@ sealed class ConfigUI : IDisposable
         private CompositeDisposable? disposable = new CompositeDisposable();
 
         private ReadOnlyCollection<ConfigPageBase> pages;
-        private Control? currentPage;
 
-        private Panel pageContainer;
+        private CxPanel pageContainer;
         private ListBox listBox;
         private UIParameters? uiParameters;
         private CxTabListener tabListener;
@@ -112,20 +111,10 @@ sealed class ConfigUI : IDisposable
 
         public Control? CurrentPage
         {
-            get => currentPage;
+            get => pageContainer.Content;
             set
             {
-                if (currentPage != null)
-                {
-                    pageContainer.Controls.Remove(currentPage);
-                }
-
-                currentPage = value;
-
-                if (currentPage != null)
-                {
-                    pageContainer.Controls.Add(currentPage);
-                }
+                pageContainer.Content = value;
             }
         }
 
@@ -185,10 +174,10 @@ sealed class ConfigUI : IDisposable
 
         private void UpdateSize()
         {
-            Size = this.DpiScale(new Size(600, 600));
+            MinimumSize = this.DpiScale(new Size(600, 400));
         }
 
-        private Panel Init(CompositeDisposable uiDisposable)
+        private CxPanel Init(CompositeDisposable uiDisposable)
         {
             const int listWidth = 150;
             const int listItemHeight = 40;
@@ -205,18 +194,14 @@ sealed class ConfigUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
             }).DisposeWith(uiDisposable);
 
-            var container = Create<Panel>(x =>
+            var container = Create<CxPanel>(x =>
             {
                 x.Dock = DockStyle.Fill;
-                x.AutoScroll = true;
-                x.AutoSize = false;
-
-                x.LinkAs(ref pageContainer);
             });
             layout.Add(1, 0, container);
 
             layout.Add<ListBox>(0, 0, x =>
-            {
+            {               
                 x.BorderStyle = BorderStyle.None;
                 x.Width = this.DpiScale(listWidth);
                 x.DrawMode = DrawMode.OwnerDrawVariable;
@@ -339,7 +324,7 @@ sealed class ConfigUI : IDisposable
 
             this.Add(layout);
 
-            Padding = new Padding(10);
+            Padding = new Padding(10,10,5,10);
             DoubleBuffered = true;
 
             Text = "Settings";
@@ -347,7 +332,7 @@ sealed class ConfigUI : IDisposable
             MinimizeBox = false;
             ShowIcon = false;
             ShowInTaskbar = false;
-            FormBorderStyle = FormBorderStyle.FixedSingle;
+            FormBorderStyle = FormBorderStyle.Sizable;
 
             Font = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel);
             UpdateSize();
