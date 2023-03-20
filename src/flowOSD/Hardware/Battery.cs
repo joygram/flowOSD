@@ -138,11 +138,8 @@ sealed partial class Battery : IDisposable, IBattery
         }
         catch (Win32Exception)
         {
-            System.Diagnostics.Trace.WriteLine("RECONNECTING");
-
             // try to reconnect
-            batteryHandle = Init();
-            CheckHandler();
+            Reconnect();
 
             batteryStatus = GetBatteryStatus(batteryHandle!, batteryTag);
         }
@@ -153,6 +150,14 @@ sealed partial class Battery : IDisposable, IBattery
 
         var estimatedTime = GetEstimatedTime(batteryHandle!, batteryTag);
         estimatedTimeSubject.OnNext(estimatedTime);
+    }
+
+    public void Reconnect()
+    {
+        batteryHandle?.Dispose();
+
+        batteryHandle = Init();
+        CheckHandler();
     }
 
     private void CheckHandler()
