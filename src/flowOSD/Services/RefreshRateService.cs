@@ -16,11 +16,13 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
+using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using flowOSD.Api;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 namespace flowOSD.Services;
 
@@ -62,15 +64,22 @@ internal class RefreshRateService : IDisposable
             return;
         }
 
-        var refreshRates = await display.RefreshRates.FirstOrDefaultAsync();
-
-        if (powerSource == PowerSource.Battery)
-        {            
-            display.SetRefreshRate(refreshRates?.Low);
-        }
-        else
+        try
         {
-            display.SetRefreshRate(refreshRates?.High);
+            var refreshRates = await display.RefreshRates.FirstOrDefaultAsync();
+
+            if (powerSource == PowerSource.Battery)
+            {
+                display.SetRefreshRate(refreshRates?.Low);
+            }
+            else
+            {
+                display.SetRefreshRate(refreshRates?.High);
+            }
+        }
+        catch (Win32Exception ex)
+        {
+            TraceException(ex, "RefreshRateService");
         }
     }
 }

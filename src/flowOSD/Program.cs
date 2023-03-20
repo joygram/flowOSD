@@ -26,8 +26,6 @@ using static flowOSD.Extensions.Common;
 
 public static class Program
 {
-    static TextWriterTraceListener? listener;
-
     [STAThread]
     static void Main()
     {
@@ -41,7 +39,7 @@ public static class Program
         var disposable = new CompositeDisposable();
         var config = new Config().DisposeWith(disposable);
 
-        listener = default(TextWriterTraceListener);
+        var listener = default(TextWriterTraceListener);
 
         try
         {
@@ -51,8 +49,6 @@ public static class Program
             Trace.Listeners.Add(listener);
 #endif
             listener?.DisposeWith(disposable);
-
-            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             Application.EnableVisualStyles();
@@ -77,11 +73,5 @@ public static class Program
 
             disposable.Dispose();
         }
-    }
-
-    private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
-    {
-        TraceException(e.ExceptionObject as Exception, "AppDomain Failure");
-        listener?.Flush();
     }
 }
