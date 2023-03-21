@@ -24,5 +24,5 @@ public enum TabletMode
     Notebook = 0,
     Tablet = 1,
     Tent = 2,
-    MustNot = 3,
+    Rotated = 3,
 }

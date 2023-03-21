@@ -81,7 +81,17 @@ sealed class AtkWmi : IDisposable, IAtkWmi
         {
             case AK_TABLET_STATE:
                 {
-                    tabletModeSubject.OnNext(GetTabletMode());
+                    var tabletMode = GetTabletMode();
+
+                    // Ignore rotated mode:
+                    // - it reasonable in tablet mode (no touchpad manipulation is required)
+                    // - it annoying when notebook mode (when device is tilted)
+
+                    if (tabletMode != Api.Hardware.TabletMode.Rotated)
+                    {
+                        tabletModeSubject.OnNext(tabletMode);
+                    }
+
                     break;
                 }
             case AK_CHARGER:
