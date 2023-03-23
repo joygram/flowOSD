@@ -26,6 +26,7 @@ using System.Runtime.InteropServices;
 using flowOSD.Api;
 using static Native;
 using static Extensions;
+using System.Management;
 
 sealed partial class Display : IDisposable, IDisplay
 {
@@ -235,6 +236,12 @@ sealed partial class Display : IDisposable, IDisplay
 
     private string GetLaptopDisplayAdapterDeviceName()
     {
+        var shortDeviceName = GetInternalDisplayShortDeviceName();
+        if (shortDeviceName == null)
+        {
+            return null;
+        }
+
         const int DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x1;
 
         var displayAdapter = new DISPLAY_DEVICE();
@@ -250,7 +257,7 @@ sealed partial class Display : IDisposable, IDisplay
             while (EnumDisplayDevices(displayAdapter.DeviceName, displayMonitorNumber, ref displayMonitor, 1))
             {
                 var isAttached = (displayMonitor.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) == DISPLAY_DEVICE_ATTACHED_TO_DESKTOP;
-                if (isAttached && displayMonitor.DeviceID?.Contains("SHP151E") == true)
+                if (isAttached && displayMonitor.DeviceID?.Contains(shortDeviceName) == true)
                 {
                     return displayAdapter.DeviceName;
                 }
@@ -262,6 +269,33 @@ sealed partial class Display : IDisposable, IDisplay
         }
 
         return null;
+    }
+
+    private string GetInternalDisplayShortDeviceName()
+    {
+        const uint D3DKMDT_VOT_INTERNAL = 0x80000000;
+
+        var name = default(string[]);
+
+        var searcher = new ManagementObjectSearcher("root\\wmi", "SELECT * FROM WmiMonitorConnectionParams");
+        foreach (var i in searcher.Get())
+        {
+            if (i.Properties["VideoOutputTechnology"].Value is uint videoOutputTechnology
+                && (videoOutputTechnology & D3DKMDT_VOT_INTERNAL) == D3DKMDT_VOT_INTERNAL)
+            {
+                name = ((i.Properties["InstanceName"].Value as string) ?? string.Empty).Split('\\');
+                break;
+            }
+        }
+
+        if (name != null && name.Length > 1 && name[0] == "DISPLAY")
+        {
+            return $"{name[0]}#{name[1]}";
+        }
+        else
+        {
+            return null;
+        }
     }
 
     private sealed class RefreshRates
