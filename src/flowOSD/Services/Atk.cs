@@ -62,7 +62,6 @@ sealed partial class Atk : IAtk, IDisposable
     private readonly Subject<AtkKey> keyPressedSubject;
     private readonly BehaviorSubject<PerformanceMode> performanceModeSubject;
     private readonly BehaviorSubject<GpuMode> gpuModeSubject;
-    private readonly BehaviorSubject<ChargerType> chargerTypeSubject;
     private readonly BehaviorSubject<TabletMode> tabletModeSubject;
 
     private IntPtr handle;
@@ -101,13 +100,11 @@ sealed partial class Atk : IAtk, IDisposable
         keyPressedSubject = new Subject<AtkKey>();
         performanceModeSubject = new BehaviorSubject<PerformanceMode>(performanceMode);
         gpuModeSubject = new BehaviorSubject<GpuMode>((GpuMode)Get(DEVID_GPU_ECO_MODE));
-        chargerTypeSubject = new BehaviorSubject<ChargerType>(GetChargerType());
         tabletModeSubject = new BehaviorSubject<TabletMode>(GetTabletMode());
 
         KeyPressed = keyPressedSubject.Throttle(TimeSpan.FromMilliseconds(5)).AsObservable();
         PerformanceMode = performanceModeSubject.AsObservable();
         GpuMode = gpuModeSubject.AsObservable();
-        ChargerType = chargerTypeSubject.AsObservable();
         TabletMode = tabletModeSubject.AsObservable();
 
         messageQueue.Subscribe(WM_ACPI, ProcessMessage).DisposeWith(disposable);
@@ -131,8 +128,6 @@ sealed partial class Atk : IAtk, IDisposable
     public IObservable<PerformanceMode> PerformanceMode { get; }
 
     public IObservable<GpuMode> GpuMode { get; }
-
-    public IObservable<ChargerType> ChargerType { get; }
 
     public IObservable<TabletMode> TabletMode { get; }
 
@@ -195,11 +190,7 @@ sealed partial class Atk : IAtk, IDisposable
             if (code == AK_TABLET_STATE)
             {
                 tabletModeSubject.OnNext(GetTabletMode());
-            }
-            else if (code == AK_CHARGER)
-            {
-                chargerTypeSubject.OnNext(GetChargerType());
-            }
+            }           
             else if (codeToKey.ContainsKey(code))
             {
                 keyPressedSubject.OnNext(codeToKey[code]);
@@ -239,23 +230,5 @@ sealed partial class Atk : IAtk, IDisposable
     private TabletMode GetTabletMode()
     {
         return (TabletMode)Get(DEVID_TABLET);
-    }
-
-    private ChargerType GetChargerType()
-    {
-        switch (Get(DEVID_CHARGER))
-        {
-            case POWER_SOURCE_BATTERY:
-                return Api.ChargerType.None;
-
-            case POWER_SOURCE_LOW:
-                return Api.ChargerType.LowPower;
-
-            case POWER_SOURCE_FULL:
-                return Api.ChargerType.FullPower;
-
-            default:
-                throw new NotSupportedException("Charger type isn't supported");
-        }
     }
 }

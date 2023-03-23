@@ -26,8 +26,6 @@ public interface IAtk
 
     IObservable<GpuMode> GpuMode { get; }
 
-    IObservable<ChargerType> ChargerType { get; }
-
     IObservable<TabletMode> TabletMode { get; }
 
     int Get(uint deviceId);
