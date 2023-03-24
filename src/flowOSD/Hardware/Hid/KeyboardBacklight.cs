@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 using flowOSD.Api;
 using flowOSD.Api.Hardware;
 
-namespace flowOSD.Hardware;
+namespace flowOSD.Hardware.Hid;
 
 sealed class KeyboardBacklight : IKeyboardBacklight
 {

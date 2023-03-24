@@ -64,6 +64,12 @@ static class Common
         return obj;
     }
 
+    public static void TraceWarning(string message)
+    {
+        Trace.WriteLine($"{DateTime.Now} WARNING: {message}");
+        Trace.Flush();
+    }
+
     public static void TraceException(Exception? ex, string message)
     {
         Trace.WriteLine($"{DateTime.Now} EXCEPTION: {message}");

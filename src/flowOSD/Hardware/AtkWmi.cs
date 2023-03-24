@@ -26,7 +26,7 @@ using flowOSD.Extensions;
 
 namespace flowOSD.Hardware;
 
-sealed class AtkWmi : IDisposable, IAtkWmi
+sealed class AtkWmi : IDisposable, IAtkWmi, IKeyboard
 {
     private const int AK_TABLET_STATE = 0xBD;
     private const int AK_CHARGER = 0x7B;
@@ -38,21 +38,24 @@ sealed class AtkWmi : IDisposable, IAtkWmi
     private const int POWER_SOURCE_LOW = 0x22;
     private const int POWER_SOURCE_FULL = 0x2A;
 
-    private Atk atk;
+    private IAtk atk;
 
     private ManagementEventWatcher? watcher;
     private readonly BehaviorSubject<ChargerType> chargerTypeSubject;
     private readonly BehaviorSubject<TabletMode> tabletModeSubject;
+    private Subject<AtkKey> keyPressedSubject;
 
-    public AtkWmi(Atk atk)
+    public AtkWmi(IAtk atk)
     {
         this.atk = atk ?? throw new ArgumentNullException(nameof(atk));
 
         chargerTypeSubject = new BehaviorSubject<ChargerType>(GetChargerType());
         tabletModeSubject = new BehaviorSubject<TabletMode>(GetTabletMode());
+        keyPressedSubject = new Subject<AtkKey>();
 
         ChargerType = chargerTypeSubject.AsObservable();
         TabletMode = tabletModeSubject.AsObservable();
+        KeyPressed = keyPressedSubject.AsObservable();
 
         watcher = new ManagementEventWatcher("root\\wmi", "SELECT * FROM AsusAtkWmiEvent");
         watcher.EventArrived += OnWmiEvent;
@@ -69,11 +72,21 @@ sealed class AtkWmi : IDisposable, IAtkWmi
 
     public IObservable<TabletMode> TabletMode { get; }
 
+    IObservable<uint> IKeyboard.Activity { get; } = Observable.Empty<uint>();
+
+    public IObservable<AtkKey> KeyPressed { get; }
+
     private void OnWmiEvent(object sender, EventArrivedEventArgs e)
     {
         var v = e.NewEvent.Properties.FirstOrDefault<PropertyData>(x => x.Name == "EventID")?.Value;
         if (v is not uint code)
         {
+            return;
+        }
+
+        if (code >= byte.MinValue && code <= byte.MaxValue && Enum.IsDefined(typeof(AtkKey), (byte)code))
+        {
+            keyPressedSubject.OnNext((AtkKey)code);
             return;
         }
 

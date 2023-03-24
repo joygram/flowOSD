@@ -16,70 +16,52 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Hardware;
+namespace flowOSD.Hardware.Optimization;
 
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Runtime.InteropServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using Microsoft.Win32;
 using static flowOSD.Native.User32;
-using static flowOSD.Native.Messages;
-using flowOSD.Api.Hardware;
-using System.Management;
-using System.Security.Principal;
 
-sealed class TouchPad : IDisposable, ITouchPad
+sealed class TouchPad : ITouchPad, IDisposable
 {
-    public const int FEATURE_KBD_REPORT_ID = 0x5a;
+    private static int WM_TOUCHPAD = RegisterWindowMessage("Touchpad status reported from ATKHotkey");
 
     private const string TOUCHPAD_STATE_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad\Status";
     private const string TOUCHPAD_STATE_VALUE = "Enabled";
 
     private CompositeDisposable? disposable = new CompositeDisposable();
 
-    private HidDevice device;
-
-    private ManagementEventWatcher watcher;
     private BehaviorSubject<DeviceState> stateSubject;
+    private IMessageQueue messageQueue;
+    private IKeysSender keysSender;
 
-    public TouchPad(HidDevice device)
+    public TouchPad(IMessageQueue messageQueue, IKeysSender keysSender)
     {
-        this.device = device ?? throw new ArgumentNullException(nameof(device));
+        this.messageQueue = messageQueue ?? throw new ArgumentNullException(nameof(messageQueue));
+        this.keysSender = keysSender ?? throw new ArgumentNullException(nameof(keysSender));
 
         stateSubject = new BehaviorSubject<DeviceState>(GetState());
         State = stateSubject.AsObservable();
 
-        var sid = WindowsIdentity.GetCurrent().User;
-        var query = "SELECT * FROM RegistryValueChangeEvent WHERE Hive='HKEY_USERS' " +
-            $"AND KeyPath='{sid}\\\\{TOUCHPAD_STATE_KEY.Replace("\\", "\\\\")}' AND ValueName='{TOUCHPAD_STATE_VALUE}'";
-
-        watcher = new ManagementEventWatcher(query);
-        watcher.EventArrived += OnWmiEvent;
-        watcher.Start();
+        this.messageQueue.Subscribe(WM_TOUCHPAD, ProcessMessage).DisposeWith(disposable);
     }
 
     public IObservable<DeviceState> State { get; }
 
     public void Toggle()
     {
-        var isOk = WriteToggle();
+        keysSender.SendKeys(Keys.F24, Keys.ControlKey, Keys.LWin);
     }
 
     public void Dispose()
     {
         disposable?.Dispose();
         disposable = null;
-    }
-
-    private bool WriteToggle()
-    {
-        return device.WriteFeatureData(
-            FEATURE_KBD_REPORT_ID,
-            0xf4,
-            0x6b);
     }
 
     private DeviceState GetState()
@@ -92,8 +74,11 @@ sealed class TouchPad : IDisposable, ITouchPad
         }
     }
 
-    private void OnWmiEvent(object sender, EventArrivedEventArgs e)
+    private void ProcessMessage(int messageId, IntPtr wParam, IntPtr lParam)
     {
-        stateSubject.OnNext(GetState());
+        if (messageId == WM_TOUCHPAD)
+        {
+            stateSubject.OnNext((int)lParam == 1 ? DeviceState.Enabled : DeviceState.Disabled);
+        }
     }
 }

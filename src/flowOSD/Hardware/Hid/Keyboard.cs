@@ -21,9 +21,10 @@ using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using flowOSD.Api;
 using flowOSD.Api.Hardware;
+using static flowOSD.Extensions.Common;
 using static flowOSD.Native.Kernel32;
 
-namespace flowOSD.Hardware;
+namespace flowOSD.Hardware.Hid;
 
 sealed class Keyboard : IDisposable, IKeyboard
 {
@@ -48,19 +49,26 @@ sealed class Keyboard : IDisposable, IKeyboard
 
         Task.Factory.StartNew(async () =>
         {
-            while (!cancellationTokenSource.Token.IsCancellationRequested)
+            try
             {
-                var data = await this.device.ReadDataAsync(cancellationTokenSource.Token);
-
-                if (data.Length > 1)
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
                 {
-                    activitySubject.OnNext(GetTickCount());
-                }
+                    var data = await this.device.ReadDataAsync(cancellationTokenSource.Token);
 
-                if (data.Length > 1 && data[0] == FEATURE_KBD_REPORT_ID && Enum.IsDefined(typeof(AtkKey), data[1]))
-                {
-                    keyPressedSubject.OnNext((AtkKey)data[1]);
+                    if (data.Length > 1)
+                    {
+                        activitySubject.OnNext(GetTickCount());
+                    }
+
+                    if (data.Length > 1 && data[0] == FEATURE_KBD_REPORT_ID && Enum.IsDefined(typeof(AtkKey), data[1]))
+                    {
+                        keyPressedSubject.OnNext((AtkKey)data[1]);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                TraceException(ex, "Keyboard listener exception");
             }
         });
     }

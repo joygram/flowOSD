@@ -29,4 +29,6 @@ public interface IConfig
     FileVersionInfo AppFileInfo { get; }
 
     DirectoryInfo DataDirectory { get; }
+
+    bool UseOptimizationMode { get; }
 }

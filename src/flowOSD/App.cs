@@ -55,7 +55,8 @@ sealed partial class App : IDisposable
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
         messageQueue = new MessageQueue().DisposeWith(disposable);
-        hardwareService = new HardwareService(config, messageQueue).DisposeWith(disposable);
+        keysSender = new KeysSender();
+        hardwareService = new HardwareService(config, messageQueue, keysSender).DisposeWith(disposable);
 
         systemEvents = new SystemEvents(messageQueue).DisposeWith(disposable);
         systemEvents.AppException
@@ -65,7 +66,6 @@ sealed partial class App : IDisposable
                 MessageBox.Show(ex.Message, "Unhandled application exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
             })
             .DisposeWith(disposable);
-        keysSender = new KeysSender();
 
         // Notifications
 
@@ -79,7 +79,7 @@ sealed partial class App : IDisposable
             hardwareService,
             keysSender,
             systemEvents);
-        
+
         mainUI = new MainUI(
             config,
             systemEvents,

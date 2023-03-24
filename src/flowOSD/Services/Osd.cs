@@ -148,6 +148,7 @@ sealed partial class Osd : IOsd, IDisposable
             Opacity = 1;
             Invalidate();
             ShowWindow(Handle, SW_SHOWNOACTIVATE);
+            BringWindowToTop(Handle);
 
             hideTimer = Observable
                 .Timer(DateTimeOffset.Now.AddMilliseconds(Parameters.Timeout), TimeSpan.FromMilliseconds(500 / 16))
