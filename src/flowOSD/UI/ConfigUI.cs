@@ -333,7 +333,7 @@ sealed class ConfigUI : IDisposable
             MinimizeBox = false;
             ShowIcon = false;
             ShowInTaskbar = false;
-            FormBorderStyle = FormBorderStyle.Sizable;
+            FormBorderStyle = FormBorderStyle.FixedSingle;
 
             Font = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel);
             UpdateSize();
