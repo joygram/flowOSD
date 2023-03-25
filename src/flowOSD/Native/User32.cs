@@ -160,7 +160,7 @@ static class User32
     [DllImport(nameof(User32), SetLastError = true)]
     public static extern int SendMessage(
         IntPtr hWnd,
-        uint wMsg,
+        int wMsg,
         IntPtr wParam,
         IntPtr lParam);
 
@@ -194,11 +194,11 @@ static class User32
         IntPtr hWnd);
 
     [DllImport(nameof(User32), SetLastError = true)]
-    private static extern IntPtr FindWindowEx(
+    public static extern IntPtr FindWindowEx(
         IntPtr parentHandle,
         IntPtr hWndChildAfter,
         string className,
-        string windowTitle);
+        string? windowTitle);
 
     [DllImport(nameof(User32), SetLastError = true)]
     public static extern bool AttachThreadInput(

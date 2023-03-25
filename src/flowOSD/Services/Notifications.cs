@@ -29,9 +29,12 @@ using flowOSD.UI;
 using flowOSD.UI.Commands;
 using flowOSD.UI.Components;
 using static flowOSD.Extensions.Common;
+using static flowOSD.Native.User32;
 
 sealed class Notifications : IDisposable
 {
+    private static int WM_SHELLHOOK = RegisterWindowMessage("SHELLHOOK");
+
     private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
@@ -139,9 +142,10 @@ sealed class Notifications : IDisposable
 
         keyboard.KeyPressed
             .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
+            .CombineLatest(keyboardBacklight.Level, (key, level) => new { key, level })
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(ShowKeyboardBacklightNotification)
+            .Subscribe(x => ShowKeyboardBacklightNotification(x.key, x.level))
             .DisposeWith(disposable);
 
         // Screen brightness
@@ -166,24 +170,33 @@ sealed class Notifications : IDisposable
             .DisposeWith(disposable);
     }
 
-    private async void ShowKeyboardBacklightNotification(AtkKey key)
+    private void ShowKeyboardBacklightNotification(AtkKey key, KeyboardBacklightLevel backlightLevel)
     {
         var icon = key == AtkKey.BacklightDown
             ? UIImages.Hardware_KeyboardLightDown
             : UIImages.Hardware_KeyboardLightUp;
-
-        var backlightLevel = await keyboardBacklight.Level.FirstOrDefaultAsync();
 
         osd.Show(new OsdData(icon, (float)backlightLevel / (float)KeyboardBacklightLevel.High));
     }
 
     private void ShowDisplayBrightnessNotification(AtkKey key)
     {
-        var icon = key == AtkKey.BacklightDown
-            ? UIImages.Hardware_BrightnessDown
-            : UIImages.Hardware_BrightnessUp;
+        //var icon = key == AtkKey.BacklightDown
+        //    ? UIImages.Hardware_BrightnessDown
+        //    : UIImages.Hardware_BrightnessUp;
 
-        osd.Show(new OsdData(icon, displayBrightness.GetLevel()));
+        //osd.Show(new OsdData(icon, displayBrightness.GetLevel()));
+
+        var hostHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Shell_TrayWnd", "");
+        if (hostHandle > 0 && (hostHandle = FindWindowEx(hostHandle, IntPtr.Zero, "ReBarWindow32", "")) >0)
+        {
+            var shellHandle = FindWindowEx(hostHandle, IntPtr.Zero, "MSTaskSwWClass", null);
+            if (shellHandle > 0)
+            {
+                SendMessage(shellHandle, WM_SHELLHOOK, 0x37, 0);
+            }
+        }
+
     }
 
     private void ShowMicNotification()
