@@ -28,7 +28,7 @@ public enum AtkKey : byte
     Aura = 0xb3,
     Fan = 0xae,
     BrightnessDown = 0x10,
-    BrightnewssUp = 0x20,
+    BrightnessUp = 0x20,
     TouchPad = 0x6b,
     Sleep = 0x6c,
     Wireless = 0x88,

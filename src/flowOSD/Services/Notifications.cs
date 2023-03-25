@@ -139,18 +139,22 @@ sealed class Notifications : IDisposable
 
         keyboard.KeyPressed
             .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
-            .CombineLatest(keyboardBacklight.Level, (key, level) => new { key, level })
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(x => ShowKeyboardBacklightNotification(x.key, x.level))
+            .Subscribe(ShowKeyboardBacklightNotification)
             .DisposeWith(disposable);
 
-        keyboard.KeyPressed
-            .Where(x => x == AtkKey.BrightnessDown || x == AtkKey.BrightnewssUp)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(ShowDisplayBrightnessNotification)
-            .DisposeWith(disposable);
+        // Screen brightness
+
+        if (!config.UseOptimizationMode)
+        {
+            keyboard.KeyPressed
+                .Where(x => x == AtkKey.BrightnessDown || x == AtkKey.BrightnessUp)
+                .Throttle(TimeSpan.FromMilliseconds(50))
+                .ObserveOn(SynchronizationContext.Current!)
+                .Subscribe(ShowDisplayBrightnessNotification)
+                .DisposeWith(disposable);
+        }
 
         // Mic Status
 
@@ -162,11 +166,13 @@ sealed class Notifications : IDisposable
             .DisposeWith(disposable);
     }
 
-    private void ShowKeyboardBacklightNotification(AtkKey key, KeyboardBacklightLevel backlightLevel)
+    private async void ShowKeyboardBacklightNotification(AtkKey key)
     {
         var icon = key == AtkKey.BacklightDown
             ? UIImages.Hardware_KeyboardLightDown
             : UIImages.Hardware_KeyboardLightUp;
+
+        var backlightLevel = await keyboardBacklight.Level.FirstOrDefaultAsync();
 
         osd.Show(new OsdData(icon, (float)backlightLevel / (float)KeyboardBacklightLevel.High));
     }

@@ -34,6 +34,8 @@ sealed class Keyboard : IDisposable, IKeyboard
 
     private CancellationTokenSource? cancellationTokenSource = new CancellationTokenSource();
 
+    private readonly Task keyboardReader;
+
     private Subject<uint> activitySubject;
     private Subject<AtkKey> keyPressedSubject;
 
@@ -47,7 +49,7 @@ sealed class Keyboard : IDisposable, IKeyboard
         Activity = activitySubject.AsObservable();
         KeyPressed = keyPressedSubject.AsObservable();
 
-        Task.Factory.StartNew(async () =>
+        keyboardReader = Task.Factory.StartNew(async () =>
         {
             try
             {

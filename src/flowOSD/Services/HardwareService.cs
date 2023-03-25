@@ -120,11 +120,10 @@ sealed class HardwareService : IDisposable, IHardwareService
            .Subscribe(_ => OnResume())
            .DisposeWith(disposable);
 
-        touchPad.State
-            .CombineLatest(atkWmi.TabletMode, (touchPadState, tabletMode) => new { touchPadState, tabletMode })
+        atkWmi.TabletMode
             .Throttle(TimeSpan.FromMicroseconds(2000))
             .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(x => UpdateTouchPad(x.touchPadState, x.tabletMode))
+            .Subscribe(UpdateTouchPad)
             .DisposeWith(disposable);
 
         if (!config.UseOptimizationMode)
@@ -150,7 +149,7 @@ sealed class HardwareService : IDisposable, IHardwareService
                 .DisposeWith(disposable);
 
             keyboard.KeyPressed
-                .Where(x => x == AtkKey.BrightnewssUp)
+                .Where(x => x == AtkKey.BrightnessUp)
                 .ObserveOn(SynchronizationContext.Current!)
                 .Subscribe(x => displayBrightness.LevelUp())
                 .DisposeWith(disposable);
@@ -259,12 +258,14 @@ sealed class HardwareService : IDisposable, IHardwareService
 #endif
     }
 
-    private void UpdateTouchPad(DeviceState touchPadState, TabletMode tabletMode)
+    private async void UpdateTouchPad(TabletMode tabletMode)
     {
         if (!config.UserConfig.DisableTouchPadInTabletMode)
         {
             return;
         }
+
+        var touchPadState = await touchPad.State.FirstOrDefaultAsync();
 
         if (tabletMode == TabletMode.Notebook && touchPadState == DeviceState.Disabled)
         {
