@@ -30,14 +30,21 @@ sealed class CommandService : ICommandService
     private IConfig config;
     private IHardwareService hardwareService;
     private IKeysSender keysSender;
+    private IUpdater updater;
 
     private Dictionary<string, CommandBase> names = new Dictionary<string, CommandBase>();
 
-    public CommandService(IConfig config, IHardwareService hardwareService, IKeysSender keysSender, ISystemEvents systemEvents)
+    public CommandService(
+        IConfig config, 
+        IHardwareService hardwareService, 
+        IKeysSender keysSender, 
+        ISystemEvents systemEvents, 
+        IUpdater updater)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.hardwareService = hardwareService ?? throw new ArgumentNullException(nameof(hardwareService));
         this.keysSender = keysSender ?? throw new ArgumentNullException(nameof(keysSender));
+        this.updater = updater ?? throw new ArgumentNullException(nameof(updater));
 
         Register(
             new DisplayRefreshRateCommand(
@@ -53,7 +60,8 @@ sealed class CommandService : ICommandService
             new ExitCommand(),
             new PrintScreenCommand(keysSender),
             new ClipboardCopyPlainTextCommand(keysSender),
-            new ClipboardPastePlainTextCommand(keysSender)
+            new ClipboardPastePlainTextCommand(keysSender),
+            new CheckUpdateCommand(updater)
         );
     }
 

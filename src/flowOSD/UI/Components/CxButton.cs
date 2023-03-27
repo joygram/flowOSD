@@ -25,7 +25,7 @@ using System.ComponentModel;
 using static flowOSD.Extensions.Drawing;
 using flowOSD.Extensions;
 
-internal sealed class CxButton : CxButtonBase
+internal sealed class CxButton : CxButtonBase, IButtonControl
 {
     private const float TEXT_HOVER = 0;
     private const float TEXT_PRESSED = -.1f;
@@ -208,7 +208,17 @@ internal sealed class CxButton : CxButtonBase
         }
     }
 
+    public DialogResult DialogResult { get; set; }
+
     private bool IsDropDownToggle => DropDownMenu != null && IsToggle;
+
+    public void NotifyDefault(bool value)
+    { }
+
+    public void PerformClick()
+    {
+        OnClick(EventArgs.Empty);
+    }
 
     public override Size GetPreferredSize(Size proposedSize)
     {

@@ -20,6 +20,8 @@ namespace flowOSD.Api;
 
 public static class UIImages
 {
+    public static string Updater = "\ue895";
+
     public static string Temperature = "\ue9ca";
 
     public static string Settings = "\ue713";

@@ -18,25 +18,17 @@
  */
 namespace flowOSD.Api;
 
-using System.Diagnostics;
-
-public interface IConfig
+public interface IUpdater
 {
-    UserConfig UserConfig { get; }
+    IObservable<Version> LatestVersion { get; }
 
-    FileInfo AppFile { get; }
+    Task CheckUpdate(bool notifyNoUpdate);
 
-    FileVersionInfo AppFileInfo { get; }
+    Task<bool> Download(Version version, IProgress<int> progress, CancellationToken cancellationToken = default);
 
-    DirectoryInfo DataDirectory { get; }
+    void Install(Version version);
 
-    bool UseOptimizationMode { get; }
+    bool IsUpdate(Version version);
 
-    bool IsPreRelease { get; }
-
-    string ProductName { get; }
-
-    string ProductVersion { get; }
-
-    Version FileVersion { get; }
+    string GetReleaseNotesLink();
 }

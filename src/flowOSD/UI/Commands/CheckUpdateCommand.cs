@@ -16,27 +16,34 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api;
 
-using System.Diagnostics;
+namespace flowOSD.UI.Commands;
 
-public interface IConfig
+using System.ComponentModel;
+using System.Reactive.Disposables;
+using System.Runtime.CompilerServices;
+using flowOSD.Api;
+
+sealed class CheckUpdateCommand : CommandBase
 {
-    UserConfig UserConfig { get; }
+    private IUpdater updater;
 
-    FileInfo AppFile { get; }
+    public CheckUpdateCommand(IUpdater updater)
+    {
+        this.updater = updater ?? throw new ArgumentNullException(nameof(updater));
 
-    FileVersionInfo AppFileInfo { get; }
+        Text = "Check for updates";
+        Enabled = true;
+    }
 
-    DirectoryInfo DataDirectory { get; }
+    public override string Name => nameof(CheckUpdateCommand);
 
-    bool UseOptimizationMode { get; }
+    public override bool CanExecuteWithHotKey => false;
 
-    bool IsPreRelease { get; }
-
-    string ProductName { get; }
-
-    string ProductVersion { get; }
-
-    Version FileVersion { get; }
+    public override async void Execute(object? parameter = null)
+    {
+        Enabled = false;
+        await updater.CheckUpdate(true);
+        Enabled = true;
+    }
 }

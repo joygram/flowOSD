@@ -43,6 +43,30 @@ static class Common
         return default;
     }
 
+    public static async Task CopyToAsync(this Stream source, Stream destination, uint bufferSize, IProgress<long>? progress = null, CancellationToken cancellationToken = default)
+    {
+        if (source == null || !source.CanRead)
+        {
+            throw new ArgumentException(source == null?"Must be not null":"Must be readable", nameof(source));
+        }
+
+        if (destination == null || !destination.CanWrite)
+        {
+            throw new ArgumentException(destination == null ? "Must be not null" : "Must be writable", nameof(destination));
+        }
+
+        var buffer = new byte[bufferSize];
+        var totalBytesRead = 0L;
+        
+        int bytesRead;
+        while ((bytesRead = await source.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) != 0)
+        {
+            await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+            totalBytesRead += bytesRead;
+            progress?.Report(totalBytesRead);
+        }
+    }
+
     public static T DisposeWith<T>(this T obj, CompositeDisposable compositeDisposable) where T : IDisposable
     {
         compositeDisposable.Add(obj);

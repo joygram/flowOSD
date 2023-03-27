@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using flowOSD.Api;
 using flowOSD.Extensions;
 using Microsoft.Win32;
@@ -39,10 +40,15 @@ sealed class Config : IConfig, IDisposable
         AppFile = new FileInfo(typeof(Config).Assembly.Location);
         AppFileInfo = FileVersionInfo.GetVersionInfo(AppFile.FullName);
 
-        if (string.IsNullOrEmpty(AppFileInfo.ProductName))
-        {
-            throw new ApplicationException("Product Name isn't set");
-        }
+        ProductName = AppFileInfo.ProductName ?? throw new ApplicationException("Product Name isn't set");
+        ProductVersion = AppFileInfo.ProductVersion ?? throw new ApplicationException("Product Version isn't set");
+        FileVersion = new Version(
+            AppFileInfo.FileMajorPart,
+            AppFileInfo.FileMinorPart,
+            AppFileInfo.FileBuildPart,
+            AppFileInfo.FilePrivatePart);
+
+        IsPreRelease = Regex.IsMatch(ProductVersion, "[a-zA-Z]");
 
         DataDirectory = new DirectoryInfo(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -92,6 +98,14 @@ sealed class Config : IConfig, IDisposable
     public DirectoryInfo DataDirectory { get; }
 
     public bool UseOptimizationMode => false;
+
+    public bool IsPreRelease { get; }
+
+    public string ProductName { get; }
+
+    public string ProductVersion { get; }
+
+    public Version FileVersion { get; }
 
     private UserConfig Load()
     {

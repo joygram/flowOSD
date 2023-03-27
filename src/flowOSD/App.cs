@@ -36,6 +36,7 @@ sealed partial class App : IDisposable
     private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
+    private IUpdater updater;
 
     private MessageQueue messageQueue;
     private SystemEvents systemEvents;
@@ -51,6 +52,7 @@ sealed partial class App : IDisposable
     {
         this.config = config;
 
+        updater = new Updater(config);
 
         ApplicationContext = new ApplicationContext().DisposeWith(disposable);
 
@@ -78,7 +80,8 @@ sealed partial class App : IDisposable
             config,
             hardwareService,
             keysSender,
-            systemEvents);
+            systemEvents,
+            updater);
 
         mainUI = new MainUI(
             config,
@@ -99,6 +102,12 @@ sealed partial class App : IDisposable
             config,
             commandService,
             hardwareService.ResolveNotNull<IKeyboard>()).DisposeWith(disposable);
+
+        updater.LatestVersion
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(Update)
+            .DisposeWith(disposable);
+        updater.CheckUpdate(false);
     }
 
     void IDisposable.Dispose()
@@ -107,7 +116,12 @@ sealed partial class App : IDisposable
         disposable = null;
     }
 
-
-
     public ApplicationContext ApplicationContext { get; }
+
+    private void Update(Version version)
+    {
+        var ui = new UpdaterUI(config, systemEvents, updater).DisposeWith(disposable!);
+
+        ui.Show(version, updater.IsUpdate(version));
+    }
 }
