@@ -24,6 +24,7 @@ using System.Reactive.Linq;
 using flowOSD.Api;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 sealed class Cpu : IDisposable, ICpu
 {
@@ -34,8 +35,21 @@ sealed class Cpu : IDisposable, ICpu
 
     public Cpu()
     {
-        temperatureSubject = new CountableSubject<uint>(GetTemperature());
+        try
+        {
+            temperatureSubject = new CountableSubject<uint>(GetTemperature());
+        }
+        catch (Exception ex)
+        {
+            Temperature = Observable.Empty<uint>();
+            IsAvailable = false;
+
+            TraceException(ex, "CPU Temperature");
+            return;
+        }
+
         Temperature = temperatureSubject.AsObservable();
+        IsAvailable = true;
 
         temperatureSubject.Count
             .Subscribe(sum =>
@@ -54,6 +68,8 @@ sealed class Cpu : IDisposable, ICpu
             .DisposeWith(disposable);
     }
 
+    public bool IsAvailable { get; }
+
     public IObservable<uint> Temperature { get; }
 
     public void Dispose()
@@ -67,7 +83,7 @@ sealed class Cpu : IDisposable, ICpu
 
     private void UpdateTemperature()
     {
-        temperatureSubject.OnNext(GetTemperature());
+        temperatureSubject?.OnNext(GetTemperature());
     }
 
     private uint GetTemperature()

@@ -29,6 +29,7 @@ using flowOSD.UI.Components;
 using flowOSD.UI.ConfigPages;
 using static flowOSD.Extensions.Forms;
 using static flowOSD.Extensions.Common;
+using flowOSD.Api.Hardware;
 
 sealed class ConfigUI : IDisposable
 {
@@ -38,12 +39,14 @@ sealed class ConfigUI : IDisposable
     private IConfig config;
     private ICommandService commandService;
     private ISystemEvents systemEvents;
+    private IHardwareService hardwareService;
 
-    public ConfigUI(IConfig config, ICommandService commandService, ISystemEvents systemEvents)
+    public ConfigUI(IConfig config, ICommandService commandService, ISystemEvents systemEvents, IHardwareService hardwareService)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
-        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
+        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents)); 
+        this.hardwareService = hardwareService ?? throw new ArgumentNullException(nameof(hardwareService));
 
         systemEvents?.AppUI
             .Subscribe(x => instance?.UpdateUI(x))
@@ -75,7 +78,7 @@ sealed class ConfigUI : IDisposable
                 new ConfigPages.GeneralConfigPage(config, tabListener),
                 new ConfigPages.NotificationsConfigPage(config, tabListener),
                 new ConfigPages.HotKeysConfigPage(config, tabListener, commandService),
-                new ConfigPages.MonitoringConfigPage(config, tabListener));
+                new ConfigPages.MonitoringConfigPage(config, tabListener, hardwareService.Resolve<ICpu>()));
 
             instance.UpdateUI(await systemEvents.AppUI.FirstOrDefaultAsync());
             instance.Show();

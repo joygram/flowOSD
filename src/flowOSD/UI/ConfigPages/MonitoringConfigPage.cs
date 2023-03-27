@@ -19,12 +19,13 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
 using flowOSD.UI.Components;
 using System.Reactive.Disposables;
 
 internal class MonitoringConfigPage : ConfigPageBase
 {
-    public MonitoringConfigPage(IConfig config, CxTabListener tabListener)
+    public MonitoringConfigPage(IConfig config, CxTabListener tabListener, ICpu? cpu)
         : base(config, tabListener)
     {
         Text = "Monitoring";
@@ -34,9 +35,12 @@ internal class MonitoringConfigPage : ConfigPageBase
             "Show battery charge rate",
             nameof(UserConfig.ShowBatteryChargeRate));
 
-        AddConfig(
-            UIImages.Temperature,
-            "Show CPU temperature",
-            nameof(UserConfig.ShowCpuTemperature));
+        if (cpu?.IsAvailable == true)
+        {
+            AddConfig(
+                UIImages.Temperature,
+                "Show CPU temperature",
+                nameof(UserConfig.ShowCpuTemperature));
+        }
     }
 }

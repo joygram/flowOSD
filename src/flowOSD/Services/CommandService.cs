@@ -56,7 +56,7 @@ sealed class CommandService : ICommandService
             new ToggleGpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),
             new PerformanceModeCommand(hardwareService.ResolveNotNull<IAtk>()),
             new PowerModeCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
-            new SettingsCommand(config, this, systemEvents),
+            new SettingsCommand(config, this, systemEvents, hardwareService),
             new ExitCommand(),
             new PrintScreenCommand(keysSender),
             new ClipboardCopyPlainTextCommand(keysSender),

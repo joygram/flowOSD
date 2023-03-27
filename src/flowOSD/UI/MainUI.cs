@@ -229,6 +229,7 @@ sealed class MainUI : IDisposable
                 .DisposeWith(disposable!);
 
             UpdateBatteryVisiblity();
+            UpdateCpuTemperatureVisiblity();
         }
 
         public DateTime LastHide { get; set; }
@@ -462,7 +463,7 @@ sealed class MainUI : IDisposable
                     .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState, x.estimatedTime));
             }
 
-            if (owner.config.UserConfig.ShowCpuTemperature)
+            if (owner.cpu.IsAvailable && owner.config.UserConfig.ShowCpuTemperature)
             {
                 cpuTemperatureUpdate = owner.cpu.Temperature
                       .ObserveOn(SynchronizationContext.Current!)
@@ -654,7 +655,7 @@ sealed class MainUI : IDisposable
                 return;
             }
 
-            cpuTemperatureLabel.Visible = value > 0 && owner.config.UserConfig.ShowCpuTemperature;
+            cpuTemperatureLabel.Visible = value > 0 && owner.cpu.IsAvailable && owner.config.UserConfig.ShowCpuTemperature;
             cpuTemperatureLabel.Text = value == 0 ? string.Empty : $"{value} °C";
         }
 
@@ -662,7 +663,7 @@ sealed class MainUI : IDisposable
         {
             if (cpuTemperatureLabel != null)
             {
-                cpuTemperatureLabel.Visible = owner.config.UserConfig.ShowCpuTemperature;
+                cpuTemperatureLabel.Visible = owner.cpu.IsAvailable && owner.config.UserConfig.ShowCpuTemperature;
             }
         }
 

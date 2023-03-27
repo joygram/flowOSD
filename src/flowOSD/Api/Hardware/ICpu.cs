@@ -22,4 +22,6 @@ namespace flowOSD.Api.Hardware;
 public interface ICpu
 {
     IObservable<uint> Temperature { get; }
+
+    bool IsAvailable { get; }
 }
