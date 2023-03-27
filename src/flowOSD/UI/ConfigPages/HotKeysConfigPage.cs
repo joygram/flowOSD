@@ -19,63 +19,52 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Extensions;
 using flowOSD.UI.Commands;
+using flowOSD.UI.Components;
 using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using static flowOSD.Extensions.Common;
 
-internal class HotKeysConfigPage : TableLayoutPanel
+internal class HotKeysConfigPage : ConfigPageBase
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
-    private IConfig config;
-    private ICommandManager commandManager;
-    private HotKeyCommand[] hotKeyCommands;
+    private ICommandService commandService;
 
-    public HotKeysConfigPage(IConfig config, ICommandManager commandManager)
+    public HotKeysConfigPage(IConfig config, CxTabListener tabListener, ICommandService commandService)
+        : base(config, tabListener)
     {
-        Dock = DockStyle.Top;
-        AutoScroll = false;
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
-
-        this.config = config ?? throw new ArgumentNullException(nameof(config));
-        this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
-
-        var c = new List<HotKeyCommand>();
-        c.Add(new HotKeyCommand("", null));
-        c.AddRange(commandManager.Commands.Select(i => new HotKeyCommand(i.Description, i.Name)));
-        hotKeyCommands = c.ToArray();
+        this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
         Text = "HotKeys";
 
-        ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        Add("`AURA`", nameof(config.UserConfig.AuraCommand), value => config.UserConfig.AuraCommand = value);
+        Add("`FAN`", nameof(config.UserConfig.FanCommand), value => config.UserConfig.FanCommand = value);
+        Add("`ROG`", nameof(config.UserConfig.RogCommand), value => config.UserConfig.RogCommand = value);
+        Add("`Fn` + `C`", nameof(config.UserConfig.CopyCommand), value => config.UserConfig.CopyCommand = value);
+        Add("`Fn` + `V`", nameof(config.UserConfig.PasteCommand), value => config.UserConfig.PasteCommand = value);
 
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-
-        Add(0, "AURA", () => config.UserConfig.AuraCommand, value => config.UserConfig.AuraCommand = value);
-        Add(1, "FAN", () => config.UserConfig.FanCommand, value => config.UserConfig.FanCommand = value);
-        Add(2, "ROG", () => config.UserConfig.RogCommand, value => config.UserConfig.RogCommand = value);
-        Add(3, "Fn + C", () => config.UserConfig.CopyCommand, value => config.UserConfig.CopyCommand = value);
-        Add(4, "Fn + V", () => config.UserConfig.PasteCommand, value => config.UserConfig.PasteCommand = value);
-
-        this.Add<FlowLayoutPanel>(0, 5, 2, 1, x =>
+        this.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        this.Add<FlowLayoutPanel>(0, RowStyles.Count - 1, 2, 1, panel =>
         {
-            x.Dock = DockStyle.Right;
-            x.AutoSize = true;
-            x.Margin = new Padding(0);
+            panel.MouseClick += OnMouseClick;
+            panel.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            panel.AutoSize = true;
+            panel.Margin = new Padding(0, 10, 0, 5);
+            panel.Padding = new Padding(0);
+            panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            panel.AutoSize = true;
 
-            x.Add<Button>(y =>
+            panel.Add<CxButton>(x =>
             {
-                y.Text = "Disable all";
-                y.AutoSize = true;
-                y.Margin = new Padding(5, 0, 0, 0);
-                y.Click += (sender, e) =>
+                x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+                x.TabListener = TabListener;
+                x.Padding = new Padding(20, 5, 5, 5);
+                x.Margin = new Padding(-2);
+
+                x.Text = "Disable all";
+                x.AutoSize = true;
+                x.Click += (sender, e) =>
                 {
                     config.UserConfig.AuraCommand = null;
                     config.UserConfig.FanCommand = null;
@@ -85,16 +74,20 @@ internal class HotKeysConfigPage : TableLayoutPanel
                 };
             });
 
-            x.Add<Button>(y =>
+            panel.Add<CxButton>(x =>
             {
-                y.Text = "Reset";
-                y.AutoSize = true;
-                y.Margin = new Padding(5, 0, 0, 0);
-                y.Click += (sender, e) =>
+                x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+                x.TabListener = TabListener;
+                x.Padding = new Padding(20, 5, 5, 5);
+                x.Margin = new Padding(-2);
+
+                x.Text = "Reset";
+                x.AutoSize = true;
+                x.Click += (sender, e) =>
                 {
-                    config.UserConfig.AuraCommand = nameof(ToggleRefreshRateCommand);
+                    config.UserConfig.AuraCommand = nameof(DisplayRefreshRateCommand);
                     config.UserConfig.FanCommand = nameof(ToggleBoostCommand);
-                    config.UserConfig.RogCommand = nameof(PrintScreenCommand);
+                    config.UserConfig.RogCommand = nameof(MainUICommand);
                     config.UserConfig.CopyCommand = null;
                     config.UserConfig.PasteCommand = null;
                 };
@@ -102,56 +95,75 @@ internal class HotKeysConfigPage : TableLayoutPanel
         });
     }
 
-    private void Add(int row, string text, Func<string> getValue, Action<string> setValue)
+    private void Add(string text, string propertyName, Action<string?> setValue)
     {
-        this.Add<Label>(0, row, y =>
+        RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        this.Add<CxGrid>(0, RowStyles.Count - 1, grid =>
         {
-            y.AutoSize = true;
-            y.Margin = new Padding(15, 5, 0, 15);
-            y.Text = text;
-            y.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            y.ForeColor = SystemColors.ControlText;
+            grid.TabListener = TabListener;
+            grid.Padding = new Padding(10, 5, 10, 5);
+            grid.Dock = DockStyle.Top;
+            grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            grid.AutoSize = true;
+            grid.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+            
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 1));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 3));
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-            y.DisposeWith(disposable);
-        });
-
-        this.Add<ComboBox>(1, row, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = new Padding(15, 5, 0, 15);
-            y.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            y.ForeColor = SystemColors.ControlText;
-
-            y.Items.AddRange(hotKeyCommands);
-            y.DisplayMember = nameof(HotKeyCommand.Text);
-            y.ValueMember = nameof(HotKeyCommand.CommandName);
-
-            y.DropDownStyle = ComboBoxStyle.DropDownList;
-
-            y.SelectedItem = hotKeyCommands.FirstOrDefault(x => x.CommandName == getValue());
-            y.SelectedIndexChanged += (sender, e) =>
+            grid.Add<CxLabel>(0, 0, x =>
             {
-                setValue((y.SelectedItem as HotKeyCommand)?.CommandName);
-            };
+                x.AutoSize = true;
+                x.MinimumSize = new Size(100, 30);
+                x.TabListener = TabListener;
+                x.Margin = new Padding(5, 10, 20, 10);
+                x.Padding = new Padding(10);
+                x.Text = text;
+                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+                x.ForeColor = SystemColors.ControlText;
+                x.UseClearType = true;
+                x.ShowKeys = true;
+            });
 
-            config.UserConfig.PropertyChanged
-                .Subscribe(_ => y.SelectedItem = hotKeyCommands.FirstOrDefault(x => x.CommandName == getValue()))
-                .DisposeWith(disposable);
+            grid.Add<CxButton>(1, 0, x =>
+            {
+                x.AutoSize = true;
+                x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+                x.TabListener = TabListener;
+                x.Margin = new Padding(0, 5, 0, 5);
+                x.Padding = new Padding(10, 10, 15, 10);
+                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+                x.DropDownMenu = CreateContextMenu(
+                    commandService.Commands.Where(i => i.CanExecuteWithHotKey),
+                    setValue);
 
-            y.DisposeWith(disposable);
+                x.TextAlign = ContentAlignment.MiddleLeft;
+                x.IconFont = IconFont;
+
+                var binding = new Binding("Text", Config.UserConfig, propertyName, true, DataSourceUpdateMode.Never);
+                binding.Format += (_, e) => e.Value = commandService.Commands
+                    .FirstOrDefault(x => x.Name == e.Value as string)?.Description ?? "[ BLANK ]";
+
+                x.DataBindings.Add(binding);
+            });
         });
     }
 
-    private class HotKeyCommand
+    private CxContextMenu CreateContextMenu(IEnumerable<CommandBase> commands, Action<string?> setValue)
     {
-        public HotKeyCommand(string text, string commandName)
+        var menu = new CxContextMenu();
+        menu.BorderRadius = CornerRadius.Small;
+
+        var relayCommand = new RelayCommand(x => setValue((x as CommandBase)?.Name));
+
+        menu.AddMenuItem("[ BLANK ]", relayCommand, null);
+        menu.AddSeparator();
+
+        foreach (var c in commands)
         {
-            Text = text;
-            CommandName = commandName;
+            menu.AddMenuItem(c.Description, relayCommand, c);
         }
 
-        public string Text { get; }
-
-        public string CommandName { get; }
+        return menu;
     }
 }

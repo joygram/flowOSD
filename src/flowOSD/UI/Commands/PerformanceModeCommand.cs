@@ -23,6 +23,8 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
 
 public class PerformanceModeCommand : CommandBase
 {
@@ -33,9 +35,9 @@ public class PerformanceModeCommand : CommandBase
         this.atk = atk ?? throw new ArgumentNullException(nameof(atk));
 
         this.atk.PerformanceMode
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(performanceMode => IsChecked = performanceMode != PerformanceMode.Default)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         Description = "Toggle Performance Mode";
         Enabled = true;
@@ -45,7 +47,7 @@ public class PerformanceModeCommand : CommandBase
 
     public override bool CanExecuteWithHotKey => true;
 
-    public override async void Execute(object parameter = null)
+    public override async void Execute(object? parameter = null)
     {
         if (!Enabled)
         {

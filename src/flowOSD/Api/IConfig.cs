@@ -29,4 +29,14 @@ public interface IConfig
     FileVersionInfo AppFileInfo { get; }
 
     DirectoryInfo DataDirectory { get; }
+
+    bool UseOptimizationMode { get; }
+
+    bool IsPreRelease { get; }
+
+    string ProductName { get; }
+
+    string ProductVersion { get; }
+
+    Version FileVersion { get; }
 }

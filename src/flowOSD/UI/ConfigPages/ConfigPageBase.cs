@@ -19,66 +19,138 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Extensions;
+using flowOSD.UI.Components;
+using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
-using static Extensions;
+using static flowOSD.Extensions.Common;
 
 internal class ConfigPageBase : TableLayoutPanel
 {
     protected static readonly Padding CheckBoxMargin = new Padding(20, 5, 0, 5);
-    protected static readonly Padding LabelMargin = new Padding(15, 5, 0, 15);
+    protected static readonly Padding LabelMargin = new Padding(15, 10, 0, 15);
 
-    protected ConfigPageBase(IConfig config)
+    private UIParameters? uiParameters;
+
+    protected ConfigPageBase(IConfig config, CxTabListener? tabListener = null)
     {
         Config = config ?? throw new ArgumentNullException(nameof(config));
+        TabListener = tabListener ?? throw new ArgumentNullException(nameof(tabListener));
 
-        Dock = DockStyle.Top;
         AutoScroll = false;
         AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+       // AutoSizeMode = AutoSizeMode.GrowAndShrink;
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+        Padding = new Padding(3);
+        IconFont = new Font(UIParameters.IconFontName, 16, GraphicsUnit.Point);
+
+        MouseClick += OnMouseClick;
     }
 
-    protected CompositeDisposable Disposable { get; private set; } = new CompositeDisposable();
+    public UIParameters? UIParameters
+    {
+        get => uiParameters;
+        set
+        {
+            uiParameters = value;
+            UpdateUI();
+        }
+    }
 
     protected IConfig Config { get; }
 
-    protected void AddConfig(string text, string description, string propertyName)
+    protected CxTabListener? TabListener { get; }
+
+    protected Font IconFont { get; }
+
+    protected void OnMouseClick(object? sender, MouseEventArgs e)
+    {
+        if (TabListener != null)
+        {
+            TabListener.ShowKeyboardFocus = false;
+        }
+    }
+
+    protected void AddConfig(string icon, string text, string propertyName)
     {
         RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        this.Add<CheckBox>(0, RowStyles.Count - 1, y =>
+        this.Add<CxGrid>(0, RowStyles.Count - 1, x =>
         {
-            y.AutoSize = true;
-            y.Margin = CheckBoxMargin;
-            y.Text = text;
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.DataBindings.Add(
-                "Checked",
-                Config.UserConfig,
-                propertyName,
-                false,
-                DataSourceUpdateMode.OnPropertyChanged);
+            x.TabListener = TabListener;
+            x.Padding = new Padding(10, 5, 10, 5);
+            x.Dock = DockStyle.Top;
+            x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            x.AutoSize = true;
+            x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
 
-            y.DisposeWith(Disposable);
-        });
+            x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-        this.Add<Label>(0, RowStyles.Count - 1, y =>
-        {
-            y.AutoSize = true;
-            y.Margin = LabelMargin;
-            y.Text = description;
-            y.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            y.ForeColor = SystemColors.ControlDarkDark;
+            if (!string.IsNullOrEmpty(icon))
+            {
+                x.Add<CxLabel>(0, 0, y =>
+                {
+                    y.TabListener = TabListener;
+                    y.AutoSize = true;
+                    y.Margin = LabelMargin;
+                    y.Padding = new Padding(0, 10, 0, 0);
+                    y.Anchor = AnchorStyles.Left;
+                    y.ForeColor = Color.Wheat;
+                    y.Icon = icon;
+                    y.IconFont = IconFont;
+                });
+            }
 
-            y.DisposeWith(Disposable);
+            x.Add<CxLabel>(1, 0, y =>
+            {
+                y.TabListener = TabListener;
+                y.AutoSize = true;
+                y.Margin = LabelMargin;
+                y.Text = text;
+                y.Anchor = AnchorStyles.Left;
+                y.ForeColor = SystemColors.ControlDarkDark;
+                y.UseClearType = true;
+            });
+
+            x.Add<CxToggle>(2, 0, y =>
+            {
+                y.TabListener = TabListener;
+                y.BackColor = SystemColors.Control;
+                y.ForeColor = SystemColors.WindowText;
+                y.Margin = CheckBoxMargin;
+                y.Anchor = AnchorStyles.Right;
+                y.DataBindings.Add(
+                    "IsChecked",
+                    Config.UserConfig,
+                    propertyName,
+                    false,
+                    DataSourceUpdateMode.OnPropertyChanged);
+            });
         });
     }
 
-    protected override void Dispose(bool disposing)
+    protected override void OnVisibleChanged(EventArgs e)
     {
-        Disposable?.Dispose();
-        Disposable = null;
+        if (Visible)
+        {
+            UpdateUI();
+        }
 
-        base.Dispose(disposing);
+        base.OnVisibleChanged(e);
+    }
+
+    protected virtual void UpdateUI()
+    {
+        if (UIParameters == null)
+        {
+            return;
+        }
+
+        BackColor = UIParameters.BackgroundColor;
+
+        CxTheme.Apply(this, UIParameters);
     }
 }

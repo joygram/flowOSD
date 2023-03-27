@@ -18,16 +18,23 @@
  */
 namespace flowOSD.Services;
 
+// This module needs for refactoring
+#pragma warning disable CS8625, CS8602, CS8618
+
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using flowOSD.Api;
-using static Native;
+using flowOSD.Extensions;
+using flowOSD.Native;
+using static flowOSD.Native.Dwmapi;
+using static Native.User32;
+using static flowOSD.Extensions.Common;
 
 sealed partial class Osd : IOsd, IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
     private OsdForm form;
 
     private Subject<OsdData> dataSubject;
@@ -38,7 +45,7 @@ sealed partial class Osd : IOsd, IDisposable
         dataSubject
             .Where(x => !x.IsIndicator)
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x =>
             {
                 form.Show(x);
@@ -47,7 +54,7 @@ sealed partial class Osd : IOsd, IDisposable
 
         dataSubject
             .Where(x => x.IsIndicator)
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x =>
             {
                 form.Show(x);
@@ -55,7 +62,11 @@ sealed partial class Osd : IOsd, IDisposable
             .DisposeWith(disposable);
 
         form = new OsdForm(systemEvents).DisposeWith(disposable);
-        SetCornerPreference(form.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+
+        if (IsWindows11)
+        {
+            SetCornerPreference(form.Handle, DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
+        }
     }
 
     void IDisposable.Dispose()
@@ -90,14 +101,14 @@ sealed partial class Osd : IOsd, IDisposable
             DoubleBuffered = true;
             TopMost = true;
 
-            Font = new Font("Segoe UI Light", DpiScaleValue(Parameters.TextValueHeight), FontStyle.Bold, GraphicsUnit.Pixel);
+            Font = new Font("Segoe UI Light", this.DpiScale(Parameters.TextValueHeight), FontStyle.Bold, GraphicsUnit.Pixel);
 
             darkIndicatorBackgroundPen = CreateIndicatorBackgroundPen(
                 Parameters.IndicatorDarkBackgroundColor,
-                DpiScaleValue(Parameters.IndicatorValueHeight)).DisposeWith(disposable);
+                this.DpiScale(Parameters.IndicatorValueHeight)).DisposeWith(disposable);
             lightIndicatorBackgroundPen = CreateIndicatorBackgroundPen(
                 Parameters.IndicatorLightBackgroundColor,
-                DpiScaleValue(Parameters.IndicatorValueHeight)).DisposeWith(disposable);
+                this.DpiScale(Parameters.IndicatorValueHeight)).DisposeWith(disposable);
 
             UpdateTheme();
 
@@ -137,10 +148,11 @@ sealed partial class Osd : IOsd, IDisposable
             Opacity = 1;
             Invalidate();
             ShowWindow(Handle, SW_SHOWNOACTIVATE);
+            BringWindowToTop(Handle);
 
             hideTimer = Observable
                 .Timer(DateTimeOffset.Now.AddMilliseconds(Parameters.Timeout), TimeSpan.FromMilliseconds(500 / 16))
-                .ObserveOn(SynchronizationContext.Current)
+                .ObserveOn(SynchronizationContext.Current!)
                 .Subscribe(t =>
                 {
                     Opacity -= .1;
@@ -161,7 +173,7 @@ sealed partial class Osd : IOsd, IDisposable
                 const int WS_EX_TOOLWINDOW = 0x00000080;
 
                 var p = base.CreateParams;
-                p.ExStyle |= (int)(WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
+                p.ExStyle |= (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
 
                 return p;
             }
@@ -194,6 +206,7 @@ sealed partial class Osd : IOsd, IDisposable
         private static Pen CreateIndicatorBackgroundPen(Color color, int width)
         {
             var pen = new Pen(color, width);
+            
             pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
             pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
 
@@ -225,18 +238,18 @@ sealed partial class Osd : IOsd, IDisposable
                 ? Parameters.DarkBackgroundColor
                 : Parameters.LightBackgroundColor;
 
-            EnableAcrylic(this, color);
+            Acrylic.EnableAcrylic(this, color);
 
             Invalidate();
         }
 
         private void DrawText(Graphics g)
         {
-            var x = DpiScaleValue(Parameters.TextPadding.Left);
+            var x = this.DpiScale(Parameters.TextPadding.Left);
 
             if (data.HasIcon)
             {
-                x += DrawImage(g, x, DpiScaleValue(Parameters.TextImageHeight), DpiScaleValue(Parameters.TextSeparator));
+                x += DrawImage(g, x, this.DpiScale(Parameters.TextImageHeight), this.DpiScale(Parameters.TextSeparator));
             }
 
             var textSize = g.MeasureString(data.Text, Font);
@@ -247,14 +260,14 @@ sealed partial class Osd : IOsd, IDisposable
 
         private void DrawIndicator(Graphics g)
         {
-            var x = DpiScaleValue(Parameters.InidicatorPadding.Left);
+            var x = this.DpiScale(Parameters.InidicatorPadding.Left);
             x += DrawImage(
                 g,
                 x,
-                DpiScaleValue(Parameters.IndicatorImageHeight),
-                DpiScaleValue(Parameters.IndicatorSeparator));
+                this.DpiScale(Parameters.IndicatorImageHeight),
+                this.DpiScale(Parameters.IndicatorSeparator));
 
-            var barWidth = DpiScaleValue(Parameters.IndicatorValueWidth);
+            var barWidth = this.DpiScale(Parameters.IndicatorValueWidth);
 
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
             g.DrawLine(
@@ -314,7 +327,7 @@ sealed partial class Osd : IOsd, IDisposable
 
             if (accentPen == null)
             {
-                accentPen = new Pen(accentColor, DpiScaleValue(6));
+                accentPen = new Pen(accentColor, this.DpiScale(6));
                 accentPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
                 accentPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
             }
@@ -327,40 +340,35 @@ sealed partial class Osd : IOsd, IDisposable
                 return;
             }
 
-            var imageHeight = DpiScaleValue(data.IsIndicator ? Parameters.IndicatorImageHeight : Parameters.TextImageHeight);
-            var width = DpiScaleValue(data.IsIndicator ? Parameters.InidicatorPadding.Left : Parameters.TextPadding.Left);
+            var imageHeight = this.DpiScale(data.IsIndicator ? Parameters.IndicatorImageHeight : Parameters.TextImageHeight);
+            var width = this.DpiScale(data.IsIndicator ? Parameters.InidicatorPadding.Left : Parameters.TextPadding.Left);
             var height = data.IsIndicator
-              ? DpiScaleValue(Parameters.InidicatorPadding.Top + Parameters.InidicatorPadding.Bottom + Parameters.IndicatorImageHeight)
-              : DpiScaleValue(Parameters.TextPadding.Top + Parameters.TextPadding.Bottom + Parameters.TextImageHeight);
+              ? this.DpiScale(Parameters.InidicatorPadding.Top + Parameters.InidicatorPadding.Bottom + Parameters.IndicatorImageHeight)
+              : this.DpiScale(Parameters.TextPadding.Top + Parameters.TextPadding.Bottom + Parameters.TextImageHeight);
 
             if (data.IsIndicator || data.HasIcon)
             {
-                using var font = new Font("Segoe Fluent Icons", imageHeight, GraphicsUnit.Pixel);
+                using var font = new Font(UIParameters.IconFontName, imageHeight, GraphicsUnit.Pixel);
                 using var g = Graphics.FromHwnd(Handle);
 
                 width += (int)g.MeasureString(data.Icon, font).Width;
-                width += DpiScaleValue(data.IsIndicator ? Parameters.IndicatorSeparator : Parameters.TextSeparator);
+                width += this.DpiScale(data.IsIndicator ? Parameters.IndicatorSeparator : Parameters.TextSeparator);
             }
 
             if (data.IsIndicator)
             {
-                width += DpiScaleValue(Parameters.IndicatorValueWidth + Parameters.InidicatorPadding.Right);
+                width += this.DpiScale(Parameters.IndicatorValueWidth + Parameters.InidicatorPadding.Right);
             }
             else
             {
                 using var g = Graphics.FromHwnd(Handle);
 
                 width += (int)g.MeasureString(data.Text, Font).Width;
-                width += DpiScaleValue(Parameters.TextPadding.Right);
+                width += this.DpiScale(Parameters.TextPadding.Right);
             }
 
             Size = new Size(width, height);
-            Location = new Point((Screen.PrimaryScreen.WorkingArea.Width - Size.Width) / 2, DpiScaleValue(Parameters.PositionX));
-        }
-
-        private int DpiScaleValue(float value)
-        {
-            return (int)Math.Round(value * GetDpiForWindow(Handle) / 96.0, 0, MidpointRounding.AwayFromZero);
+            Location = new Point((Screen.PrimaryScreen.WorkingArea.Width - Size.Width) / 2, this.DpiScale(Parameters.PositionX));
         }
     }
 

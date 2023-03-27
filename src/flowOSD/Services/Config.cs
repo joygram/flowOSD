@@ -22,14 +22,16 @@ using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using flowOSD.Api;
+using flowOSD.Extensions;
 using Microsoft.Win32;
 
 sealed class Config : IConfig, IDisposable
 {
     private const string RUN_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
 
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
     private FileInfo configFile;
     private Lazy<UserConfig> userConfig;
 
@@ -37,9 +39,20 @@ sealed class Config : IConfig, IDisposable
     {
         AppFile = new FileInfo(typeof(Config).Assembly.Location);
         AppFileInfo = FileVersionInfo.GetVersionInfo(AppFile.FullName);
+
+        ProductName = AppFileInfo.ProductName ?? throw new ApplicationException("Product Name isn't set");
+        ProductVersion = AppFileInfo.ProductVersion ?? throw new ApplicationException("Product Version isn't set");
+        FileVersion = new Version(
+            AppFileInfo.FileMajorPart,
+            AppFileInfo.FileMinorPart,
+            AppFileInfo.FileBuildPart,
+            AppFileInfo.FilePrivatePart);
+
+        IsPreRelease = Regex.IsMatch(ProductVersion, "[a-zA-Z]");
+
         DataDirectory = new DirectoryInfo(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            AppFileInfo.ProductName));
+            AppFileInfo.ProductName!));
 
         if (!DataDirectory.Exists)
         {
@@ -84,13 +97,23 @@ sealed class Config : IConfig, IDisposable
 
     public DirectoryInfo DataDirectory { get; }
 
+    public bool UseOptimizationMode => true;
+
+    public bool IsPreRelease { get; }
+
+    public string ProductName { get; }
+
+    public string ProductVersion { get; }
+
+    public Version FileVersion { get; }
+
     private UserConfig Load()
     {
         try
         {
             using (var stream = configFile.OpenRead())
             {
-                return JsonSerializer.Deserialize<UserConfig>(stream);
+                return JsonSerializer.Deserialize<UserConfig>(stream) ?? new UserConfig();
             }
         }
         catch (Exception)
@@ -113,7 +136,7 @@ sealed class Config : IConfig, IDisposable
     {
         using (var key = Registry.CurrentUser.OpenSubKey(RUN_KEY, true))
         {
-            return key.GetValue(AppFileInfo.ProductName) != null;
+            return key?.GetValue(AppFileInfo.ProductName) != null;
         }
     }
 
@@ -121,13 +144,18 @@ sealed class Config : IConfig, IDisposable
     {
         using (var key = Registry.CurrentUser.OpenSubKey(RUN_KEY, true))
         {
+            if (key == null)
+            {
+                throw new ApplicationException("Can't write to Windows registry");
+            }
+
             if (runAtStartup)
             {
-                key.SetValue(AppFileInfo.ProductName, Application.ExecutablePath);
+                key.SetValue(AppFileInfo.ProductName!, Application.ExecutablePath);
             }
             else
             {
-                key.DeleteValue(AppFileInfo.ProductName, false);
+                key.DeleteValue(AppFileInfo.ProductName!, false);
             }
         }
     }

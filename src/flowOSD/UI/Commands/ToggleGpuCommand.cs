@@ -23,6 +23,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
+using static flowOSD.Extensions.Common;
 
 sealed class ToggleGpuCommand : CommandBase
 {
@@ -35,9 +38,9 @@ sealed class ToggleGpuCommand : CommandBase
         this.config = config ?? throw new ArgumentNullException(nameof(config));
 
         this.atk.GpuMode
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(Update)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         Description = "Toggle dGPU";
         Enabled = true;
@@ -45,7 +48,7 @@ sealed class ToggleGpuCommand : CommandBase
 
     public override string Name => nameof(ToggleGpuCommand);
 
-    public async override void Execute(object parameter = null)
+    public async override void Execute(object? parameter = null)
     {
         var isGpuEnabled = await atk.GpuMode.FirstAsync() == GpuMode.dGpu;
         if (!Confirm(isGpuEnabled))
@@ -59,7 +62,7 @@ sealed class ToggleGpuCommand : CommandBase
         }
         catch (Exception ex)
         {
-            Extensions.TraceException(ex, "Error is occurred while toggling GPU (UI).");
+            TraceException(ex, "Error is occurred while toggling GPU (UI).");
         }
     }
 

@@ -25,11 +25,11 @@ using flowOSD.Api;
 
 sealed class PrintScreenCommand : CommandBase
 {
-    private IKeyboard keyboard;
+    private IKeysSender keysSender;
 
-    public PrintScreenCommand(IKeyboard keyboard)
+    public PrintScreenCommand(IKeysSender keysSender)
     {
-        this.keyboard = keyboard;
+        this.keysSender = keysSender ?? throw new ArgumentNullException(nameof(keysSender));
 
         Text = "Print Screen";
         Description = Text;
@@ -38,8 +38,8 @@ sealed class PrintScreenCommand : CommandBase
 
     public override string Name => nameof(PrintScreenCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
-        keyboard.SendKeys(Keys.PrintScreen);
+        keysSender.SendKeys(Keys.PrintScreen);
     }
 }

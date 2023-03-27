@@ -23,11 +23,11 @@ using flowOSD.Api;
 
 sealed class ClipboardPastePlainTextCommand : CommandBase
 {
-    private IKeyboard keyboard;
+    private IKeysSender keysSender;
 
-    public ClipboardPastePlainTextCommand(IKeyboard keyboard)
+    public ClipboardPastePlainTextCommand(IKeysSender keysSender)
     {
-        this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
+        this.keysSender = keysSender ?? throw new ArgumentNullException(nameof(keysSender));
 
         Description = "Paste as a plain text";
         Enabled = true;
@@ -35,13 +35,13 @@ sealed class ClipboardPastePlainTextCommand : CommandBase
 
     public override string Name => nameof(ClipboardPastePlainTextCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         if (Clipboard.ContainsText())
         {
             Clipboard.SetText(Clipboard.GetText());
         }
 
-        keyboard.SendKeys(Keys.V, Keys.ControlKey);
+        keysSender.SendKeys(Keys.V, Keys.ControlKey);
     }
 }

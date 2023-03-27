@@ -41,9 +41,9 @@ public class OsdData
         Value = value;
     }
 
-    public string Icon { get; }
+    public string? Icon { get; }
 
-    public string Text { get; }
+    public string? Text { get; }
 
     public double? Value { get; }
 

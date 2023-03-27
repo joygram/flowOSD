@@ -40,7 +40,7 @@ sealed class MainUICommand : CommandBase
 
     public override bool CanExecuteWithHotKey => true;
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         mainUI.Show();
     }

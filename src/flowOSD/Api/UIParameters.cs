@@ -24,12 +24,13 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using static flowOSD.Extensions.Common;
 
 public sealed class UIParameters
 {
     public static string FontName => "Segoe UI";
 
-    public static string IconFontName => "Segoe Fluent Icons";
+    public static string IconFontName => IsWindows11 ? "Segoe Fluent Icons" : "Segoe MDL2 Assets";
 
     public bool IsDarkMode { get; private set; }
 
@@ -40,6 +41,8 @@ public sealed class UIParameters
     public Color BackgroundColor { get; private set; }
 
     public Color TextColor { get; private set; }
+
+    public Color TextGrayColor { get; private set; }
 
     public Color ButtonBackgroundColor { get; private set; }
 
@@ -63,6 +66,10 @@ public sealed class UIParameters
 
     public Color OsdIndicatorBackgroundColor { get; private set; }
 
+    public Color PanelBackgroundColor { get; private set; }
+
+    public Color NavigationMenuBackgroundHoverColor { get; private set; }
+
 
     public static UIParameters Create(Color accentColor, bool isDarkMode)
     {
@@ -79,38 +86,83 @@ public sealed class UIParameters
 
     private static UIParameters InitDarkParameters(UIParameters p)
     {
-        p.BackgroundColor = Color.FromArgb(255, 44, 44, 44);
-        p.TextColor = Color.White;
-        p.FocusColor = Color.White;
+        p.BackgroundColor = Color.FromArgb(255, 32, 32, 32);
+        p.TextColor = Color.FromArgb(255, 250, 250, 250);
+        p.TextGrayColor = Color.FromArgb(255, 190, 190, 190);
 
-        p.MenuBackgroundColor = p.BackgroundColor;
+        p.FocusColor = Color.FromArgb(255, 250, 250, 250);
+
+        p.MenuBackgroundColor = Color.FromArgb(255, 45, 45, 45);
         p.MenuBackgroundHoverColor = p.AccentColor;
-        p.MenuTextColor = Color.White;
-        p.MenuTextBrightColor = Color.Black;
-        p.MenuTextDisabledColor = Color.FromArgb(255, 171, 171, 171);
+        p.MenuTextColor = Color.FromArgb(255, 250, 250, 250);
+        p.MenuTextBrightColor = Color.FromArgb(255, 30, 30, 30);
+        p.MenuTextDisabledColor = Color.FromArgb(255, 170, 170, 170);
 
         p.ButtonBackgroundColor = Color.FromArgb(255, 62, 62, 62);
-        p.ButtonTextColor = Color.White;
-        p.ButtonTextBrightColor = Color.Black;
+        p.ButtonTextColor = Color.FromArgb(255, 250, 250, 250);
+        p.ButtonTextBrightColor = Color.FromArgb(255, 30, 30, 30);
+
+        p.PanelBackgroundColor = Color.FromArgb(255, 45, 45, 45);
+        p.NavigationMenuBackgroundHoverColor = Color.FromArgb(255, 45, 45, 45);
+
+        // Background 32 32 32
+        // Panel 45 45 45
+        // Panel Hover  50 50 50
+        // Button  55 55 55 (62 on hovered panel) 
+        // Button Hover 60 60 60 (67 on hovered)
+        // Button Press 50 50 50 (56 on hovered panel)
+
+        // Menu 45 45 45
+        // Menu Hover 52 52 52
+        // Menu Selected 56 56 56
+        // Menu Pressed 56 56 56
+
+        // Side Menu 45 45 45
+        // Side Menu Hover 41 41 41
+        // Side Menu Pressed 45 45 45
+
+        // Font = 255 or 207 for grayed
 
         return p;
     }
 
     private static UIParameters InitLightParameters(UIParameters p)
     {
-        p.BackgroundColor = Color.FromArgb(255, 249, 249, 249);
-        p.TextColor = Color.Black;
-        p.FocusColor = Color.Black;
+        p.BackgroundColor = Color.FromArgb(255, 243, 243, 243);
+        p.TextColor = Color.FromArgb(255, 30, 30, 30);
+        p.TextGrayColor = Color.FromArgb(255, 95, 95, 95);
+        p.FocusColor = Color.FromArgb(255, 30, 30, 30);
 
-        p.MenuBackgroundColor = p.BackgroundColor;
+        p.MenuBackgroundColor = Color.FromArgb(255, 249, 249, 249);
         p.MenuBackgroundHoverColor = p.AccentColor;
-        p.MenuTextColor = Color.White;
-        p.MenuTextBrightColor = Color.Black;
+        p.MenuTextColor = Color.FromArgb(255, 250, 250, 250);
+        p.MenuTextBrightColor = Color.FromArgb(255, 30, 30, 30);
         p.MenuTextDisabledColor = Color.FromArgb(255, 158, 158, 158);
 
         p.ButtonBackgroundColor = Color.FromArgb(255, 251, 251, 251);
-        p.ButtonTextColor = Color.White;
-        p.ButtonTextBrightColor = Color.Black;
+        p.ButtonTextColor = Color.FromArgb(255, 250, 250, 250);
+        p.ButtonTextBrightColor = Color.FromArgb(255, 30, 30, 30);
+
+        p.PanelBackgroundColor = Color.FromArgb(255, 251, 251, 251);
+        p.NavigationMenuBackgroundHoverColor = Color.FromArgb(255, 255, 255, 255);
+
+        // Background 243 243 243
+        // Panel 251 251 251 
+        // Panel Hover  246 246 246
+        // Button  254 254 254 (252 on hovered panel)
+        // Button Hover 250 250 250 (247 on hovered panel)
+        // Button Press 250 250 250 (247 on hovered panel)
+
+        // Menu 249 249 249
+        // Menu Hover 243 243 243
+        // Menu Selected 240 240 240
+        // Menu Pressed 240 240 240
+
+        // Side Menu 234 234 234
+        // Side Menu Hover 237 237 237
+        // Side Menu Pressed 234 234 234
+
+        // Font = 27 or 96 for grayed
 
         return p;
     }

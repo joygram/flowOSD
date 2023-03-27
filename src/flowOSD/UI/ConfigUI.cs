@@ -19,25 +19,42 @@
 namespace flowOSD.UI;
 
 using System.Collections.ObjectModel;
+using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using flowOSD.Api;
-using static Extensions;
-using static Native;
+using flowOSD.Extensions;
+using flowOSD.Native;
+using flowOSD.UI.Components;
+using flowOSD.UI.ConfigPages;
+using static flowOSD.Extensions.Forms;
+using static flowOSD.Extensions.Common;
 
 sealed class ConfigUI : IDisposable
 {
-    private Window instance;
-    private IConfig config;
-    private ICommandManager commandManager;
+    private CompositeDisposable? disposable = new CompositeDisposable();
 
-    public ConfigUI(IConfig config, ICommandManager commandManager)
+    private Window? instance;
+    private IConfig config;
+    private ICommandService commandService;
+    private ISystemEvents systemEvents;
+
+    public ConfigUI(IConfig config, ICommandService commandService, ISystemEvents systemEvents)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
-        this.commandManager = commandManager ?? throw new ArgumentNullException(nameof(commandManager));
+        this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
+        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
+
+        systemEvents?.AppUI
+            .Subscribe(x => instance?.UpdateUI(x))
+            .DisposeWith(disposable);
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
+        disposable?.Dispose();
+        disposable = null;
+
         if (instance != null && !instance.IsDisposed)
         {
             instance.Dispose();
@@ -45,7 +62,7 @@ sealed class ConfigUI : IDisposable
         }
     }
 
-    public void Show()
+    public async void Show()
     {
         if (instance != null && !instance.IsDisposed)
         {
@@ -53,50 +70,84 @@ sealed class ConfigUI : IDisposable
         }
         else
         {
-            instance = new Window(
-                new ConfigPages.GeneralConfigPage(config),
-                new ConfigPages.NotificationsConfigPage(config),
-                new ConfigPages.HotKeysConfigPage(config, commandManager),
-                new ConfigPages.MonitoringConfigPage(config));
+            var tabListener = new CxTabListener();
+            instance = new Window(tabListener,
+                new ConfigPages.GeneralConfigPage(config, tabListener),
+                new ConfigPages.NotificationsConfigPage(config, tabListener),
+                new ConfigPages.HotKeysConfigPage(config, tabListener, commandService),
+                new ConfigPages.MonitoringConfigPage(config, tabListener));
+
+            instance.UpdateUI(await systemEvents.AppUI.FirstOrDefaultAsync());
             instance.Show();
         }
     }
 
     private sealed class Window : Form
     {
-        private CompositeDisposable disposable = new CompositeDisposable();
-        private ReadOnlyCollection<Control> pages;
-        private Control currentPage;
+        private CompositeDisposable? disposable = new CompositeDisposable();
 
-        private TableLayoutPanel layout;
-        private Panel pageContainer;
+        private ReadOnlyCollection<ConfigPageBase> pages;
 
-        public Window(params Control[] pages)
+        private CxPanel pageContainer;
+        private ListBox listBox;
+        private UIParameters? uiParameters;
+        private CxTabListener tabListener;
+
+        public Window(CxTabListener tabListener, params ConfigPageBase[] pages)
         {
-            this.pages = new ReadOnlyCollection<Control>(pages);
+            this.tabListener = tabListener;
+            this.tabListener.ShowKeyboardFocusChanged += TabListener_ShowKeyboardFocusChanged;
+            this.pages = new ReadOnlyCollection<ConfigPageBase>(pages);
 
-            Init();
+            pageContainer = Init(disposable);
 
             CurrentPage = pages.FirstOrDefault();
         }
 
-        public Control CurrentPage
+        private void TabListener_ShowKeyboardFocusChanged(object? sender, EventArgs e)
         {
-            get => currentPage;
+            listBox?.Invalidate();
+        }
+
+        public Control? CurrentPage
+        {
+            get => pageContainer.Content;
             set
             {
-                if (currentPage != null)
-                {
-                    pageContainer.Controls.Remove(currentPage);
-                }
-
-                currentPage = value;
-
-                if (currentPage != null)
-                {
-                    pageContainer.Controls.Add(currentPage);
-                }
+                pageContainer.Content = value;
             }
+        }
+
+        public void UpdateUI(UIParameters uiParameters)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            this.uiParameters = uiParameters;
+
+            foreach (var page in pages)
+            {
+                page.UIParameters = uiParameters;
+            }
+
+            if (uiParameters == null)
+            {
+                return;
+            }
+
+            BackColor = uiParameters.BackgroundColor;
+            ForeColor = uiParameters.TextColor;
+
+            listBox.BackColor = uiParameters.BackgroundColor;
+
+            Native.Dwmapi.UseDarkMode(Handle, uiParameters.IsDarkMode);
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
         }
 
         protected override void OnClosed(EventArgs e)
@@ -109,30 +160,30 @@ sealed class ConfigUI : IDisposable
 
         protected override void OnShown(EventArgs e)
         {
-            UpdateSize(GetDpiForWindow(Handle));
+            UpdateSize();
 
             base.OnShown(e);
         }
 
         protected override void OnDpiChanged(DpiChangedEventArgs e)
         {
-            UpdateSize(e.DeviceDpiNew);
+            UpdateSize();
 
             base.OnDpiChanged(e);
         }
 
-        private void UpdateSize(int dpi)
+        private void UpdateSize()
         {
-            var scale = dpi / 96f;
-            this.Size = new Size((int)(600 * scale), (int)(500 * scale));
+            MinimumSize = this.DpiScale(new Size(600, 400));
+            Size = this.DpiScale(new Size(600, 500));
         }
 
-        private void Init()
+        private CxPanel Init(CompositeDisposable uiDisposable)
         {
             const int listWidth = 150;
-            const int listItemHeight = 30;
+            const int listItemHeight = 40;
 
-            layout = Create<TableLayoutPanel>(x =>
+            var layout = Create<TableLayoutPanel>(x =>
             {
                 x.Dock = DockStyle.Fill;
 
@@ -142,22 +193,18 @@ sealed class ConfigUI : IDisposable
                 x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
                 x.RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
-            }).DisposeWith(disposable);
+            }).DisposeWith(uiDisposable);
 
-            layout.Add<Panel>(1, 0, x =>
+            var container = Create<CxPanel>(x =>
             {
                 x.Dock = DockStyle.Fill;
-                x.AutoScroll = true;
-                x.AutoSize = false;
-
-                x.LinkAs(ref pageContainer);
             });
+            layout.Add(1, 0, container);
 
             layout.Add<ListBox>(0, 0, x =>
-            {
-                var scale = GetDpiForWindow(Handle) / 96f;
-                x.Width = (int)(listWidth * scale);
-
+            {               
+                x.BorderStyle = BorderStyle.None;
+                x.Width = this.DpiScale(listWidth);
                 x.DrawMode = DrawMode.OwnerDrawVariable;
                 x.IntegralHeight = false;
                 x.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom;
@@ -167,72 +214,118 @@ sealed class ConfigUI : IDisposable
 
                 x.SelectedIndexChanged += (_, _) =>
                 {
-                    CurrentPage = x.SelectedIndex < 0 ? null : pages[x.SelectedIndex];
+                    var page = x.SelectedIndex < 0 ? null : pages[x.SelectedIndex];
+                    if (page != CurrentPage)
+                    {
+                        CurrentPage = page;
+                    }
+                };
+
+                x.PreviewKeyDown += (_, e) =>
+                {
+                    if (tabListener != null && e.KeyCode == Keys.Tab)
+                    {
+                        tabListener.ShowKeyboardFocus = true;
+                    }
+                };
+
+                x.MouseClick += (_, _) =>
+                {
+                    if (tabListener != null)
+                    {
+                        tabListener.ShowKeyboardFocus = false;
+                    }
                 };
 
                 x.DrawItem += (_, e) =>
                 {
+                    if (uiParameters == null || e.Font == null)
+                    {
+                        return;
+                    }
+
+                    // Clear
+                    using var backgroundBrush = new SolidBrush(uiParameters.BackgroundColor);
+                    e.Graphics.FillRectangle(backgroundBrush, e.Bounds);
+
+                    const int FOCUS_SPACE = 6;
+
                     var text = pages[e.Index].Text;
                     var textSize = e.Graphics.MeasureString(text, e.Font);
 
-                    e.DrawBackground();
-                    e.DrawFocusRectangle();
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-                    using var brush = new SolidBrush(e.State == DrawItemState.Selected ? e.BackColor : e.ForeColor);
+                    var drawingAreaRect = new Rectangle(
+                         e.Bounds.Left + FOCUS_SPACE,
+                         e.Bounds.Top + FOCUS_SPACE,
+                         e.Bounds.Width - 1 - FOCUS_SPACE * 2,
+                         e.Bounds.Height - 1 - FOCUS_SPACE * 2);
+
+                    var color = (e.State & DrawItemState.Selected) == DrawItemState.Selected
+                        ? uiParameters.NavigationMenuBackgroundHoverColor
+                        : uiParameters.BackgroundColor;
+
+                    using var brush = new SolidBrush(color);
+                    e.Graphics.FillRoundedRectangle(
+                        brush, 
+                        drawingAreaRect,
+                        (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
+
+                    if ((e.State & DrawItemState.Selected) == DrawItemState.Selected)
+                    {
+                        using var accentBrush = new SolidBrush(uiParameters.AccentColor);
+                        e.Graphics.FillRoundedRectangle(accentBrush,
+                            drawingAreaRect.Left,
+                            drawingAreaRect.Top + drawingAreaRect.Height / 8,
+                            8,
+                            drawingAreaRect.Height - drawingAreaRect.Height / 4,
+                            (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
+
+                    }
+
+                    if ((e.State & DrawItemState.Focus) == DrawItemState.Focus && tabListener?.ShowKeyboardFocus == true)
+                    {
+                        using var pen = new Pen(uiParameters.FocusColor, 2);
+                        e.Graphics.DrawRoundedRectangle(pen,
+                            e.Bounds.Left + 1,
+                            e.Bounds.Top + 1,
+                            e.Bounds.Width - 3,
+                            e.Bounds.Height - 3,
+                            (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
+
+                    }
+
+                    var textBrush = color.IsBright()
+                        ? new SolidBrush(uiParameters.MenuTextBrightColor)
+                        : new SolidBrush(uiParameters.MenuTextColor);
 
                     e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                     e.Graphics.DrawString(
                         text,
                         e.Font,
-                        brush,
-                        e.Bounds.Left + (e.Bounds.Height - textSize.Height) / 2,
-                        e.Bounds.Top + (e.Bounds.Height - textSize.Height) / 2);
+                        textBrush,
+                        drawingAreaRect.Left + drawingAreaRect.Height / 2,
+                        drawingAreaRect.Top + (drawingAreaRect.Height - textSize.Height) / 2);
                 };
 
                 x.MeasureItem += (_, e) =>
                 {
-                    var scale = GetDpiForWindow(Handle) / 96f;
-
-                    e.ItemHeight = (int)(listItemHeight * scale);
-                    e.ItemWidth = (int)(listWidth * scale);
+                    e.ItemHeight = this.DpiScale(listItemHeight);
+                    e.ItemWidth = this.DpiScale(listWidth);
                 };
 
                 x.DpiChangedAfterParent += (_, _) =>
                 {
-                    var scale = GetDpiForWindow(Handle) / 96f;
-                    x.Width = (int)(listWidth * scale);
+                    x.Width = this.DpiScale(listWidth);
                 };
 
-                x.DisposeWith(disposable);
-            });
-
-            layout.Add<Label>(0, 1, 2, 1, x =>
-            {
-                x.Dock = DockStyle.Fill;
-                x.Margin = new Padding(5, 10, 5, 10);
-                x.AutoSize = false;
-
-                x.Height = 2;
-                x.BorderStyle = BorderStyle.Fixed3D;
-
-                x.DisposeWith(disposable);
-            });
-
-            layout.Add<Button>(1, 2, x =>
-            {
-                x.Text = "Close";
-                x.AutoSize = true;
-                x.Padding = new Padding(15, 3, 15, 3);
-                x.Margin = new Padding(5);
-                x.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
-                x.Click += (sender, e) => Close();
-
-                x.DisposeWith(disposable);
+                x.DisposeWith(uiDisposable);
+                x.LinkAs(ref listBox);
             });
 
             this.Add(layout);
 
-            Padding = new Padding(10);
+            Padding = new Padding(10,10,5,10);
             DoubleBuffered = true;
 
             Text = "Settings";
@@ -242,11 +335,14 @@ sealed class ConfigUI : IDisposable
             ShowInTaskbar = false;
             FormBorderStyle = FormBorderStyle.FixedSingle;
 
-            var scale = GetDpiForWindow(Handle) / 96f;
-            this.Font = new Font("Segoe UI", 12 * scale, GraphicsUnit.Pixel);
-            UpdateSize(GetDpiForWindow(Handle));
+            Font = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel);
+            UpdateSize();
 
-            StartPosition = FormStartPosition.CenterScreen;
+            Location = new Point(
+                (Screen.PrimaryScreen.WorkingArea.Width - Width) / 2,
+                (Screen.PrimaryScreen.WorkingArea.Height - Height) / 2);
+
+            return container;
         }
     }
 }

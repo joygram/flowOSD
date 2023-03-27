@@ -20,8 +20,10 @@ namespace flowOSD;
 
 using System.Diagnostics;
 using System.Reactive.Disposables;
+using flowOSD.Extensions;
 using flowOSD.Services;
-using static Extensions;
+using flowOSD.UI;
+using static flowOSD.Extensions.Common;
 
 public static class Program
 {
@@ -55,17 +57,6 @@ public static class Program
 
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
-            if (Environment.OSVersion.Version.Build < 22621)
-            {
-                MessageBox.Show(
-                    "This version of flowOSD supports only Windows 11 22H2. Please, use an older version of flowOSD instead.\r\n\r\nFor details, see https://github.com/albertakhmetov/flowOSD",
-                    "Not supported OS version",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-
-                return;
-            }
-
             var app = new App(config).DisposeWith(disposable);
 
             Application.Run(app.ApplicationContext);
@@ -74,7 +65,6 @@ public static class Program
         {
             TraceException(ex, "General Failure");
             MessageBox.Show(ex.Message, "General Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
         }
         finally
         {

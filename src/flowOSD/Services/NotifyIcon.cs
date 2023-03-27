@@ -24,11 +24,14 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using flowOSD.Api;
-using static Native;
+using flowOSD.Extensions;
+using flowOSD.Native;
+using static flowOSD.Native.Shell32;
+using static Native.Messages;
 
 sealed partial class NotifyIcon : INotifyIcon, IDisposable
 {
-    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable? disposable = new CompositeDisposable();
     private Dictionary<int, MouseButtonAction> messageToMouseButtonAction;
 
     private static readonly Guid IconGuid = new Guid("EF27BC18-C13D-4056-BE35-3603AB766796");
@@ -37,8 +40,8 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
     private Subject<MouseButtonAction> mouseButtonAction;
 
     private IMessageQueue messageQueue;
-    private string text;
-    private Icon icon;
+    private string? text;
+    private Icon? icon;
 
     public NotifyIcon(IMessageQueue messageQueue)
     {
@@ -62,16 +65,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         messageQueue.Subscribe(MessageId, ProcessMessage).DisposeWith(disposable);
     }
 
-    void IDisposable.Dispose()
-    {
-        icon?.Dispose();
-        icon = null;
-
-        disposable?.Dispose();
-        disposable = null;
-    }
-
-    public string Text
+    public string? Text
     {
         get => text;
         set
@@ -86,7 +80,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         }
     }
 
-    public Icon Icon
+    public Icon? Icon
     {
         get => icon;
         set
@@ -111,7 +105,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         notifyIcon.uID = 1;
         notifyIcon.guidItem = IconGuid;
 
-        if (Shell_NotifyIconGetRect(ref notifyIcon, out RECT rect) != S_OK)
+        if (Shell_NotifyIconGetRect(ref notifyIcon, out RECT rect) != 0)
         {
             return Rectangle.Empty;
         }
@@ -119,6 +113,15 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
         {
             return new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
         }
+    }
+
+    public void Dispose()
+    {
+        icon?.Dispose();
+        icon = null;
+
+        disposable?.Dispose();
+        disposable = null;
     }
 
     public void Show()
@@ -160,7 +163,7 @@ sealed partial class NotifyIcon : INotifyIcon, IDisposable
             hIcon = Icon?.Handler ?? IntPtr.Zero,
             hWnd = messageQueue.Handle,
             uCallbackMessage = MessageId,
-            szTip = Text,
+            szTip = Text ?? string.Empty,
             uVersion = 5,
             guidItem = IconGuid
         };

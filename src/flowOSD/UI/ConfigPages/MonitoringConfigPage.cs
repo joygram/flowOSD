@@ -19,18 +19,24 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.UI.Components;
 using System.Reactive.Disposables;
 
 internal class MonitoringConfigPage : ConfigPageBase
 {
-    public MonitoringConfigPage(IConfig config)
-        : base(config)
+    public MonitoringConfigPage(IConfig config, CxTabListener tabListener)
+        : base(config, tabListener)
     {
         Text = "Monitoring";
 
         AddConfig(
+            "\uf5f2",
             "Show battery charge rate",
-            "Indicates whether battery charge rate is shown.",
             nameof(UserConfig.ShowBatteryChargeRate));
+
+        AddConfig(
+            UIImages.Temperature,
+            "Show CPU temperature",
+            nameof(UserConfig.ShowCpuTemperature));
     }
 }

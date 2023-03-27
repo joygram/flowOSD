@@ -23,11 +23,11 @@ using flowOSD.Api;
 
 sealed class ClipboardCopyPlainTextCommand : CommandBase
 {
-    private IKeyboard keyboard;
+    private IKeysSender keysSender;
 
-    public ClipboardCopyPlainTextCommand(IKeyboard keyboard)
+    public ClipboardCopyPlainTextCommand(IKeysSender keysSender)
     {
-        this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
+        this.keysSender = keysSender ?? throw new ArgumentNullException(nameof(keysSender));
 
         Description = "Copy to the clipboard";
         Enabled = true;
@@ -35,8 +35,8 @@ sealed class ClipboardCopyPlainTextCommand : CommandBase
 
     public override string Name => nameof(ClipboardCopyPlainTextCommand);
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
-        keyboard.SendKeys(Keys.C, Keys.ControlKey);
+        keysSender.SendKeys(Keys.C, Keys.ControlKey);
     }
 }

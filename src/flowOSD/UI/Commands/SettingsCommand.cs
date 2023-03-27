@@ -27,9 +27,9 @@ sealed class SettingsCommand : CommandBase
 {
     private ConfigUI configUI;
 
-    public SettingsCommand(IConfig config, ICommandManager commandManager)
+    public SettingsCommand(IConfig config, ICommandService commandService, ISystemEvents systemEvents)
     {
-        configUI = new ConfigUI(config, commandManager);
+        configUI = new ConfigUI(config, commandService, systemEvents);
 
         Text = "Settings...";
         Enabled = true;
@@ -39,7 +39,7 @@ sealed class SettingsCommand : CommandBase
 
     public override bool CanExecuteWithHotKey => false;
 
-    public override void Execute(object parameter = null)
+    public override void Execute(object? parameter = null)
     {
         configUI.Show();
     }

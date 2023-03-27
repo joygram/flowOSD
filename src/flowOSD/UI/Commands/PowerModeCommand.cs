@@ -23,6 +23,8 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Hardware;
+using flowOSD.Extensions;
 
 sealed class PowerModeCommand : CommandBase
 {
@@ -33,9 +35,9 @@ sealed class PowerModeCommand : CommandBase
         this.powerManagement = powerManagement ?? throw new ArgumentNullException(nameof(powerManagement));
 
         this.powerManagement.IsBatterySaver
-            .ObserveOn(SynchronizationContext.Current)
+            .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(isBatterySaver => Enabled = !isBatterySaver)
-            .DisposeWith(Disposable);
+            .DisposeWith(Disposable!);
 
         Description = "Toggle Power Mode";
         Enabled = true;
@@ -45,7 +47,7 @@ sealed class PowerModeCommand : CommandBase
 
     public override bool CanExecuteWithHotKey => true;
 
-    public override async void Execute(object parameter = null)
+    public override async void Execute(object? parameter = null)
     {
         if (!Enabled)
         {

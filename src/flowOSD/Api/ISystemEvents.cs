@@ -26,7 +26,7 @@ public interface ISystemEvents
 
     IObservable<Color> AccentColor { get; }
 
-    IObservable<Screen> PrimaryScreen { get; }
+    IObservable<Screen?> PrimaryScreen { get; }
 
     IObservable<int> Dpi { get; }
 
