@@ -20,15 +20,13 @@ namespace flowOSD.Api;
 
 public interface IUpdater
 {
-    IObservable<Version> LatestVersion { get; }
+    string ReleaseNotesLink { get; }
 
-    Task CheckUpdate(bool notifyNoUpdate);
+    Task<Version?> CheckUpdate();
 
     Task<bool> Download(Version version, IProgress<int> progress, CancellationToken cancellationToken = default);
 
     void Install(Version version);
 
     bool IsUpdate(Version version);
-
-    string GetReleaseNotesLink();
 }

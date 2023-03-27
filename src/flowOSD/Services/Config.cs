@@ -97,7 +97,7 @@ sealed class Config : IConfig, IDisposable
 
     public DirectoryInfo DataDirectory { get; }
 
-    public bool UseOptimizationMode => false;
+    public bool UseOptimizationMode => true;
 
     public bool IsPreRelease { get; }
 

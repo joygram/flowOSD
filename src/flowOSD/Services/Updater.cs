@@ -32,19 +32,15 @@ sealed class Updater : IUpdater
     private const string URL = "https://github.com/albertakhmetov/flowOSD/releases/latest";
 
     private IConfig config;
-    private Subject<Version> latestVersionSubject;
 
     public Updater(IConfig config)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
-
-        latestVersionSubject = new Subject<Version>();
-        LatestVersion = latestVersionSubject.AsObservable();
     }
 
-    public IObservable<Version> LatestVersion { get; }
+    public string ReleaseNotesLink => URL;
 
-    public async Task CheckUpdate(bool notifyNoUpdate)
+    public async Task<Version?> CheckUpdate()
     {
         try
         {
@@ -56,19 +52,17 @@ sealed class Updater : IUpdater
                 var v = i.RequestMessage?.RequestUri?.Segments.LastOrDefault();
                 if (!string.IsNullOrEmpty(v) && Regex.IsMatch(v, "v[0-9]+.[0-9]+.[0-9]+"))
                 {
-                    var version = Version.Parse(v.Substring(1));
-
-                    if (IsUpdate(version) || notifyNoUpdate)
-                    {
-                        latestVersionSubject.OnNext(version);
-                    }
+                    return Version.Parse(v.Substring(1));
                 }
             }
         }
         catch (Exception ex)
         {
             TraceException(ex, "Error due checking update");
+
         }
+
+        return null;
     }
 
     public async Task<bool> Download(Version version, IProgress<int> progress, CancellationToken cancellationToken = default)

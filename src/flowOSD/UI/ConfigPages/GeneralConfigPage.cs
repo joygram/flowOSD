@@ -58,7 +58,11 @@ internal class GeneralConfigPage : ConfigPageBase
             "",
             "Confirm GPU change",
             nameof(UserConfig.ConfirmGpuModeChange));
-
+        
+        AddConfig(
+            "",
+            "Check for updates at startup",
+            nameof(UserConfig.CheckForUpdates));
     }
 
     protected override void UpdateUI()

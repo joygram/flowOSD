@@ -144,7 +144,7 @@ sealed class NotifyIconUI : IDisposable
         menu.AddMenuItem(commandService.ResolveNotNull<MainUICommand>()).DisposeWith(disposable!);
         menu.AddSeparator().DisposeWith(disposable!);
         menu.AddMenuItem(commandService.ResolveNotNull<SettingsCommand>()).DisposeWith(disposable!);
-        menu.AddMenuItem(commandService.ResolveNotNull<CheckUpdateCommand>()).DisposeWith(disposable!);
+        menu.AddMenuItem(commandService.ResolveNotNull<UpdateCommand>()).DisposeWith(disposable!);
         menu.AddSeparator().DisposeWith(disposable!);
 
         menu.AddMenuItem(commandService.ResolveNotNull<ExitCommand>()).DisposeWith(disposable!);

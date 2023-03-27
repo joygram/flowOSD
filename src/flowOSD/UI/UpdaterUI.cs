@@ -58,6 +58,12 @@ sealed class UpdaterUI : IDisposable
         {
             instance = new Window(this, version, hasUpdate);
 
+            instance.UpdateSize();
+
+            instance.Location = new Point(
+                (Screen.PrimaryScreen.WorkingArea.Width - instance.Width) / 2,
+                (Screen.PrimaryScreen.WorkingArea.Height - instance.Height) / 2);
+
             instance.UpdateUI(await systemEvents.AppUI.FirstOrDefaultAsync());
             instance.Show();
             instance.BringToFront();
@@ -131,7 +137,7 @@ sealed class UpdaterUI : IDisposable
             {
                 layout.Add<CxLabel>(1, 1, x =>
                 {
-                    var link = owner.updater.GetReleaseNotesLink();
+                    var link = owner.updater.ReleaseNotesLink;
 
                     x.Text = "View release notes";
 
@@ -227,10 +233,6 @@ sealed class UpdaterUI : IDisposable
             FormBorderStyle = FormBorderStyle.FixedSingle;
 
             Font = new Font(UIParameters.FontName, this.DpiScale(12), GraphicsUnit.Pixel);
-
-            Location = new Point(
-                (Screen.PrimaryScreen.WorkingArea.Width - Width) / 2,
-                (Screen.PrimaryScreen.WorkingArea.Height - Height) / 2);
         }
 
         public void UpdateUI(UIParameters uiParameters)
@@ -258,6 +260,12 @@ sealed class UpdaterUI : IDisposable
             }
         }
 
+        public void UpdateSize()
+        {
+            MinimumSize = this.DpiScale(new Size(400, 150));
+            Size = this.DpiScale(new Size(400, 150));
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -282,12 +290,6 @@ sealed class UpdaterUI : IDisposable
             UpdateSize();
 
             base.OnDpiChanged(e);
-        }
-
-        private void UpdateSize()
-        {
-            MinimumSize = this.DpiScale(new Size(400, 150));
-            Size = this.DpiScale(new Size(400, 150));
         }
 
         private void OnMouseClick(object? sender, MouseEventArgs e)

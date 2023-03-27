@@ -44,6 +44,7 @@ sealed partial class App : IDisposable
 
     private Osd osd;
     private MainUI mainUI;
+    private UpdaterUI updaterUI;
 
     private HardwareService hardwareService;
     private CommandService commandService;
@@ -89,7 +90,10 @@ sealed partial class App : IDisposable
             commandService,
             hardwareService).DisposeWith(disposable);
 
+        updaterUI = new UpdaterUI(config, systemEvents, updater).DisposeWith(disposable!);
+
         commandService.Register(new MainUICommand(mainUI));
+        commandService.Register(new UpdateCommand(updater, updaterUI));
 
         new NotifyIconUI(
             config,
@@ -103,11 +107,10 @@ sealed partial class App : IDisposable
             commandService,
             hardwareService.ResolveNotNull<IKeyboard>()).DisposeWith(disposable);
 
-        updater.LatestVersion
-            .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(Update)
-            .DisposeWith(disposable);
-        updater.CheckUpdate(false);
+        if (config.UserConfig.CheckForUpdates)
+        {
+            commandService.Resolve<UpdateCommand>()?.Execute(false);
+        }
     }
 
     void IDisposable.Dispose()
@@ -117,11 +120,4 @@ sealed partial class App : IDisposable
     }
 
     public ApplicationContext ApplicationContext { get; }
-
-    private void Update(Version version)
-    {
-        var ui = new UpdaterUI(config, systemEvents, updater).DisposeWith(disposable!);
-
-        ui.Show(version, updater.IsUpdate(version));
-    }
 }

@@ -33,6 +33,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool disableTouchPadInTabletMode;
     private bool controlDisplayRefreshRate;
     private bool confirmGpuModeChange;
+    private bool checkForUpdates;
 
     private bool showPerformanceModeNotification;
     private bool showPowerModeNotification;
@@ -58,6 +59,7 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         controlDisplayRefreshRate = true;
         disableTouchPadInTabletMode = true;
         confirmGpuModeChange = true;
+        checkForUpdates = true;
 
         showPerformanceModeNotification = true;
         showPowerModeNotification = true;
@@ -130,6 +132,12 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => runAtStartup;
         set => SetProperty(ref runAtStartup, value);
+    }
+
+    public bool CheckForUpdates
+    {
+        get => checkForUpdates;
+        set => SetProperty(ref checkForUpdates, value);
     }
 
     public bool DisableTouchPadInTabletMode

@@ -60,9 +60,7 @@ sealed class CommandService : ICommandService
             new ExitCommand(),
             new PrintScreenCommand(keysSender),
             new ClipboardCopyPlainTextCommand(keysSender),
-            new ClipboardPastePlainTextCommand(keysSender),
-            new CheckUpdateCommand(updater)
-        );
+            new ClipboardPastePlainTextCommand(keysSender));
     }
 
     public void Register(CommandBase command, params CommandBase[] commands)
