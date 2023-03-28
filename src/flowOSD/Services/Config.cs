@@ -81,6 +81,9 @@ sealed class Config : IConfig, IDisposable
 
             return config;
         }, true);
+
+        var service = new System.ServiceProcess.ServiceController("ASUSOptimization");
+        UseOptimizationMode = service.Status != System.ServiceProcess.ServiceControllerStatus.Stopped;
     }
 
     void IDisposable.Dispose()
@@ -97,7 +100,7 @@ sealed class Config : IConfig, IDisposable
 
     public DirectoryInfo DataDirectory { get; }
 
-    public bool UseOptimizationMode => true;
+    public bool UseOptimizationMode { get; }
 
     public bool IsPreRelease { get; }
 

@@ -35,6 +35,9 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     private bool confirmGpuModeChange;
     private bool checkForUpdates;
 
+    private KeyboardBacklightLevel keyboardBacklightLevel;
+    private int keyboardBacklightTimeout;
+
     private bool showPerformanceModeNotification;
     private bool showPowerModeNotification;
     private bool showPowerSourceNotification;
@@ -60,6 +63,9 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
         disableTouchPadInTabletMode = true;
         confirmGpuModeChange = true;
         checkForUpdates = true;
+
+        keyboardBacklightLevel = KeyboardBacklightLevel.Low;
+        keyboardBacklightTimeout = 60;
 
         showPerformanceModeNotification = true;
         showPowerModeNotification = true;
@@ -156,6 +162,18 @@ public sealed class UserConfig : INotifyPropertyChanged, IDisposable
     {
         get => confirmGpuModeChange;
         set => SetProperty(ref confirmGpuModeChange, value);
+    }
+
+    public KeyboardBacklightLevel KeyboardBacklightLevel
+    {
+        get => keyboardBacklightLevel;
+        set => SetProperty(ref keyboardBacklightLevel, value);
+    }
+
+    public int KeyboardBacklightTimeout
+    {
+        get => keyboardBacklightTimeout;
+        set => SetProperty(ref keyboardBacklightTimeout, value);
     }
 
     public bool ShowPerformanceModeNotification

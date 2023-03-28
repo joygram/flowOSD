@@ -88,20 +88,18 @@ sealed class AtkWmi : IDisposable, IAtkWmi, IKeyboard
         switch (code)
         {
             case AK_TABLET_STATE:
+                var tabletMode = GetTabletMode();
+
+                // Ignore rotated mode:
+                // - it reasonable in tablet mode (no touchpad manipulation is required)
+                // - it annoying when notebook mode (when device is tilted)
+
+                if (tabletMode != Api.Hardware.TabletMode.Rotated)
                 {
-                    var tabletMode = GetTabletMode();
-
-                    // Ignore rotated mode:
-                    // - it reasonable in tablet mode (no touchpad manipulation is required)
-                    // - it annoying when notebook mode (when device is tilted)
-
-                    if (tabletMode != Api.Hardware.TabletMode.Rotated)
-                    {
-                        tabletModeSubject.OnNext(tabletMode);
-                    }
-
-                    break;
+                    tabletModeSubject.OnNext(tabletMode);
                 }
+
+                break;
         }
     }
 

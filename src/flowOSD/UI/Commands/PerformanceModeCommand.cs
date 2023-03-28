@@ -75,8 +75,10 @@ public class PerformanceModeCommand : CommandBase
         {
             case PerformanceMode.Silent:
                 return PerformanceMode.Default;
+
             case PerformanceMode.Default:
                 return PerformanceMode.Turbo;
+
             case PerformanceMode.Turbo:
                 return PerformanceMode.Silent;
 

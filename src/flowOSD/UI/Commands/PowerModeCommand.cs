@@ -75,8 +75,10 @@ sealed class PowerModeCommand : CommandBase
         {
             case PowerMode.BestPowerEfficiency:
                 return PowerMode.Balanced;
+
             case PowerMode.Balanced:
                 return PowerMode.BestPerformance;
+
             case PowerMode.BestPerformance:
                 return PowerMode.BestPowerEfficiency;
 

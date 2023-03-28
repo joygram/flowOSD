@@ -45,7 +45,7 @@ sealed class ConfigUI : IDisposable
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
-        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents)); 
+        this.systemEvents = systemEvents ?? throw new ArgumentNullException(nameof(systemEvents));
         this.hardwareService = hardwareService ?? throw new ArgumentNullException(nameof(hardwareService));
 
         systemEvents?.AppUI
@@ -77,6 +77,7 @@ sealed class ConfigUI : IDisposable
             instance = new Window(tabListener,
                 new ConfigPages.GeneralConfigPage(config, tabListener),
                 new ConfigPages.NotificationsConfigPage(config, tabListener),
+                new ConfigPages.KeyboardConfigPage(config, tabListener),
                 new ConfigPages.HotKeysConfigPage(config, tabListener, commandService),
                 new ConfigPages.MonitoringConfigPage(config, tabListener, hardwareService.Resolve<ICpu>()));
 
@@ -100,7 +101,7 @@ sealed class ConfigUI : IDisposable
         {
             this.tabListener = tabListener;
             this.tabListener.ShowKeyboardFocusChanged += TabListener_ShowKeyboardFocusChanged;
-            this.pages = new ReadOnlyCollection<ConfigPageBase>(pages);
+            this.pages = new ReadOnlyCollection<ConfigPageBase>(pages.Where(i => i.IsAvailable).ToList());
 
             pageContainer = Init(disposable);
 
@@ -205,7 +206,7 @@ sealed class ConfigUI : IDisposable
             layout.Add(1, 0, container);
 
             layout.Add<ListBox>(0, 0, x =>
-            {               
+            {
                 x.BorderStyle = BorderStyle.None;
                 x.Width = this.DpiScale(listWidth);
                 x.DrawMode = DrawMode.OwnerDrawVariable;
@@ -270,7 +271,7 @@ sealed class ConfigUI : IDisposable
 
                     using var brush = new SolidBrush(color);
                     e.Graphics.FillRoundedRectangle(
-                        brush, 
+                        brush,
                         drawingAreaRect,
                         (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
 
@@ -328,7 +329,7 @@ sealed class ConfigUI : IDisposable
 
             this.Add(layout);
 
-            Padding = new Padding(10,10,5,10);
+            Padding = new Padding(10, 10, 5, 10);
             DoubleBuffered = true;
 
             Text = "Settings";

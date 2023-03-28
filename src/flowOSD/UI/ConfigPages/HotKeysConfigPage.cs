@@ -38,11 +38,33 @@ internal class HotKeysConfigPage : ConfigPageBase
 
         Text = "HotKeys";
 
-        Add("`AURA`", nameof(config.UserConfig.AuraCommand), value => config.UserConfig.AuraCommand = value);
-        Add("`FAN`", nameof(config.UserConfig.FanCommand), value => config.UserConfig.FanCommand = value);
-        Add("`ROG`", nameof(config.UserConfig.RogCommand), value => config.UserConfig.RogCommand = value);
-        Add("`Fn` + `C`", nameof(config.UserConfig.CopyCommand), value => config.UserConfig.CopyCommand = value);
-        Add("`Fn` + `V`", nameof(config.UserConfig.PasteCommand), value => config.UserConfig.PasteCommand = value);
+        var commands = commandService.Commands.Where(i => i.CanExecuteWithHotKey);
+
+        AddConfig<string>(
+            "`AURA`",
+            nameof(config.UserConfig.AuraCommand),
+            value => commandService.Commands.FirstOrDefault(x => x.Name == value)?.Description ?? "[ BLANK ]",
+            () => CreateContextMenu(commands, value => config.UserConfig.AuraCommand = value));
+        AddConfig<string>(
+            "`FAN`", 
+            nameof(config.UserConfig.FanCommand),
+            value => commandService.Commands.FirstOrDefault(x => x.Name == value)?.Description ?? "[ BLANK ]",
+            () => CreateContextMenu(commands, value => config.UserConfig.FanCommand = value));
+        AddConfig<string>(
+            "`ROG`", 
+            nameof(config.UserConfig.RogCommand),
+            value => commandService.Commands.FirstOrDefault(x => x.Name == value)?.Description ?? "[ BLANK ]",
+            () => CreateContextMenu(commands, value => config.UserConfig.RogCommand = value));
+        AddConfig<string>(
+            "`Fn` + `C`", 
+            nameof(config.UserConfig.CopyCommand),
+            value => commandService.Commands.FirstOrDefault(x => x.Name == value)?.Description ?? "[ BLANK ]",
+            () => CreateContextMenu(commands, value => config.UserConfig.CopyCommand = value));
+        AddConfig<string>(
+            "`Fn` + `V`", 
+            nameof(config.UserConfig.PasteCommand),
+            value => commandService.Commands.FirstOrDefault(x => x.Name == value)?.Description ?? "[ BLANK ]",
+            () => CreateContextMenu(commands, value => config.UserConfig.PasteCommand = value));
 
         this.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         this.Add<FlowLayoutPanel>(0, RowStyles.Count - 1, 2, 1, panel =>
@@ -91,60 +113,6 @@ internal class HotKeysConfigPage : ConfigPageBase
                     config.UserConfig.CopyCommand = null;
                     config.UserConfig.PasteCommand = null;
                 };
-            });
-        });
-    }
-
-    private void Add(string text, string propertyName, Action<string?> setValue)
-    {
-        RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        this.Add<CxGrid>(0, RowStyles.Count - 1, grid =>
-        {
-            grid.TabListener = TabListener;
-            grid.Padding = new Padding(10, 5, 10, 5);
-            grid.Dock = DockStyle.Top;
-            grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            grid.AutoSize = true;
-            grid.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
-            
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 1));
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 3));
-            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-            grid.Add<CxLabel>(0, 0, x =>
-            {
-                x.AutoSize = true;
-                x.MinimumSize = new Size(100, 30);
-                x.TabListener = TabListener;
-                x.Margin = new Padding(5, 10, 20, 10);
-                x.Padding = new Padding(10);
-                x.Text = text;
-                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-                x.ForeColor = SystemColors.ControlText;
-                x.UseClearType = true;
-                x.ShowKeys = true;
-            });
-
-            grid.Add<CxButton>(1, 0, x =>
-            {
-                x.AutoSize = true;
-                x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
-                x.TabListener = TabListener;
-                x.Margin = new Padding(0, 5, 0, 5);
-                x.Padding = new Padding(10, 10, 15, 10);
-                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-                x.DropDownMenu = CreateContextMenu(
-                    commandService.Commands.Where(i => i.CanExecuteWithHotKey),
-                    setValue);
-
-                x.TextAlign = ContentAlignment.MiddleLeft;
-                x.IconFont = IconFont;
-
-                var binding = new Binding("Text", Config.UserConfig, propertyName, true, DataSourceUpdateMode.Never);
-                binding.Format += (_, e) => e.Value = commandService.Commands
-                    .FirstOrDefault(x => x.Name == e.Value as string)?.Description ?? "[ BLANK ]";
-
-                x.DataBindings.Add(binding);
             });
         });
     }

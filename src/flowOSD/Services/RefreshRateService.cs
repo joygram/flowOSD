@@ -41,8 +41,9 @@ internal class RefreshRateService : IDisposable
         this.powerManagement = powerManagement ?? throw new ArgumentNullException(nameof(powerManagement));
 
         powerManagement.PowerSource
+            .CombineLatest(display.State, (powerSource, displayState) => new { powerSource, displayState })
             .Throttle(TimeSpan.FromSeconds(5))
-            .Subscribe(Update)
+            .Subscribe(x => Update(x.powerSource, x.displayState))
             .DisposeWith(disposable);
     }
 
@@ -54,12 +55,12 @@ internal class RefreshRateService : IDisposable
 
     public async void Update()
     {
-        Update(await powerManagement.PowerSource.FirstOrDefaultAsync());
+        Update(await powerManagement.PowerSource.FirstOrDefaultAsync(), await display.State.FirstOrDefaultAsync());
     }
 
-    private async void Update(PowerSource powerSource)
+    private async void Update(PowerSource powerSource, DeviceState displayState)
     {
-        if (!config.UserConfig.ControlDisplayRefreshRate)
+        if (!config.UserConfig.ControlDisplayRefreshRate && displayState == DeviceState.Disabled)
         {
             return;
         }

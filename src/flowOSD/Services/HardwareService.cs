@@ -82,7 +82,10 @@ sealed class HardwareService : IDisposable, IHardwareService
         else
         {
             keyboard = new Hardware.Hid.Keyboard(hidDevice);
-            keyboardBacklight = new Hardware.Hid.KeyboardBacklight(hidDevice, KeyboardBacklightLevel.Low); // << change to config
+            keyboardBacklight = new Hardware.Hid.KeyboardBacklight(hidDevice, config.UserConfig.KeyboardBacklightLevel);
+            keyboardBacklight.Level
+                .Subscribe(x => config.UserConfig.KeyboardBacklightLevel = x)
+                .DisposeWith(disposable);
             touchPad = new Hardware.Hid.TouchPad(hidDevice);
         }
 
@@ -174,9 +177,10 @@ sealed class HardwareService : IDisposable, IHardwareService
         }
 
         keyboardBacklightService = config.UseOptimizationMode ? null : new KeyboardBacklightService(
+            config, 
             keyboardBacklight,
             keyboard,
-            TimeSpan.FromSeconds(60)).DisposeWith(disposable);
+            powerManagement).DisposeWith(disposable);
 
         refreshRateService = new RefreshRateService(
             this.config,

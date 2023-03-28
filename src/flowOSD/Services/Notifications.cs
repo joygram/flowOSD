@@ -188,7 +188,7 @@ sealed class Notifications : IDisposable
         //osd.Show(new OsdData(icon, displayBrightness.GetLevel()));
 
         var hostHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Shell_TrayWnd", "");
-        if (hostHandle > 0 && (hostHandle = FindWindowEx(hostHandle, IntPtr.Zero, "ReBarWindow32", "")) >0)
+        if (hostHandle > 0 && (hostHandle = FindWindowEx(hostHandle, IntPtr.Zero, "ReBarWindow32", "")) > 0)
         {
             var shellHandle = FindWindowEx(hostHandle, IntPtr.Zero, "MSTaskSwWClass", null);
             if (shellHandle > 0)
@@ -229,22 +229,16 @@ sealed class Notifications : IDisposable
         switch (performanceMode)
         {
             case PerformanceMode.Default:
-                {
-                    osd.Show(new OsdData(UIImages.Performance_Default, $"{performanceMode.ToText()} performance mode"));
-                    break;
-                }
+                osd.Show(new OsdData(UIImages.Performance_Default, $"{performanceMode.ToText()} performance mode"));
+                break;
 
             case PerformanceMode.Turbo:
-                {
-                    osd.Show(new OsdData(UIImages.Performance_Turbo, $"{performanceMode.ToText()} performance mode"));
-                    break;
-                }
+                osd.Show(new OsdData(UIImages.Performance_Turbo, $"{performanceMode.ToText()} performance mode"));
+                break;
 
             case PerformanceMode.Silent:
-                {
-                    osd.Show(new OsdData(UIImages.Performance_Silent, $"{performanceMode.ToText()} performance mode"));
-                    break;
-                }
+                osd.Show(new OsdData(UIImages.Performance_Silent, $"{performanceMode.ToText()} performance mode"));
+                break;
         }
     }
 
@@ -258,22 +252,16 @@ sealed class Notifications : IDisposable
         switch (powerMode)
         {
             case PowerMode.BestPowerEfficiency:
-                {
-                    osd.Show(new OsdData(UIImages.Power_BestPowerEfficiency, $"{powerMode.ToText()} power mode"));
-                    break;
-                }
+                osd.Show(new OsdData(UIImages.Power_BestPowerEfficiency, $"{powerMode.ToText()} power mode"));
+                break;
 
             case PowerMode.Balanced:
-                {
-                    osd.Show(new OsdData(UIImages.Power_Balanced, $"{powerMode.ToText()} power mode"));
-                    break;
-                }
+                osd.Show(new OsdData(UIImages.Power_Balanced, $"{powerMode.ToText()} power mode"));
+                break;
 
             case PowerMode.BestPerformance:
-                {
-                    osd.Show(new OsdData(UIImages.Power_BestPerformance, $"{powerMode.ToText()} power mode"));
-                    break;
-                }
+                osd.Show(new OsdData(UIImages.Power_BestPerformance, $"{powerMode.ToText()} power mode"));
+                break;
         }
     }
 

@@ -22,5 +22,8 @@ namespace flowOSD.Api.Hardware;
 public enum PowerEvent
 {
     Suspend,
-    Resume
+    Resume,
+    DisplayOn,
+    DisplayOff,
+    DisplayDimmed,
 }

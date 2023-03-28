@@ -24,6 +24,7 @@ using flowOSD.Native;
 using static flowOSD.Native.User32;
 using static flowOSD.Native.Kernel32;
 using System.Reactive.Linq;
+using flowOSD.Api;
 
 namespace flowOSD.Services;
 
@@ -31,17 +32,25 @@ sealed class KeyboardBacklightService : IDisposable
 {
     private CompositeDisposable? disposable = new CompositeDisposable();
 
+    private IConfig config;
     private IKeyboardBacklight keyboardBacklight;
     private IKeyboard keyboard;
+    private IPowerManagement powerManagement;
     private TimeSpan timeout;
 
     private volatile uint lastActivityTime;
 
-    public KeyboardBacklightService(IKeyboardBacklight keyboardBacklight, IKeyboard keyboard, TimeSpan timeout)
+    public KeyboardBacklightService(
+        IConfig config,
+        IKeyboardBacklight keyboardBacklight,
+        IKeyboard keyboard,
+        IPowerManagement powerManagement)
     {
-        this.keyboardBacklight = keyboardBacklight;
-        this.keyboard = keyboard;
-        this.timeout = timeout;
+        this.config = config ?? throw new ArgumentNullException(nameof(config));
+        this.keyboardBacklight = keyboardBacklight ?? throw new ArgumentNullException(nameof(keyboardBacklight));
+        this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
+        this.powerManagement = powerManagement ?? throw new ArgumentNullException(nameof(powerManagement));
+        this.timeout = TimeSpan.FromSeconds(config.UserConfig.KeyboardBacklightTimeout);
 
         this.keyboard.Activity
             .Subscribe(x =>
@@ -51,11 +60,25 @@ sealed class KeyboardBacklightService : IDisposable
             })
             .DisposeWith(disposable);
 
+        this.config.UserConfig.PropertyChanged
+            .Where(name => name == nameof(UserConfig.KeyboardBacklightTimeout))
+            .Subscribe(_ => this.timeout = TimeSpan.FromSeconds(config.UserConfig.KeyboardBacklightTimeout))
+            .DisposeWith(disposable);
+
+        this.powerManagement.PowerEvent
+            .Where(x => x == PowerEvent.DisplayOff || x == PowerEvent.DisplayDimmed)
+            .Subscribe(_ => keyboardBacklight.SetState(DeviceState.Disabled))
+            .DisposeWith(disposable);
+
+        this.powerManagement.PowerEvent
+            .Where(x => x == PowerEvent.DisplayOn)
+            .Subscribe(_ => lastActivityTime = GetTickCount())
+            .DisposeWith(disposable);
+
         Observable.Interval(TimeSpan.FromMilliseconds(1000))
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(x => UpdateBacklightState())
             .DisposeWith(disposable);
-
     }
 
     public TimeSpan Timeout
@@ -82,9 +105,18 @@ sealed class KeyboardBacklightService : IDisposable
 
         if (GetLastInputInfo(ref lii))
         {
-            var isIdle = timeout < TimeSpan.FromMilliseconds(GetTickCount() - Math.Max(lastActivityTime, lii.dwTime));
+            if (timeout.Seconds > 0)
+            {
+                var isIdle = timeout < TimeSpan.FromMilliseconds(GetTickCount() - Math.Max(lastActivityTime, lii.dwTime));
 
-            keyboardBacklight.SetState(isIdle ? DeviceState.Disabled : DeviceState.Enabled);
+                keyboardBacklight.SetState(isIdle ? DeviceState.Disabled : DeviceState.Enabled);
+                return;
+            }
+
+            if (TimeSpan.FromMilliseconds(GetTickCount() - Math.Max(lastActivityTime, lii.dwTime)) < TimeSpan.FromSeconds(2))
+            {
+                keyboardBacklight.SetState(DeviceState.Enabled);
+            }
         }
     }
 }

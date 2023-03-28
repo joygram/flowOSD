@@ -177,7 +177,6 @@ sealed class CxContextMenu : ContextMenuStrip
         item.CommandParameter = commandParameter;
 
         item.DataBindings.Add("Text", command, "Text");
-        item.DataBindings.Add("Visible", command, "Enabled");
 
         return item;
     }
@@ -190,18 +189,6 @@ sealed class CxContextMenu : ContextMenuStrip
         {
             dependsOn.VisibleChanged += (sender, e) => item.Visible = dependsOn.Visible;
         }
-
-        return item;
-    }
-
-    public ToolStripItem AddMonitoringItem(string text)
-    {
-        var item = new ToolStripLabel();
-        item.Margin = new Padding(0);
-        item.Text = text;
-        item.Enabled = false;
-
-        Items.Add(item);
 
         return item;
     }
@@ -278,28 +265,20 @@ sealed class CxContextMenu : ContextMenuStrip
         switch (BorderRadius)
         {
             case CornerRadius.Off:
-                {
-                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_DONOTROUND;
-                    break;
-                }
+                corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_DONOTROUND;
+                break;
 
             case CornerRadius.Small:
-                {
-                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUNDSMALL;
-                    break;
-                }
+                corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUNDSMALL;
+                break;
 
             case CornerRadius.Round:
-                {
-                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
-                    break;
-                }
+                corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
+                break;
 
             default:
-                {
-                    corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_DEFAULT;
-                    break;
-                }
+                corner = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_DEFAULT;
+                break;
         }
 
         SetCornerPreference(Handle, corner);
@@ -489,11 +468,11 @@ sealed class CxContextMenu : ContextMenuStrip
 
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
                 e.Graphics.FillRoundedRectangle(
-                    backgroundHoverBrush, 
-                    x, 
-                    y, 
-                    width, 
-                    height, 
+                    backgroundHoverBrush,
+                    x,
+                    y,
+                    width,
+                    height,
                     (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
             }
         }

@@ -32,14 +32,15 @@ internal class ConfigPageBase : TableLayoutPanel
 
     private UIParameters? uiParameters;
 
-    protected ConfigPageBase(IConfig config, CxTabListener? tabListener = null)
+    protected ConfigPageBase(IConfig config, CxTabListener? tabListener = null, bool isAvailable = true)
     {
         Config = config ?? throw new ArgumentNullException(nameof(config));
         TabListener = tabListener ?? throw new ArgumentNullException(nameof(tabListener));
+        IsAvailable = isAvailable;
 
         AutoScroll = false;
         AutoSize = true;
-       // AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        // AutoSizeMode = AutoSizeMode.GrowAndShrink;
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         Padding = new Padding(3);
@@ -57,6 +58,8 @@ internal class ConfigPageBase : TableLayoutPanel
             UpdateUI();
         }
     }
+
+    public bool IsAvailable { get; }
 
     protected IConfig Config { get; }
 
@@ -130,6 +133,63 @@ internal class ConfigPageBase : TableLayoutPanel
                     DataSourceUpdateMode.OnPropertyChanged);
             });
         });
+    }
+
+    protected CxGrid AddConfig<T>(string text, string propertyName, Func<T?, string> getTextValue, Func<CxContextMenu> getMenu)
+    {
+        var r = default(CxGrid);
+
+        RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        this.Add<CxGrid>(0, RowStyles.Count - 1, grid =>
+        {
+            grid.TabListener = TabListener;
+            grid.Padding = new Padding(10, 5, 10, 5);
+            grid.Dock = DockStyle.Top;
+            grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            grid.AutoSize = true;
+            grid.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 1));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 3));
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            grid.Add<CxLabel>(0, 0, x =>
+            {
+                x.AutoSize = true;
+                x.MinimumSize = new Size(100, 30);
+                x.TabListener = TabListener;
+                x.Margin = new Padding(5, 10, 20, 10);
+                x.Padding = new Padding(10);
+                x.Text = text;
+                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+                x.ForeColor = SystemColors.ControlText;
+                x.UseClearType = true;
+                x.ShowKeys = true;
+            });
+
+            grid.Add<CxButton>(1, 0, x =>
+            {
+                x.AutoSize = true;
+                x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+                x.TabListener = TabListener;
+                x.Margin = new Padding(0, 5, 0, 5);
+                x.Padding = new Padding(10, 10, 15, 10);
+                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+                x.DropDownMenu = getMenu();
+
+                x.TextAlign = ContentAlignment.MiddleLeft;
+                x.IconFont = IconFont;
+
+                var binding = new Binding("Text", Config.UserConfig, propertyName, true, DataSourceUpdateMode.Never);
+                binding.Format += (_, e) => e.Value = getTextValue(e.Value is T ? (T)e.Value : default(T));
+
+                x.DataBindings.Add(binding);
+            });
+
+            r = grid;
+        });
+
+        return r!;
     }
 
     protected override void OnVisibleChanged(EventArgs e)

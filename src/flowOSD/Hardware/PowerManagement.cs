@@ -34,6 +34,8 @@ using static Native.Powrprof;
 sealed partial class PowerManagement : IDisposable, IPowerManagement
 {
     private static Guid GUID_ACDC_POWER_SOURCE = new Guid("5D3E9A59-E9D5-4B00-A6BD-FF34FF516548");
+    private static Guid GUID_SESSION_USER_PRESENCE = new Guid("3C0F4548-C03F-4c4d-B9F2-237EDE686376");
+    private static Guid GUID_SESSION_DISPLAY_STATUS = new Guid("2B84C20E-AD23-4ddf-93DB-05FFBD7EFCA5");
 
     private static Guid PROCESSOR_SUBGROUP = new Guid("54533251-82be-4824-96c1-47b60b740d00");
     private static Guid BOOST_SETTING = new Guid("be337238-0d82-4146-a960-4f3749d470c7");
@@ -43,6 +45,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
     private static Guid OVERLAY_BETTER_BATTERY = new Guid("961cc777-2547-4f9d-8174-7d86181b8a7a");
     private static Guid OVERLAY_BETTER_PERFORMANCE = new Guid("3af9B8d9-7c97-431d-ad78-34a8bfea439f");
     private static Guid OVERLAY_BEST_PERFORMANCE = new Guid("ded574b5-45a0-4f42-8737-46345c09c238");
+
 
     private CompositeDisposable? disposable = new CompositeDisposable();
 
@@ -86,6 +89,8 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
 
         new PowerSettingSubscription(BOOST_SETTING, HandlerCallback).DisposeWith(disposable);
         new PowerSettingSubscription(GUID_ACDC_POWER_SOURCE, HandlerCallback).DisposeWith(disposable);
+        new PowerSettingSubscription(GUID_SESSION_DISPLAY_STATUS, HandlerCallback).DisposeWith(disposable);
+
         new PowerModeSubscription(PowerModeCallback).DisposeWith(disposable);
         new PowerSuspendResumeSubscription(HandlerCallback).DisposeWith(disposable);
     }
@@ -139,22 +144,16 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
         switch (powerMode)
         {
             case Api.Hardware.PowerMode.BestPerformance:
-                {
-                    PowerSetActiveOverlayScheme(OVERLAY_BEST_PERFORMANCE);
-                    break;
-                }
+                PowerSetActiveOverlayScheme(OVERLAY_BEST_PERFORMANCE);
+                break;
 
             case Api.Hardware.PowerMode.Balanced:
-                {
-                    PowerSetActiveOverlayScheme(Guid.Empty);
-                    break;
-                }
+                PowerSetActiveOverlayScheme(Guid.Empty);
+                break;
 
             case Api.Hardware.PowerMode.BestPowerEfficiency:
-                {
-                    PowerSetActiveOverlayScheme(OVERLAY_BETTER_BATTERY);
-                    break;
-                }
+                PowerSetActiveOverlayScheme(OVERLAY_BETTER_BATTERY);
+                break;
         }
     }
 
@@ -235,37 +234,49 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
         switch (eventType)
         {
             case PBT_APMSUSPEND:
-                {
-                    powerEventSubject.OnNext(Api.Hardware.PowerEvent.Suspend);
-                    break;
-                }
+                powerEventSubject.OnNext(Api.Hardware.PowerEvent.Suspend);
+                break;
 
             case PBT_APMRESUMEAUTOMATIC:
-                {
-                    powerEventSubject.OnNext(Api.Hardware.PowerEvent.Resume);
-                    break;
-                }
+                powerEventSubject.OnNext(Api.Hardware.PowerEvent.Resume);
+                break;
 
             case PBT_POWERSETTINGCHANGE:
+                var pbs = Marshal.PtrToStructure<POWERBROADCAST_SETTING>(setting);
+
+                if (pbs.PowerSetting == BOOST_SETTING)
                 {
-                    var pbs = Marshal.PtrToStructure<POWERBROADCAST_SETTING>(setting);
-
-                    if (pbs.PowerSetting == BOOST_SETTING)
-                    {
-                        isBoostSubject.OnNext(pbs.Data != 0);
-                    }
-
-                    if (pbs.PowerSetting == GUID_ACDC_POWER_SOURCE)
-                    {
-                        var powerSource = pbs.Data == 1
-                            ? Api.Hardware.PowerSource.Battery
-                            : Api.Hardware.PowerSource.Charger;
-
-                        powerSourceSubject.OnNext(powerSource);
-                    }
-
-                    break;
+                    isBoostSubject.OnNext(pbs.Data != 0);
                 }
+
+                if (pbs.PowerSetting == GUID_ACDC_POWER_SOURCE)
+                {
+                    var powerSource = pbs.Data == 1
+                        ? Api.Hardware.PowerSource.Battery
+                        : Api.Hardware.PowerSource.Charger;
+
+                    powerSourceSubject.OnNext(powerSource);
+                }
+
+                if (pbs.PowerSetting == GUID_SESSION_DISPLAY_STATUS)
+                {
+                    switch (pbs.Data)
+                    {
+                        case 0:
+                            powerEventSubject.OnNext(Api.Hardware.PowerEvent.DisplayOff);
+                            break;
+
+                        case 1:
+                            powerEventSubject.OnNext(Api.Hardware.PowerEvent.DisplayOn);
+                            break;
+
+                        case 2:
+                            powerEventSubject.OnNext(Api.Hardware.PowerEvent.DisplayDimmed);
+                            break;
+                    }
+                }
+
+                break;
         }
 
         return 0;
@@ -277,29 +288,21 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
         switch (Mode)
         {
             case EFFECTIVE_POWER_MODE.EffectivePowerModeBatterySaver:
-                {
-                    isBatterySaverSubject.OnNext(true);
-                    return;
-                }
+                isBatterySaverSubject.OnNext(true);
+                return;
 
             case EFFECTIVE_POWER_MODE.EffectivePowerModeBetterBattery:
-                {
-                    powerMode = Api.Hardware.PowerMode.BestPowerEfficiency;
-                    break;
-                }
+                powerMode = Api.Hardware.PowerMode.BestPowerEfficiency;
+                break;
 
             case EFFECTIVE_POWER_MODE.EffectivePowerModeBalanced:
-                {
-                    powerMode = Api.Hardware.PowerMode.Balanced;
-                    break;
-                }
+                powerMode = Api.Hardware.PowerMode.Balanced;
+                break;
 
             case EFFECTIVE_POWER_MODE.EffectivePowerModeMaxPerformance:
             case EFFECTIVE_POWER_MODE.EffectivePowerModeHighPerformance:
-                {
-                    powerMode = Api.Hardware.PowerMode.BestPerformance;
-                    break;
-                }
+                powerMode = Api.Hardware.PowerMode.BestPerformance;
+                break;
 
             default:
                 return;
@@ -319,7 +322,7 @@ sealed partial class PowerManagement : IDisposable, IPowerManagement
         private IntPtr handle;
 
         public PowerSettingSubscription(Guid setting, DEVICENOTIFYPROC callback)
-        { 
+        {
             this.callback = callback;
 
             var errorCode = PowerSettingRegisterNotification(

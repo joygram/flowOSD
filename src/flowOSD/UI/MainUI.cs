@@ -677,22 +677,18 @@ sealed class MainUI : IDisposable
             switch (owner.config.UserConfig.PerformanceModeOverride)
             {
                 case PerformanceMode.Silent:
-                    {
-                        performanceModeButton.Icon = UIImages.Performance_Silent;
-                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Default
-                            ? PerformanceMode.Silent
-                            : PerformanceMode.Default;
-                        break;
-                    }
+                    performanceModeButton.Icon = UIImages.Performance_Silent;
+                    performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Default
+                        ? PerformanceMode.Silent
+                        : PerformanceMode.Default;
+                    break;
 
                 case PerformanceMode.Turbo:
-                    {
-                        performanceModeButton.Icon = UIImages.Performance_Turbo;
-                        performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Default
-                            ? PerformanceMode.Turbo
-                            : PerformanceMode.Default;
-                        break;
-                    }
+                    performanceModeButton.Icon = UIImages.Performance_Turbo;
+                    performanceModeButton.CommandParameter = performanceMode == PerformanceMode.Default
+                        ? PerformanceMode.Turbo
+                        : PerformanceMode.Default;
+                    break;
             }
 
             performanceModeLabel.Text = owner.config.UserConfig.PerformanceModeOverride.ToText();
@@ -719,23 +715,19 @@ sealed class MainUI : IDisposable
                 switch (powerMode)
                 {
                     case PowerMode.BestPowerEfficiency:
-                        {
-                            powerModeButton.Icon = UIImages.Power_BestPowerEfficiency;
-                            powerModeLabel.Text = powerMode.ToText();
-                            break;
-                        }
+                        powerModeButton.Icon = UIImages.Power_BestPowerEfficiency;
+                        powerModeLabel.Text = powerMode.ToText();
+                        break;
+
                     case PowerMode.Balanced:
-                        {
-                            powerModeButton.Icon = UIImages.Power_Balanced;
-                            powerModeLabel.Text = powerMode.ToText();
-                            break;
-                        }
+                        powerModeButton.Icon = UIImages.Power_Balanced;
+                        powerModeLabel.Text = powerMode.ToText();
+                        break;
+
                     case PowerMode.BestPerformance:
-                        {
-                            powerModeButton.Icon = UIImages.Power_BestPerformance;
-                            powerModeLabel.Text = powerMode.ToText();
-                            break;
-                        }
+                        powerModeButton.Icon = UIImages.Power_BestPerformance;
+                        powerModeLabel.Text = powerMode.ToText();
+                        break;
                 }
             }
         }
