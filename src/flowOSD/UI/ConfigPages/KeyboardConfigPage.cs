@@ -18,7 +18,7 @@
  */
 namespace flowOSD.UI.ConfigPages;
 
-using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Extensions;
 using flowOSD.UI.Commands;
 using flowOSD.UI.Components;
@@ -36,9 +36,9 @@ internal class KeyboardConfigPage : ConfigPageBase
 
         var grid = AddConfig<int>(
             "Backlight timeout",
-            nameof(config.UserConfig.KeyboardBacklightTimeout),
+            nameof(config.Common.KeyboardBacklightTimeout),
             value => GetTimeoutText(value),
-            () => CreateContextMenu(value => config.UserConfig.KeyboardBacklightTimeout = value));
+            () => CreateContextMenu(value => config.Common.KeyboardBacklightTimeout = value));
 
         grid.ColumnStyles[0].Width = 2;
         grid.ColumnStyles[1].Width = 1;

@@ -30,6 +30,7 @@ using flowOSD.UI.ConfigPages;
 using static flowOSD.Extensions.Forms;
 using static flowOSD.Extensions.Common;
 using flowOSD.Api.Hardware;
+using flowOSD.Api.Configs;
 
 sealed class ConfigUI : IDisposable
 {

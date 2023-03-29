@@ -19,11 +19,13 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Extensions;
 using flowOSD.UI.Components;
 using System.Drawing.Drawing2D;
 using System.Reactive.Disposables;
 using static flowOSD.Extensions.Common;
+using static flowOSD.Extensions.Forms;
 
 internal class ConfigPageBase : TableLayoutPanel
 {
@@ -127,12 +129,124 @@ internal class ConfigPageBase : TableLayoutPanel
                 y.Anchor = AnchorStyles.Right;
                 y.DataBindings.Add(
                     "IsChecked",
-                    Config.UserConfig,
+                    Config.Common,
                     propertyName,
                     false,
                     DataSourceUpdateMode.OnPropertyChanged);
             });
         });
+    }
+
+    protected CxToggle AddConfig(string icon, string text, Func<bool> getValue, Action<bool> setValue)
+    {
+        var toogle = default(CxToggle);
+
+        RowStyles.Add(new RowStyle(SizeType.AutoSize, 100));
+        this.Add<CxGrid>(0, RowStyles.Count - 1, x =>
+        {
+            x.TabListener = TabListener;
+            x.Padding = new Padding(10, 5, 10, 5);
+            x.Dock = DockStyle.Top;
+            x.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            x.AutoSize = true;
+            x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+
+            x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            x.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            x.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            x.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            if (!string.IsNullOrEmpty(icon))
+            {
+                x.Add<CxLabel>(0, 0, y =>
+                {
+                    y.TabListener = TabListener;
+                    y.AutoSize = true;
+                    y.Margin = LabelMargin;
+                    y.Padding = new Padding(0, 10, 0, 0);
+                    y.Anchor = AnchorStyles.Left;
+                    y.ForeColor = Color.Wheat;
+                    y.Icon = icon;
+                    y.IconFont = IconFont;
+                });
+            }
+
+            x.Add<CxLabel>(1, 0, y =>
+            {
+                y.TabListener = TabListener;
+                y.AutoSize = true;
+                y.Margin = LabelMargin;
+                y.Text = text;
+                y.Anchor = AnchorStyles.Left;
+                y.ForeColor = SystemColors.ControlDarkDark;
+                y.UseClearType = true;
+            });
+
+            x.Add<CxToggle>(2, 0, y =>
+            {
+                y.TabListener = TabListener;
+                y.BackColor = SystemColors.Control;
+                y.ForeColor = SystemColors.WindowText;
+                y.Margin = CheckBoxMargin;
+                y.Anchor = AnchorStyles.Right;
+                y.IsChecked = getValue();
+                y.IsCheckedChanged += (_, _) => setValue(y.IsChecked);
+
+                toogle = y;
+            });
+        });
+
+        return toogle!;
+    }
+
+    protected CxGrid AddConfig(string text, Func<CxContextMenu> getMenu)
+    {
+        var layout = Create<CxGrid>(grid =>
+        {
+            grid.TabListener = TabListener;
+            grid.Padding = new Padding(10, 5, 10, 5);
+            grid.Dock = DockStyle.Top;
+            grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            grid.AutoSize = true;
+            grid.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 1));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 1));
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            grid.Add<CxLabel>(0, 0, x =>
+            {
+                x.AutoSize = true;
+                x.MinimumSize = new Size(100, 30);
+                x.TabListener = TabListener;
+                x.Margin = new Padding(5, 10, 20, 10);
+                x.Padding = new Padding(10);
+                x.Text = text;
+                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+                x.ForeColor = SystemColors.ControlText;
+                x.UseClearType = true;
+                x.ShowKeys = true;
+            });
+
+            grid.Add<CxButton>(1, 0, x =>
+            {
+                x.AutoSize = true;
+                x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
+                x.TabListener = TabListener;
+                x.Margin = new Padding(0, 5, 0, 5);
+                x.Padding = new Padding(10, 10, 15, 10);
+                x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+                x.DropDownMenu = getMenu();
+
+                x.TextAlign = ContentAlignment.MiddleLeft;
+                x.IconFont = IconFont;
+            });
+        });
+
+        RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        this.Add(0, RowStyles.Count - 1, layout);
+
+        return layout;
     }
 
     protected CxGrid AddConfig<T>(string text, string propertyName, Func<T?, string> getTextValue, Func<CxContextMenu> getMenu)
@@ -180,7 +294,7 @@ internal class ConfigPageBase : TableLayoutPanel
                 x.TextAlign = ContentAlignment.MiddleLeft;
                 x.IconFont = IconFont;
 
-                var binding = new Binding("Text", Config.UserConfig, propertyName, true, DataSourceUpdateMode.Never);
+                var binding = new Binding("Text", Config.Common, propertyName, true, DataSourceUpdateMode.Never);
                 binding.Format += (_, e) => e.Value = getTextValue(e.Value is T ? (T)e.Value : default(T));
 
                 x.DataBindings.Add(binding);

@@ -22,6 +22,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reflection;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using flowOSD.Services;

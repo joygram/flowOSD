@@ -16,13 +16,18 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.Api;
+
+namespace flowOSD.Api.Configs;
 
 using System.Diagnostics;
 
 public interface IConfig
 {
-    UserConfig UserConfig { get; }
+    CommonConfig Common { get; }
+
+    NotificationsConfig Notifications { get; }
+
+    HotKeysConfig HotKeys { get; }
 
     FileInfo AppFile { get; }
 

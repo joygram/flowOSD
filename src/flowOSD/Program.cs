@@ -38,7 +38,7 @@ public static class Program
         }
 
         var disposable = new CompositeDisposable();
-        var config = new Config().DisposeWith(disposable);
+        var config = new ConfigService().DisposeWith(disposable);
 
         var listener = default(TextWriterTraceListener);
 

@@ -27,6 +27,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Windows.Input;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using flowOSD.Native;
@@ -196,20 +197,20 @@ sealed class MainUI : IDisposable
 
             InitComponents();
 
-            owner.config.UserConfig.PropertyChanged
-                .Where(propertyName => propertyName == nameof(UserConfig.ShowBatteryChargeRate))
+            owner.config.Common.PropertyChanged
+                .Where(propertyName => propertyName == nameof(CommonConfig.ShowBatteryChargeRate))
                 .ObserveOn(SynchronizationContext.Current!)
                 .Subscribe(_ => UpdateBatteryVisiblity())
                 .DisposeWith(disposable!);
 
-            owner.config.UserConfig.PropertyChanged
-                .Where(propertyName => propertyName == nameof(UserConfig.ShowCpuTemperature))
+            owner.config.Common.PropertyChanged
+                .Where(propertyName => propertyName == nameof(CommonConfig.ShowCpuTemperature))
                 .ObserveOn(SynchronizationContext.Current!)
                 .Subscribe(_ => UpdateCpuTemperatureVisiblity())
                 .DisposeWith(disposable!);
 
-            owner.config.UserConfig.PropertyChanged
-                .Where(propertyName => propertyName == nameof(UserConfig.PerformanceModeOverride))
+            owner.config.Common.PropertyChanged
+                .Where(propertyName => propertyName == nameof(CommonConfig.PerformanceModeOverride))
                 .CombineLatest(owner.atk.PerformanceMode, (_, performanceMode) => performanceMode)
                 .ObserveOn(SynchronizationContext.Current!)
                 .Subscribe(UpdatePerformanceModeOverride)
@@ -292,15 +293,15 @@ sealed class MainUI : IDisposable
                     iconFont,
                     "",
                     command: owner.commandService.Resolve<PerformanceModeCommand>(),
-                    commandParameter: owner.config.UserConfig.PerformanceModeOverride);
+                    commandParameter: owner.config.Common.PerformanceModeOverride);
 
                 performanceMenuItemCommand = new RelayCommand(x =>
                 {
                     if (x is PerformanceMode performanceMode)
                     {
                         owner.commandService.Resolve<PerformanceModeCommand>()?.Execute(x);
-                        owner.config.UserConfig.PerformanceModeOverride = performanceMode;
-                        owner.config.UserConfig.PerformanceModeOverrideEnabled = performanceMode != PerformanceMode.Default;
+                        owner.config.Common.PerformanceModeOverride = performanceMode;
+                        owner.config.Common.PerformanceModeOverrideEnabled = performanceMode != PerformanceMode.Default;
                     }
                 });
 
@@ -451,7 +452,7 @@ sealed class MainUI : IDisposable
 
         protected override void OnActivated(EventArgs e)
         {
-            if (owner.config.UserConfig.ShowBatteryChargeRate)
+            if (owner.config.Common.ShowBatteryChargeRate)
             {
                 batteryUpdate = owner.battery.Rate
                     .CombineLatest(
@@ -463,7 +464,7 @@ sealed class MainUI : IDisposable
                     .Subscribe(x => UpdateBattery(x.rate, x.capacity, x.powerState, x.estimatedTime));
             }
 
-            if (owner.cpu.IsAvailable && owner.config.UserConfig.ShowCpuTemperature)
+            if (owner.cpu.IsAvailable && owner.config.Common.ShowCpuTemperature)
             {
                 cpuTemperatureUpdate = owner.cpu.Temperature
                       .ObserveOn(SynchronizationContext.Current!)
@@ -645,7 +646,7 @@ sealed class MainUI : IDisposable
                 return;
             }
 
-            batteryLabel.Visible = owner.config.UserConfig.ShowBatteryChargeRate;
+            batteryLabel.Visible = owner.config.Common.ShowBatteryChargeRate;
         }
 
         private void UpdateCpuTemperature(uint value)
@@ -655,7 +656,7 @@ sealed class MainUI : IDisposable
                 return;
             }
 
-            cpuTemperatureLabel.Visible = value > 0 && owner.cpu.IsAvailable && owner.config.UserConfig.ShowCpuTemperature;
+            cpuTemperatureLabel.Visible = value > 0 && owner.cpu.IsAvailable && owner.config.Common.ShowCpuTemperature;
             cpuTemperatureLabel.Text = value == 0 ? string.Empty : $"{value} °C";
         }
 
@@ -663,7 +664,7 @@ sealed class MainUI : IDisposable
         {
             if (cpuTemperatureLabel != null)
             {
-                cpuTemperatureLabel.Visible = owner.cpu.IsAvailable && owner.config.UserConfig.ShowCpuTemperature;
+                cpuTemperatureLabel.Visible = owner.cpu.IsAvailable && owner.config.Common.ShowCpuTemperature;
             }
         }
 
@@ -674,7 +675,7 @@ sealed class MainUI : IDisposable
                 return;
             }
 
-            switch (owner.config.UserConfig.PerformanceModeOverride)
+            switch (owner.config.Common.PerformanceModeOverride)
             {
                 case PerformanceMode.Silent:
                     performanceModeButton.Icon = UIImages.Performance_Silent;
@@ -691,7 +692,7 @@ sealed class MainUI : IDisposable
                     break;
             }
 
-            performanceModeLabel.Text = owner.config.UserConfig.PerformanceModeOverride.ToText();
+            performanceModeLabel.Text = owner.config.Common.PerformanceModeOverride.ToText();
         }
 
         private void UpdatePowerMode(PowerMode powerMode, bool isBatterySaver)

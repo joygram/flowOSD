@@ -23,6 +23,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text.Json;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using flowOSD.Hardware;
@@ -69,7 +70,7 @@ sealed class HardwareService : IDisposable, IHardwareService
 
         InitHid();
 
-        atk = new Atk(config.UserConfig.PerformanceModeOverrideEnabled ? config.UserConfig.PerformanceModeOverride : null);
+        atk = new Atk(config.Common.PerformanceModeOverrideEnabled ? config.Common.PerformanceModeOverride : null);
         atkWmi = new AtkWmi(atk);
         cpu = new Cpu();
 
@@ -82,9 +83,9 @@ sealed class HardwareService : IDisposable, IHardwareService
         else
         {
             keyboard = new Hardware.Hid.Keyboard(hidDevice);
-            keyboardBacklight = new Hardware.Hid.KeyboardBacklight(hidDevice, config.UserConfig.KeyboardBacklightLevel);
+            keyboardBacklight = new Hardware.Hid.KeyboardBacklight(hidDevice, config.Common.KeyboardBacklightLevel);
             keyboardBacklight.Level
-                .Subscribe(x => config.UserConfig.KeyboardBacklightLevel = x)
+                .Subscribe(x => config.Common.KeyboardBacklightLevel = x)
                 .DisposeWith(disposable);
             touchPad = new Hardware.Hid.TouchPad(hidDevice);
         }
@@ -238,9 +239,9 @@ sealed class HardwareService : IDisposable, IHardwareService
     {
         battery.Reconnect();
 
-        if (config.UserConfig.PerformanceModeOverrideEnabled)
+        if (config.Common.PerformanceModeOverrideEnabled)
         {
-            atk.SetPerformanceMode(config.UserConfig.PerformanceModeOverride);
+            atk.SetPerformanceMode(config.Common.PerformanceModeOverride);
         }
 
         if (!config.UseOptimizationMode)
@@ -264,7 +265,7 @@ sealed class HardwareService : IDisposable, IHardwareService
 
     private async void UpdateTouchPad(TabletMode tabletMode)
     {
-        if (!config.UserConfig.DisableTouchPadInTabletMode)
+        if (!config.Common.DisableTouchPadInTabletMode)
         {
             return;
         }

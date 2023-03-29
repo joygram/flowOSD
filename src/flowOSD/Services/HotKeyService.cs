@@ -25,6 +25,7 @@ using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 
@@ -44,7 +45,7 @@ sealed class HotKeyService : IDisposable
         this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
         this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
 
-        this.config.UserConfig.PropertyChanged
+        this.config.HotKeys.KeyChanged
             .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(UpdateBindings)
@@ -56,7 +57,7 @@ sealed class HotKeyService : IDisposable
             .Subscribe(ExecuteCommand)
             .DisposeWith(disposable);
 
-        UpdateBindings(null);
+        RegisterHotKeys();
     }
 
     public void Dispose()
@@ -65,13 +66,18 @@ sealed class HotKeyService : IDisposable
         disposable = null;
     }
 
-    private void Register(AtkKey key, string? commandName, object? commandParameter = null)
+    private void Register(AtkKey key, HotKeysConfig.Command? commandInfo)
     {
-        var command = commandService.Resolve(commandName);
+        if (commandInfo == null)
+        {
+            return;
+        }
+
+        var command = commandService.Resolve(commandInfo.Name);
 
         if (command != null)
         {
-            keys[key] = new Binding(command, commandParameter);
+            keys[key] = new Binding(command, commandInfo.Parameter);
         }
         else
         {
@@ -81,42 +87,16 @@ sealed class HotKeyService : IDisposable
 
     private void RegisterHotKeys()
     {
-        Register(AtkKey.Aura, config.UserConfig.AuraCommand);
-        Register(AtkKey.Fan, config.UserConfig.FanCommand);
-        Register(AtkKey.Rog, config.UserConfig.RogCommand);
-        Register(AtkKey.Copy, config.UserConfig.CopyCommand);
-        Register(AtkKey.Paste, config.UserConfig.PasteCommand);
+        Register(AtkKey.Aura, config.HotKeys[AtkKey.Aura]);
+        Register(AtkKey.Fan, config.HotKeys[AtkKey.Fan]);
+        Register(AtkKey.Rog, config.HotKeys[AtkKey.Rog]);
+        Register(AtkKey.Copy, config.HotKeys[AtkKey.Copy]);
+        Register(AtkKey.Paste, config.HotKeys[AtkKey.Paste]);
     }
 
-    private void UpdateBindings(string? propertyName)
+    private void UpdateBindings(AtkKey key)
     {
-        switch (propertyName)
-        {
-            case nameof(UserConfig.AuraCommand):
-                Register(AtkKey.Aura, config.UserConfig.AuraCommand);
-                break;
-
-            case nameof(UserConfig.FanCommand):
-                Register(AtkKey.Fan, config.UserConfig.FanCommand);
-                break;
-
-            case nameof(UserConfig.RogCommand):
-                Register(AtkKey.Rog, config.UserConfig.RogCommand);
-                break;
-
-            case nameof(UserConfig.CopyCommand):
-                Register(AtkKey.Copy, config.UserConfig.CopyCommand);
-                break;
-
-            case nameof(UserConfig.PasteCommand):
-                Register(AtkKey.Paste, config.UserConfig.PasteCommand);
-                break;
-
-            case "":
-            case null:
-                RegisterHotKeys();
-                break;
-        }
+        Register(key, config.HotKeys[key]);
     }
 
     private void ExecuteCommand(AtkKey key)

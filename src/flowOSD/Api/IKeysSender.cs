@@ -16,6 +16,7 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
+
 namespace flowOSD.Api;
 
 public interface IKeysSender

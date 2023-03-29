@@ -16,32 +16,17 @@
  *  along with flowOSD. If not, see <https://www.gnu.org/licenses/>.   
  *
  */
-namespace flowOSD.UI.ConfigPages;
 
-using flowOSD.Api;
-using flowOSD.Api.Configs;
-using flowOSD.Api.Hardware;
-using flowOSD.UI.Components;
-using System.Reactive.Disposables;
+namespace flowOSD.Api;
 
-internal class MonitoringConfigPage : ConfigPageBase
+public enum NotificationType
 {
-    public MonitoringConfigPage(IConfig config, CxTabListener tabListener, ICpu? cpu)
-        : base(config, tabListener)
-    {
-        Text = "Monitoring";
-
-        AddConfig(
-            "\uf5f2",
-            "Show battery charge rate",
-            nameof(CommonConfig.ShowBatteryChargeRate));
-
-        if (cpu?.IsAvailable == true)
-        {
-            AddConfig(
-                UIImages.Temperature,
-                "Show CPU temperature",
-                nameof(CommonConfig.ShowCpuTemperature));
-        }
-    }
+    PerformanceMode,
+    PowerMode,
+    PowerSource,
+    Boost,
+    TouchPad,
+    DisplayRefreshRate,
+    Mic,
+    Gpu,
 }

@@ -25,6 +25,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using static flowOSD.Extensions.Common;
 
 sealed class Updater : IUpdater

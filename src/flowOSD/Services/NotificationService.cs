@@ -22,6 +22,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reflection;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using flowOSD.Services;
@@ -31,7 +32,7 @@ using flowOSD.UI.Components;
 using static flowOSD.Extensions.Common;
 using static flowOSD.Native.User32;
 
-sealed class Notifications : IDisposable
+sealed class NotificationService : IDisposable
 {
     private static int WM_SHELLHOOK = RegisterWindowMessage("SHELLHOOK");
 
@@ -49,7 +50,7 @@ sealed class Notifications : IDisposable
     private IKeyboardBacklight keyboardBacklight;
     private IMicrophone microphone;
 
-    public Notifications(IConfig config, IOsd osd, IHardwareService hardwareService)
+    public NotificationService(IConfig config, IOsd osd, IHardwareService hardwareService)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.osd = osd ?? throw new ArgumentNullException(nameof(osd));
@@ -201,7 +202,7 @@ sealed class Notifications : IDisposable
 
     private void ShowMicNotification()
     {
-        if (!config.UserConfig.ShowMicNotification)
+        if (!config.Notifications[NotificationType.Mic])
         {
             return;
         }
@@ -221,7 +222,7 @@ sealed class Notifications : IDisposable
 
     private void ShowPerformanceModeNotification(PerformanceMode performanceMode)
     {
-        if (!config.UserConfig.ShowPerformanceModeNotification)
+        if (!config.Notifications[NotificationType.PerformanceMode])
         {
             return;
         }
@@ -244,7 +245,7 @@ sealed class Notifications : IDisposable
 
     private void ShowPowerModeNotification(PowerMode powerMode)
     {
-        if (!config.UserConfig.ShowPowerModeNotification)
+        if (!config.Notifications[NotificationType.PowerMode])
         {
             return;
         }
@@ -267,7 +268,7 @@ sealed class Notifications : IDisposable
 
     private void ShowPowerSourceNotification(PowerSource powerSource)
     {
-        if (!config.UserConfig.ShowPowerSourceNotification)
+        if (!config.Notifications[NotificationType.PowerSource])
         {
             return;
         }
@@ -279,7 +280,7 @@ sealed class Notifications : IDisposable
 
     private void ShowDisplayRefreshRateNotification(uint refreshRate)
     {
-        if (!config.UserConfig.ShowDisplayRateNotification)
+        if (!config.Notifications[NotificationType.DisplayRefreshRate])
         {
             return;
         }
@@ -289,7 +290,7 @@ sealed class Notifications : IDisposable
 
     private void ShowBoostNotification(bool isEnabled)
     {
-        if (!config.UserConfig.ShowBoostNotification)
+        if (!config.Notifications[NotificationType.Boost])
         {
             return;
         }
@@ -299,7 +300,7 @@ sealed class Notifications : IDisposable
 
     private void ShowTouchPadNotification(DeviceState state)
     {
-        if (!config.UserConfig.ShowTouchPadNotification)
+        if (!config.Notifications[NotificationType.TouchPad])
         {
             return;
         }
@@ -309,7 +310,7 @@ sealed class Notifications : IDisposable
 
     private void ShowGpuNotification(GpuMode gpuMode)
     {
-        if (!config.UserConfig.ShowGpuNotification)
+        if (!config.Notifications[NotificationType.Gpu])
         {
             return;
         }

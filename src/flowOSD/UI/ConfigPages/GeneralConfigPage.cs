@@ -19,6 +19,7 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Extensions;
 using flowOSD.UI.Components;
 using System;
@@ -42,27 +43,27 @@ internal class GeneralConfigPage : ConfigPageBase
         AddConfig(
             "",
             "Run at logon",
-            nameof(UserConfig.RunAtStartup));
+            nameof(CommonConfig.RunAtStartup));
 
         AddConfig(
             "",
             "Disable TouchPad in tablet mode",
-            nameof(UserConfig.DisableTouchPadInTabletMode));
+            nameof(CommonConfig.DisableTouchPadInTabletMode));
 
         AddConfig(
             "",
             "Control display refresh rate",
-            nameof(UserConfig.ControlDisplayRefreshRate));
+            nameof(CommonConfig.ControlDisplayRefreshRate));
 
         AddConfig(
             "",
             "Confirm GPU change",
-            nameof(UserConfig.ConfirmGpuModeChange));
+            nameof(CommonConfig.ConfirmGpuModeChange));
         
         AddConfig(
             "",
             "Check for updates at startup",
-            nameof(UserConfig.CheckForUpdates));
+            nameof(CommonConfig.CheckForUpdates));
     }
 
     protected override void UpdateUI()

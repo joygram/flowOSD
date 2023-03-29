@@ -19,7 +19,7 @@
 using System.ComponentModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using static flowOSD.Extensions.Common;
@@ -60,7 +60,7 @@ internal class RefreshRateService : IDisposable
 
     private async void Update(PowerSource powerSource, DeviceState displayState)
     {
-        if (!config.UserConfig.ControlDisplayRefreshRate && displayState == DeviceState.Disabled)
+        if (!config.Common.ControlDisplayRefreshRate && displayState == DeviceState.Disabled)
         {
             return;
         }

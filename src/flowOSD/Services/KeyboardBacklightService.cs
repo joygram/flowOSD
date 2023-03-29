@@ -24,7 +24,7 @@ using flowOSD.Native;
 using static flowOSD.Native.User32;
 using static flowOSD.Native.Kernel32;
 using System.Reactive.Linq;
-using flowOSD.Api;
+using flowOSD.Api.Configs;
 
 namespace flowOSD.Services;
 
@@ -50,7 +50,7 @@ sealed class KeyboardBacklightService : IDisposable
         this.keyboardBacklight = keyboardBacklight ?? throw new ArgumentNullException(nameof(keyboardBacklight));
         this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
         this.powerManagement = powerManagement ?? throw new ArgumentNullException(nameof(powerManagement));
-        this.timeout = TimeSpan.FromSeconds(config.UserConfig.KeyboardBacklightTimeout);
+        this.timeout = TimeSpan.FromSeconds(config.Common.KeyboardBacklightTimeout);
 
         this.keyboard.Activity
             .Subscribe(x =>
@@ -60,9 +60,9 @@ sealed class KeyboardBacklightService : IDisposable
             })
             .DisposeWith(disposable);
 
-        this.config.UserConfig.PropertyChanged
-            .Where(name => name == nameof(UserConfig.KeyboardBacklightTimeout))
-            .Subscribe(_ => this.timeout = TimeSpan.FromSeconds(config.UserConfig.KeyboardBacklightTimeout))
+        this.config.Common.PropertyChanged
+            .Where(name => name == nameof(CommonConfig.KeyboardBacklightTimeout))
+            .Subscribe(_ => this.timeout = TimeSpan.FromSeconds(config.Common.KeyboardBacklightTimeout))
             .DisposeWith(disposable);
 
         this.powerManagement.PowerEvent

@@ -62,6 +62,8 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
         }
     }
 
+    public virtual IList<ParameterInfo> Parameters => new ParameterInfo[0];
+
     public bool IsChecked
     {
         get => isChecked;
@@ -111,4 +113,6 @@ public abstract class CommandBase : ICommand, IDisposable, INotifyPropertyChange
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
+
+    public readonly record struct ParameterInfo(string Value, string Description);
 }

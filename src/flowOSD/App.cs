@@ -22,6 +22,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reflection;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using flowOSD.Hardware;
@@ -73,7 +74,7 @@ sealed partial class App : IDisposable
         // Notifications
 
         osd = new Osd(systemEvents);
-        new Notifications(config, osd, hardwareService).DisposeWith(disposable);
+        new NotificationService(config, osd, hardwareService).DisposeWith(disposable);
 
         // Commands
 
@@ -107,7 +108,7 @@ sealed partial class App : IDisposable
             commandService,
             hardwareService.ResolveNotNull<IKeyboard>()).DisposeWith(disposable);
 
-        if (config.UserConfig.CheckForUpdates)
+        if (config.Common.CheckForUpdates)
         {
             commandService.Resolve<UpdateCommand>()?.Execute(false);
         }

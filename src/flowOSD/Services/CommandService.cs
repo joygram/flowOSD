@@ -22,6 +22,7 @@ using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.UI.Commands;
 
@@ -50,7 +51,7 @@ sealed class CommandService : ICommandService
             new DisplayRefreshRateCommand(
                 hardwareService.ResolveNotNull<IPowerManagement>(), 
                 hardwareService.ResolveNotNull<IDisplay>(), 
-                config.UserConfig),
+                config.Common),
             new ToggleTouchPadCommand(hardwareService.ResolveNotNull<ITouchPad>()),
             new ToggleBoostCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
             new ToggleGpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),

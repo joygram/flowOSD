@@ -23,6 +23,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using static flowOSD.Extensions.Common;
@@ -31,9 +32,9 @@ sealed class DisplayRefreshRateCommand : CommandBase
 {
     private IPowerManagement powerManagement;
     private IDisplay display;
-    private UserConfig userConfig;
+    private CommonConfig userConfig;
 
-    public DisplayRefreshRateCommand(IPowerManagement powerManagement, IDisplay display, UserConfig userConfig)
+    public DisplayRefreshRateCommand(IPowerManagement powerManagement, IDisplay display, CommonConfig userConfig)
     {
         this.powerManagement = powerManagement ?? throw new ArgumentNullException(nameof(powerManagement));
         this.display = display ?? throw new ArgumentNullException(nameof(display));

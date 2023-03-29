@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.UI.Components;
 using static flowOSD.Extensions.Common;
 using static flowOSD.Extensions.Forms;

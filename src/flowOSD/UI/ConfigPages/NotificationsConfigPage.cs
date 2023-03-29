@@ -19,48 +19,90 @@
 namespace flowOSD.UI.ConfigPages;
 
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Extensions;
 using flowOSD.UI.Components;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 
 internal class NotificationsConfigPage : ConfigPageBase
 {
+    private CompositeDisposable? disposable = new CompositeDisposable();
+    private Dictionary<NotificationType, CxToggle> toggles = new Dictionary<NotificationType, CxToggle>();
+
     public NotificationsConfigPage(IConfig config, CxTabListener tabListener)
         : base(config, tabListener)
     {
         Text = "Notifications";
 
-        AddConfig(
-            UIImages.Hardware_AC,
-            "Show power source notifications",
-            nameof(UserConfig.ShowPowerSourceNotification));
-        AddConfig(
+        toggles[NotificationType.PowerSource] = AddConfig(
+             UIImages.Hardware_AC,
+             "Show power source notifications",
+             () => config.Notifications[NotificationType.PowerSource],
+             x => config.Notifications[NotificationType.PowerSource] = x);
+
+        toggles[NotificationType.Boost] = AddConfig(
             UIImages.Hardware_Cpu,
             "Show CPU boost mode notifications",
-            nameof(UserConfig.ShowBoostNotification));
-        AddConfig(
+             () => config.Notifications[NotificationType.Boost],
+             x => config.Notifications[NotificationType.Boost] = x);
+
+        toggles[NotificationType.PerformanceMode] = AddConfig(
             UIImages.Performance_Turbo,
             "Show performance mode notifications",
-            nameof(UserConfig.ShowPerformanceModeNotification));
-        AddConfig(
+             () => config.Notifications[NotificationType.PerformanceMode],
+             x => config.Notifications[NotificationType.PerformanceMode] = x);
+
+        toggles[NotificationType.PowerMode] = AddConfig(
             UIImages.Power_Balanced,
             "Show power mode notifications",
-            nameof(UserConfig.ShowPowerModeNotification));
-        AddConfig(
+             () => config.Notifications[NotificationType.PowerMode],
+             x => config.Notifications[NotificationType.PowerMode] = x);
+
+        toggles[NotificationType.TouchPad] = AddConfig(
             UIImages.Hardware_TouchPad,
             "Show TouchPad notifications",
-            nameof(UserConfig.ShowTouchPadNotification));
-        AddConfig(
+             () => config.Notifications[NotificationType.TouchPad],
+             x => config.Notifications[NotificationType.TouchPad] = x);
+
+        toggles[NotificationType.DisplayRefreshRate] = AddConfig(
             UIImages.Hardware_Screen,
             "Show display refesh rate notifications",
-            nameof(UserConfig.ShowDisplayRateNotification));
-        AddConfig(
+             () => config.Notifications[NotificationType.DisplayRefreshRate],
+             x => config.Notifications[NotificationType.DisplayRefreshRate] = x);
+
+        toggles[NotificationType.Mic] = AddConfig(
             UIImages.Hardware_Mic,
             "Show microphone status notifications",
-            nameof(UserConfig.ShowMicNotification));
-        AddConfig(
+             () => config.Notifications[NotificationType.Mic],
+             x => config.Notifications[NotificationType.Mic] = x);
+
+        toggles[NotificationType.Gpu] = AddConfig(
             UIImages.Hardware_Gpu,
             "Show dGPU notifications",
-            nameof(UserConfig.ShowGpuNotification));
+             () => config.Notifications[NotificationType.Gpu],
+             x => config.Notifications[NotificationType.Gpu] = x);
+
+        config.Notifications.NotificationChanged
+            .ObserveOn(SynchronizationContext.Current!)
+            .Subscribe(x =>
+            {
+                if (toggles.TryGetValue(x, out var toggle))
+                {
+                    toggle.IsChecked = config.Notifications[x];
+                }
+            })
+            .DisposeWith(disposable);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            disposable?.Dispose();
+            disposable = null;
+        }
+
+        base.Dispose(disposing);
     }
 }

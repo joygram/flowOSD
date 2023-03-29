@@ -23,6 +23,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using flowOSD.Api;
+using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using static flowOSD.Extensions.Common;
@@ -68,7 +69,7 @@ sealed class ToggleGpuCommand : CommandBase
 
     private bool Confirm(bool isGpuEnabled)
     {
-        return !config.UserConfig.ConfirmGpuModeChange || DialogResult.Yes == MessageBox.Show(
+        return !config.Common.ConfirmGpuModeChange || DialogResult.Yes == MessageBox.Show(
             isGpuEnabled ? "Do you want to turn off dGPU?" : "Do you want to turn on dGPU?",
             "Discrete GPU",
             MessageBoxButtons.YesNo,
