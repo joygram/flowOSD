@@ -194,7 +194,7 @@ internal class HotKeysConfigPage : ConfigPageBase
                 x.Click += (sender, e) =>
                 {
                     config.HotKeys[AtkKey.BacklightDown] = new HotKeysConfig.Command(nameof(KeyboardBacklightCommand), KeyboardBacklightCommand.DOWN);
-                    config.HotKeys[AtkKey.BacklightDown] = new HotKeysConfig.Command(nameof(KeyboardBacklightCommand), KeyboardBacklightCommand.UP);
+                    config.HotKeys[AtkKey.BacklightUp] = new HotKeysConfig.Command(nameof(KeyboardBacklightCommand), KeyboardBacklightCommand.UP);
                     config.HotKeys[AtkKey.Aura] = new HotKeysConfig.Command(nameof(DisplayRefreshRateCommand));
                     config.HotKeys[AtkKey.Fan] = new HotKeysConfig.Command(nameof(ToggleBoostCommand));
                     config.HotKeys[AtkKey.BrightnessDown] = new HotKeysConfig.Command(nameof(DisplayBrightnessCommand), DisplayBrightnessCommand.DOWN);
