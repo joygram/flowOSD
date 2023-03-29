@@ -199,7 +199,7 @@ internal class ConfigPageBase : TableLayoutPanel
         return toogle!;
     }
 
-    protected CxGrid AddConfig(string text, Func<CxContextMenu> getMenu)
+    protected CxGrid AddConfig(string text, Func<CxContextMenu> getMenu, string icon = null)
     {
         var layout = Create<CxGrid>(grid =>
         {
@@ -211,10 +211,39 @@ internal class ConfigPageBase : TableLayoutPanel
             grid.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;
 
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 1));
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 1));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 2));
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 4));
             grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-            grid.Add<CxLabel>(0, 0, x =>
+            if (!string.IsNullOrEmpty(icon))
+            {
+                grid.Add<CxLabel>(0, 0, x =>
+                {
+                    x.AutoSize = true;
+                    x.MinimumSize = new Size(70, 30);
+                    x.TabListener = TabListener;
+                    x.Margin = new Padding(5, 10, 10, 10);
+                    x.Padding = new Padding(10);
+                    x.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+                    x.ForeColor = SystemColors.ControlText;
+                    x.TextAlign = ContentAlignment.MiddleCenter;
+
+                    if (icon.Length > 4)
+                    {
+                        x.Text = icon;
+                        x.ShowKeys = true;
+                        x.BlackAndWhite = true;
+                        x.UseClearType = true;
+                    }
+                    else
+                    {
+                        x.Icon = icon;
+                        x.IconFont = IconFont;
+                    }
+                });
+            }
+
+            grid.Add<CxLabel>(1, 0, x =>
             {
                 x.AutoSize = true;
                 x.MinimumSize = new Size(100, 30);
@@ -226,9 +255,10 @@ internal class ConfigPageBase : TableLayoutPanel
                 x.ForeColor = SystemColors.ControlText;
                 x.UseClearType = true;
                 x.ShowKeys = true;
+                x.TextAlign = ContentAlignment.MiddleCenter;
             });
 
-            grid.Add<CxButton>(1, 0, x =>
+            grid.Add<CxButton>(2, 0, x =>
             {
                 x.AutoSize = true;
                 x.BorderRadius = IsWindows11 ? CornerRadius.Small : CornerRadius.Off;

@@ -28,12 +28,12 @@ using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using static flowOSD.Extensions.Common;
 
-sealed class ToggleGpuCommand : CommandBase
+sealed class GpuCommand : CommandBase
 {
     private IAtk atk;
     private IConfig config;
 
-    public ToggleGpuCommand(IAtk atk, IConfig config)
+    public GpuCommand(IAtk atk, IConfig config)
     {
         this.atk = atk ?? throw new ArgumentNullException(nameof(atk));
         this.config = config ?? throw new ArgumentNullException(nameof(config));
@@ -47,7 +47,7 @@ sealed class ToggleGpuCommand : CommandBase
         Enabled = true;
     }
 
-    public override string Name => nameof(ToggleGpuCommand);
+    public override string Name => nameof(GpuCommand);
 
     public async override void Execute(object? parameter = null)
     {

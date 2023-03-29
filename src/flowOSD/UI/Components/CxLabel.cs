@@ -28,7 +28,7 @@ internal sealed class CxLabel : Label
 {
     private string? icon;
     private Font? iconFont;
-    private bool useClearType, showKeys;
+    private bool useClearType, showKeys, blackAndWhite;
 
     public CxLabel()
     {
@@ -36,6 +36,7 @@ internal sealed class CxLabel : Label
         iconFont = null;
         useClearType = false;
         showKeys = false;
+        blackAndWhite = false;
     }
 
     public string? Icon
@@ -94,6 +95,21 @@ internal sealed class CxLabel : Label
             }
 
             showKeys = value;
+            Invalidate();
+        }
+    }
+
+    public bool BlackAndWhite
+    {
+        get => blackAndWhite;
+        set
+        {
+            if (blackAndWhite == value)
+            {
+                return;
+            }
+
+            blackAndWhite = value;
             Invalidate();
         }
     }
@@ -169,8 +185,8 @@ internal sealed class CxLabel : Label
             e.Graphics.DrawString(Icon, IconFont, textBrush, x, y + Math.Max(0, -dY));
         }
 
-        using var pen = new Pen(ForeColor.Luminance(ForeColor.IsBright() ? -.5f : +.5f), 1);
-        using var brush = new SolidBrush(ForeColor.Luminance(ForeColor.IsBright() ? -.7f : +.8f));
+        using var pen = new Pen(BlackAndWhite ? ForeColor : ForeColor.Luminance(ForeColor.IsBright() ? -.5f : +.5f), BlackAndWhite ? 2 : 1);
+        using var brush = new SolidBrush(BlackAndWhite ? BackColor : ForeColor.Luminance(ForeColor.IsBright() ? -.7f : +.8f));
 
         var dX = x + symbolSize.Width;
         foreach (var p in parts)

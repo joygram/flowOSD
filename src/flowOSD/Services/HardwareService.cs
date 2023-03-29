@@ -130,53 +130,6 @@ sealed class HardwareService : IDisposable, IHardwareService
             .Subscribe(UpdateTouchPad)
             .DisposeWith(disposable);
 
-        if (!config.UseOptimizationMode)
-        {
-            keyboard.KeyPressed
-                .Throttle(TimeSpan.FromMilliseconds(50))
-                .Where(x => x == AtkKey.BacklightDown)
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(_ => keyboardBacklight.LevelDown())
-                .DisposeWith(disposable);
-
-            keyboard.KeyPressed
-                .Throttle(TimeSpan.FromMilliseconds(50))
-                .Where(x => x == AtkKey.BacklightUp)
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(_ => keyboardBacklight.LevelUp())
-                .DisposeWith(disposable);
-
-            keyboard.KeyPressed
-                .Where(x => x == AtkKey.BrightnessDown)
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(x => displayBrightness.LevelDown())
-                .DisposeWith(disposable);
-
-            keyboard.KeyPressed
-                .Where(x => x == AtkKey.BrightnessUp)
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(x => displayBrightness.LevelUp())
-                .DisposeWith(disposable);
-
-            keyboard.KeyPressed
-                .Where(x => x == AtkKey.Mic)
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(x => microphone.Toggle())
-                .DisposeWith(disposable);
-
-            keyboard.KeyPressed
-                .Where(x => x == AtkKey.TouchPad)
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(x => touchPad.Toggle())
-                .DisposeWith(disposable);
-
-            keyboard.KeyPressed
-                .Where(x => x == AtkKey.Sleep)
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(x => Powrprof.SetSuspendState(true, true, true))
-                .DisposeWith(disposable);
-        }
-
         keyboardBacklightService = config.UseOptimizationMode ? null : new KeyboardBacklightService(
             config, 
             keyboardBacklight,

@@ -20,6 +20,16 @@ namespace flowOSD.Api;
 
 public static class UIImages
 {
+    public static string Game = "\ue7fc";
+
+    public static string Paste ="\ue77f";
+
+    public static string Copy = "\ue8c8";
+
+    public static string Airplane = "\ue709";
+
+    public static string Suspend = "\ue823";
+
     public static string Updater = "\ue895";
 
     public static string Temperature = "\ue9ca";
@@ -36,7 +46,7 @@ public static class UIImages
 
     public static string Hardware_Mic = "\ue720";
 
-    public static string Hardware_MicMuted = "\uec54";
+    public static string Hardware_MicMuted = "\uf781";
 
     public static string Hardware_KeyboardLightUp = "\ued39";
 

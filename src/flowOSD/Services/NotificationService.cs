@@ -34,8 +34,6 @@ using static flowOSD.Native.User32;
 
 sealed class NotificationService : IDisposable
 {
-    private static int WM_SHELLHOOK = RegisterWindowMessage("SHELLHOOK");
-
     private CompositeDisposable? disposable = new CompositeDisposable();
 
     private IConfig config;
@@ -138,86 +136,6 @@ sealed class NotificationService : IDisposable
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(ShowGpuNotification)
             .DisposeWith(disposable);
-
-        // Keyboard Backlight
-
-        keyboard.KeyPressed
-            .Where(x => x == AtkKey.BacklightDown || x == AtkKey.BacklightUp)
-            .CombineLatest(keyboardBacklight.Level, (key, level) => new { key, level })
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(x => ShowKeyboardBacklightNotification(x.key, x.level))
-            .DisposeWith(disposable);
-
-        // Screen brightness
-
-        if (!config.UseOptimizationMode)
-        {
-            keyboard.KeyPressed
-                .Where(x => x == AtkKey.BrightnessDown || x == AtkKey.BrightnessUp)
-                .Throttle(TimeSpan.FromMilliseconds(50))
-                .ObserveOn(SynchronizationContext.Current!)
-                .Subscribe(ShowDisplayBrightnessNotification)
-                .DisposeWith(disposable);
-        }
-
-        // Mic Status
-
-        keyboard.KeyPressed
-            .Where(x => x == AtkKey.Mic)
-            .Throttle(TimeSpan.FromMilliseconds(50))
-            .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(x => ShowMicNotification())
-            .DisposeWith(disposable);
-    }
-
-    private void ShowKeyboardBacklightNotification(AtkKey key, KeyboardBacklightLevel backlightLevel)
-    {
-        var icon = key == AtkKey.BacklightDown
-            ? UIImages.Hardware_KeyboardLightDown
-            : UIImages.Hardware_KeyboardLightUp;
-
-        osd.Show(new OsdData(icon, (float)backlightLevel / (float)KeyboardBacklightLevel.High));
-    }
-
-    private void ShowDisplayBrightnessNotification(AtkKey key)
-    {
-        //var icon = key == AtkKey.BacklightDown
-        //    ? UIImages.Hardware_BrightnessDown
-        //    : UIImages.Hardware_BrightnessUp;
-
-        //osd.Show(new OsdData(icon, displayBrightness.GetLevel()));
-
-        var hostHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Shell_TrayWnd", "");
-        if (hostHandle > 0 && (hostHandle = FindWindowEx(hostHandle, IntPtr.Zero, "ReBarWindow32", "")) > 0)
-        {
-            var shellHandle = FindWindowEx(hostHandle, IntPtr.Zero, "MSTaskSwWClass", null);
-            if (shellHandle > 0)
-            {
-                SendMessage(shellHandle, WM_SHELLHOOK, 0x37, 0);
-            }
-        }
-
-    }
-
-    private void ShowMicNotification()
-    {
-        if (!config.Notifications[NotificationType.Mic])
-        {
-            return;
-        }
-
-        try
-        {
-            var isMuted = microphone.IsMicMuted();
-            osd.Show(new OsdData(
-                isMuted ? UIImages.Hardware_MicMuted : UIImages.Hardware_Mic,
-                isMuted ? "Muted" : "On air"));
-        }
-        catch (Exception ex)
-        {
-            TraceException(ex, "Error is occurred while toggling TouchPad state (Auto).");
-        }
     }
 
     private void ShowPerformanceModeNotification(PerformanceMode performanceMode)

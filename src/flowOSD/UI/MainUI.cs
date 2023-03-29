@@ -282,12 +282,12 @@ sealed class MainUI : IDisposable
                 dGpuButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_Gpu,
-                    command: owner.commandService.Resolve<ToggleGpuCommand>());
+                    command: owner.commandService.Resolve<GpuCommand>());
 
                 touchPadButton = CreateButton(
                     iconFont,
                     UIImages.Hardware_TouchPad,
-                    command: owner.commandService.Resolve<ToggleTouchPadCommand>());
+                    command: owner.commandService.Resolve<TouchPadCommand>());
 
                 performanceModeButton = CreateButton(
                     iconFont,

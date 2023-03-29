@@ -87,11 +87,10 @@ sealed class HotKeyService : IDisposable
 
     private void RegisterHotKeys()
     {
-        Register(AtkKey.Aura, config.HotKeys[AtkKey.Aura]);
-        Register(AtkKey.Fan, config.HotKeys[AtkKey.Fan]);
-        Register(AtkKey.Rog, config.HotKeys[AtkKey.Rog]);
-        Register(AtkKey.Copy, config.HotKeys[AtkKey.Copy]);
-        Register(AtkKey.Paste, config.HotKeys[AtkKey.Paste]);
+        foreach (var key in Enum.GetValues<AtkKey>())
+        {
+            UpdateBindings(key);
+        }
     }
 
     private void UpdateBindings(AtkKey key)

@@ -27,11 +27,11 @@ using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 using static flowOSD.Extensions.Common;
 
-sealed class ToggleTouchPadCommand : CommandBase
+sealed class TouchPadCommand : CommandBase
 {
     private ITouchPad touchPad;
 
-    public ToggleTouchPadCommand(ITouchPad touchPad)
+    public TouchPadCommand(ITouchPad touchPad)
     {
         this.touchPad = touchPad ?? throw new ArgumentNullException(nameof(touchPad));
 
@@ -44,7 +44,7 @@ sealed class ToggleTouchPadCommand : CommandBase
         Enabled = true;
     }
 
-    public override string Name => nameof(ToggleTouchPadCommand);
+    public override string Name => nameof(TouchPadCommand);
 
     public override void Execute(object? parameter = null)
     {

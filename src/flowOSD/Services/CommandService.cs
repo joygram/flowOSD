@@ -40,7 +40,8 @@ sealed class CommandService : ICommandService
         IHardwareService hardwareService, 
         IKeysSender keysSender, 
         ISystemEvents systemEvents, 
-        IUpdater updater)
+        IUpdater updater,
+        IOsd osd)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.hardwareService = hardwareService ?? throw new ArgumentNullException(nameof(hardwareService));
@@ -49,14 +50,18 @@ sealed class CommandService : ICommandService
 
         Register(
             new DisplayRefreshRateCommand(
-                hardwareService.ResolveNotNull<IPowerManagement>(), 
-                hardwareService.ResolveNotNull<IDisplay>(), 
+                hardwareService.ResolveNotNull<IPowerManagement>(),
+                hardwareService.ResolveNotNull<IDisplay>(),
                 config.Common),
-            new ToggleTouchPadCommand(hardwareService.ResolveNotNull<ITouchPad>()),
+            new DisplayBrightnessCommand(config, osd, hardwareService.ResolveNotNull<IDisplayBrightness>()),
+            new KeyboardBacklightCommand(config, osd, hardwareService.ResolveNotNull<IKeyboardBacklight>()),
+            new TouchPadCommand(hardwareService.ResolveNotNull<ITouchPad>()),
+            new MicrophoneCommand(config, osd, hardwareService.ResolveNotNull<IMicrophone>()),
             new ToggleBoostCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
-            new ToggleGpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),
+            new GpuCommand(hardwareService.ResolveNotNull<IAtk>(), config),
             new PerformanceModeCommand(hardwareService.ResolveNotNull<IAtk>()),
             new PowerModeCommand(hardwareService.ResolveNotNull<IPowerManagement>()),
+            new SuspendCommand(),
             new SettingsCommand(config, this, systemEvents, hardwareService),
             new ExitCommand(),
             new PrintScreenCommand(keysSender),

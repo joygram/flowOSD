@@ -83,7 +83,8 @@ sealed partial class App : IDisposable
             hardwareService,
             keysSender,
             systemEvents,
-            updater);
+            updater,
+            osd);
 
         mainUI = new MainUI(
             config,

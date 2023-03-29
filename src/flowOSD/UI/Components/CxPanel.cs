@@ -206,6 +206,8 @@ internal sealed class CxPanel : Panel
                     (down, move) => new Point(down.X - move.X, down.Y - move.Y))
                 .TakeUntil(mouseUp)
                 .Repeat()
+                .Throttle(TimeSpan.FromMilliseconds(2))
+                .ObserveOn(SynchronizationContext.Current!)
                 .Subscribe(x => owner.UpdateScroll(x.Y))
                 .DisposeWith(disposable);
 

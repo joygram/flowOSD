@@ -49,27 +49,109 @@ internal class HotKeysConfigPage : ConfigPageBase
 
         CxButton? button;
 
-        if (AddConfig("`Fn` + `F4`  ( `AURA` )", () => CreateContextMenu(AtkKey.Aura)).FindChild(out button) && button != null)
+        if (AddConfig(
+            "`Fn` + `F2`",
+            () => CreateContextMenu(AtkKey.BacklightDown),
+            UIImages.Hardware_KeyboardLightDown).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.BacklightDown] = button;
+        }
+
+        if (AddConfig(
+            "`Fn` + `F3`",
+            () => CreateContextMenu(AtkKey.BacklightUp),
+            UIImages.Hardware_KeyboardLightUp).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.BacklightUp] = button;
+        }
+
+        if (AddConfig(
+            "`Fn` + `F4`",
+            () => CreateContextMenu(AtkKey.Aura),
+            "`AURA`"
+            ).FindChild(out button) && button != null)
         {
             buttons[AtkKey.Aura] = button;
         }
 
-        if (AddConfig("`Fn` + `F5`  ( `FAN` )", () => CreateContextMenu(AtkKey.Fan)).FindChild(out button) && button != null)
+        if (AddConfig(
+            "`Fn` + `F5`",
+            () => CreateContextMenu(AtkKey.Fan),
+            "`FAN`"
+            ).FindChild(out button) && button != null)
         {
             buttons[AtkKey.Fan] = button;
         }
 
-        if (AddConfig("`ROG`", () => CreateContextMenu(AtkKey.Rog)).FindChild(out button) && button != null)
+        if (AddConfig(
+            "`Fn` + `F7`",
+            () => CreateContextMenu(AtkKey.BrightnessDown),
+            UIImages.Hardware_BrightnessDown
+            ).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.BrightnessDown] = button;
+        }
+
+        if (AddConfig(
+            "`Fn` + `F8`",
+            () => CreateContextMenu(AtkKey.BrightnessUp),
+            UIImages.Hardware_BrightnessUp).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.BrightnessUp] = button;
+        }
+
+        if (AddConfig(
+            "`Fn` + `F10`",
+            () => CreateContextMenu(AtkKey.TouchPad),
+            UIImages.Hardware_TouchPad).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.TouchPad] = button;
+        }
+
+        if (AddConfig(
+            "`Fn` + `F11`",
+            () => CreateContextMenu(AtkKey.Sleep),
+            UIImages.Suspend).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.Sleep] = button;
+        }
+
+        if (AddConfig(
+            "`Fn` + `F12`",
+            () => CreateContextMenu(AtkKey.Wireless),
+            UIImages.Airplane).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.Wireless] = button;
+        }
+
+        if (AddConfig(
+            "",
+            () => CreateContextMenu(AtkKey.Mic),
+            UIImages.Hardware_MicMuted).FindChild(out button) && button != null)
+        {
+            buttons[AtkKey.Mic] = button;
+        }
+
+        if (AddConfig(
+            "", 
+            () => CreateContextMenu(AtkKey.Rog),
+            "`ROG`").FindChild(out button) && button != null)
         {
             buttons[AtkKey.Rog] = button;
         }
 
-        if (AddConfig("`Fn` + `C`", () => CreateContextMenu(AtkKey.Copy)).FindChild(out button) && button != null)
+        if (AddConfig(
+            "`Fn` + `C`", 
+            () => CreateContextMenu(AtkKey.Copy),
+            UIImages.Copy).FindChild(out button) && button != null)
         {
             buttons[AtkKey.Copy] = button;
         }
 
-        if (AddConfig("`Fn` + `V`", () => CreateContextMenu(AtkKey.Paste)).FindChild(out button) && button != null)
+        if (AddConfig(
+            "`Fn` + `V`", 
+            () => CreateContextMenu(AtkKey.Paste),
+            UIImages.Paste).FindChild(out button) && button != null)
         {
             buttons[AtkKey.Paste] = button;
         }
@@ -111,8 +193,16 @@ internal class HotKeysConfigPage : ConfigPageBase
                 x.AutoSize = true;
                 x.Click += (sender, e) =>
                 {
+                    config.HotKeys[AtkKey.BacklightDown] = new HotKeysConfig.Command(nameof(KeyboardBacklightCommand), KeyboardBacklightCommand.DOWN);
+                    config.HotKeys[AtkKey.BacklightDown] = new HotKeysConfig.Command(nameof(KeyboardBacklightCommand), KeyboardBacklightCommand.UP);
                     config.HotKeys[AtkKey.Aura] = new HotKeysConfig.Command(nameof(DisplayRefreshRateCommand));
                     config.HotKeys[AtkKey.Fan] = new HotKeysConfig.Command(nameof(ToggleBoostCommand));
+                    config.HotKeys[AtkKey.BrightnessDown] = new HotKeysConfig.Command(nameof(DisplayBrightnessCommand), DisplayBrightnessCommand.DOWN);
+                    config.HotKeys[AtkKey.BrightnessUp] = new HotKeysConfig.Command(nameof(DisplayBrightnessCommand), DisplayBrightnessCommand.UP);
+                    config.HotKeys[AtkKey.TouchPad] = new HotKeysConfig.Command(nameof(TouchPadCommand));
+                    config.HotKeys[AtkKey.Sleep] = new HotKeysConfig.Command(nameof(SuspendCommand), SuspendCommand.HIBERNATE);
+
+                    config.HotKeys[AtkKey.Mic] = new HotKeysConfig.Command(nameof(MicrophoneCommand));
                     config.HotKeys[AtkKey.Rog] = new HotKeysConfig.Command(nameof(MainUICommand));
                     config.HotKeys[AtkKey.Copy] = null;
                     config.HotKeys[AtkKey.Paste] = null;
