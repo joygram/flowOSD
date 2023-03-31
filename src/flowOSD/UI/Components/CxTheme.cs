@@ -72,10 +72,12 @@ internal static class CxTheme
         if (control is CxContextMenu menu)
         {
             menu.BackgroundColor = uiParameters.MenuBackgroundColor;
+            menu.BackgroundCheckedColor = uiParameters.NavigationMenuBackgroundHoverColor;
             menu.BackgroundHoverColor = uiParameters.MenuBackgroundHoverColor;
             menu.TextColor = uiParameters.MenuTextColor;
             menu.TextBrightColor = uiParameters.MenuTextBrightColor;
             menu.TextDisabledColor = uiParameters.MenuTextDisabledColor;
+            menu.AccentColor = uiParameters.AccentColor;           
         }
 
         if(control is CxPanel panel)

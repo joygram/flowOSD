@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net7.0-windows10.0.19041.0</TargetFramework>
+		<TargetFramework>net7.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
@@ -12,7 +12,7 @@
 		<Copyright>© 2021-2023, Albert Akhmetov</Copyright>
 		<Authors>Albert Akhmetov</Authors>
 		<Product>flowOSD</Product>
-		<Version>2.2.0-dev329</Version>
+		<Version>2.2.0-Preview1</Version>
 		<Platforms>x64</Platforms>
 		<PackageIcon></PackageIcon>
 		<PackageIconUrl />
@@ -25,7 +25,6 @@
 	  	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<LangVersion>10</LangVersion>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

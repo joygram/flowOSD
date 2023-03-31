@@ -104,7 +104,7 @@ sealed partial class App : IDisposable
             commandService,
             hardwareService.ResolveNotNull<IAtkWmi>()).DisposeWith(disposable);
 
-        new HotKeyService(
+        new HotKeysService(
             config,
             commandService,
             hardwareService.ResolveNotNull<IKeyboard>()).DisposeWith(disposable);

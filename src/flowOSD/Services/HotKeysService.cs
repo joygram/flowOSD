@@ -29,7 +29,7 @@ using flowOSD.Api.Configs;
 using flowOSD.Api.Hardware;
 using flowOSD.Extensions;
 
-sealed class HotKeyService : IDisposable
+sealed class HotKeysService : IDisposable
 {
     private CompositeDisposable? disposable = new CompositeDisposable();
 
@@ -39,14 +39,13 @@ sealed class HotKeyService : IDisposable
 
     private Dictionary<AtkKey, Binding> keys = new Dictionary<AtkKey, Binding>();
 
-    public HotKeyService(IConfig config, ICommandService commandService, IKeyboard keyboard)
+    public HotKeysService(IConfig config, ICommandService commandService, IKeyboard keyboard)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
         this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
 
         this.config.HotKeys.KeyChanged
-            .Throttle(TimeSpan.FromMilliseconds(50))
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(UpdateBindings)
             .DisposeWith(disposable);
@@ -68,16 +67,11 @@ sealed class HotKeyService : IDisposable
 
     private void Register(AtkKey key, HotKeysConfig.Command? commandInfo)
     {
-        if (commandInfo == null)
-        {
-            return;
-        }
-
-        var command = commandService.Resolve(commandInfo.Name);
+        var command = commandService.Resolve(commandInfo?.Name);
 
         if (command != null)
         {
-            keys[key] = new Binding(command, commandInfo.Parameter);
+            keys[key] = new Binding(command, commandInfo?.Parameter);
         }
         else
         {

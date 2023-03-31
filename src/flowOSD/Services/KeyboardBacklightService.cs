@@ -105,7 +105,7 @@ sealed class KeyboardBacklightService : IDisposable
 
         if (GetLastInputInfo(ref lii))
         {
-            if (timeout.Seconds > 0)
+            if (timeout.TotalSeconds > 0)
             {
                 var isIdle = timeout < TimeSpan.FromMilliseconds(GetTickCount() - Math.Max(lastActivityTime, lii.dwTime));
 

@@ -41,6 +41,9 @@ sealed class CxContextMenu : ContextMenuStrip
         borderRadius = CornerRadius.Round;
 
         BackgroundHoverColor = Color.FromArgb(255, 25, 110, 191);
+        BackgroundCheckedColor = Color.FromArgb(255, 25, 25, 25);
+        AccentColor = Color.FromArgb(255, 25, 110, 191).Luminance(0.2f);
+
         SeparatorColor = Color.FromArgb(255, 96, 96, 96);
         TextColor = Color.White;
         TextBrightColor = Color.Black;
@@ -78,6 +81,35 @@ sealed class CxContextMenu : ContextMenuStrip
 
             Renderer.BackgroundColor = value;
             Acrylic.EnableAcrylic(this, Renderer.BackgroundColor.SetAlpha(210));
+            Invalidate();
+        }
+    }
+
+    public Color AccentColor
+    {
+        get => Renderer.AccentColor;
+        set
+        {
+            if (Renderer.AccentColor == value)
+            {
+                return;
+            }
+
+            Renderer.AccentColor = value;
+        }
+    }
+
+    public Color BackgroundCheckedColor
+    {
+        get => Renderer.BackgroundCheckedColor;
+        set
+        {
+            if (Renderer.BackgroundCheckedColor == value)
+            {
+                return;
+            }
+
+            Renderer.BackgroundCheckedColor = value;
         }
     }
 
@@ -193,7 +225,7 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
-    public ToolStripItem AddMenuItem(CommandBase command, object? commandParameter = null)
+    public ToolStripMenuItem AddMenuItem(CommandBase command, object? commandParameter = null)
     {
         var item = CreateMenuItem(command, commandParameter);
 
@@ -202,7 +234,7 @@ sealed class CxContextMenu : ContextMenuStrip
         return item;
     }
 
-    public ToolStripItem AddMenuItem(string text, ICommand command, object? commandParameter = null)
+    public ToolStripMenuItem AddMenuItem(string text, ICommand command, object? commandParameter = null)
     {
         var item = CreateMenuItem(text, command, commandParameter);
 
@@ -286,7 +318,7 @@ sealed class CxContextMenu : ContextMenuStrip
 
     private class MenuRenderer : ToolStripRenderer, IDisposable
     {
-        private SolidBrush? textBrush, textBrightBrush, textDisabledBrush, backgroundHoverBrush;
+        private SolidBrush? textBrush, textBrightBrush, textDisabledBrush, backgroundHoverBrush, accentBrush, backgroundCheckedBrush;
         private Pen? separatorPen;
 
         private CompositeDisposable? disposable = new CompositeDisposable();
@@ -304,6 +336,50 @@ sealed class CxContextMenu : ContextMenuStrip
         public Color BackgroundColor
         {
             get; set;
+        }
+
+        public Color AccentColor
+        {
+            get => (accentBrush?.Color) ?? Color.Empty;
+            set
+            {
+                CheckDisposed();
+
+                if (accentBrush?.Color == value)
+                {
+                    return;
+                }
+
+                if (accentBrush != null)
+                {
+                    disposable!.Remove(accentBrush);
+                    accentBrush.Dispose();
+                }
+
+                accentBrush = new SolidBrush(value).DisposeWith(disposable!);
+            }
+        }
+
+        public Color BackgroundCheckedColor
+        {
+            get => (backgroundCheckedBrush?.Color) ?? Color.Empty;
+            set
+            {
+                CheckDisposed();
+
+                if (backgroundCheckedBrush?.Color == value)
+                {
+                    return;
+                }
+
+                if (backgroundCheckedBrush != null)
+                {
+                    disposable!.Remove(backgroundCheckedBrush);
+                    backgroundCheckedBrush.Dispose();
+                }
+
+                backgroundCheckedBrush = new SolidBrush(value).DisposeWith(disposable!);
+            }
         }
 
         public Color BackgroundHoverColor
@@ -421,8 +497,13 @@ sealed class CxContextMenu : ContextMenuStrip
             e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
             e.Graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
-            if (e.Item is ToolStripMenuItem)
+            if (e.Item is ToolStripMenuItem menuItem)
             {
+                if (menuItem.Checked)
+                {
+                    e.Graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+                }
+
                 var textHeight = e.TextFont.GetHeight(e.Graphics);
                 var point = new PointF(
                     e.TextRectangle.X,
@@ -453,20 +534,48 @@ sealed class CxContextMenu : ContextMenuStrip
                 y);
         }
 
+        protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
+        {
+            //base.OnRenderItemCheck(e);
+        }
+
         protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
         {
-            e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-
-            if (e.Item.Selected && e.Item.Enabled)
+            if (!e.Item.Enabled)
             {
-                const int offset = 8;
+                return;
+            }
 
-                var x = e.Item.ContentRectangle.X + offset;
-                var y = e.Item.ContentRectangle.Y + 1;
-                var width = e.Item.ContentRectangle.Width - offset * 2;
-                var height = e.Item.ContentRectangle.Height - 2;
+            e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
 
-                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+            const int offset = 8;
+
+            var x = e.Item.ContentRectangle.X + offset;
+            var y = e.Item.ContentRectangle.Y + 1;
+            var width = e.Item.ContentRectangle.Width - offset * 2;
+            var height = e.Item.ContentRectangle.Height - 2;
+
+            if (!e.Item.Selected && e.Item is ToolStripMenuItem menuItem && menuItem.Checked)
+            {
+                e.Graphics.FillRoundedRectangle(
+                    backgroundCheckedBrush,
+                    x,
+                    y,
+                    width,
+                    height,
+                    (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
+
+                e.Graphics.FillRoundedRectangle(accentBrush,
+                    x,
+                    y + height / 8,
+                    8,
+                    height - height / 4,
+                    (int)(IsWindows11 ? CornerRadius.Small : CornerRadius.Off));
+            }
+
+            if (e.Item.Selected)
+            {
                 e.Graphics.FillRoundedRectangle(
                     backgroundHoverBrush,
                     x,

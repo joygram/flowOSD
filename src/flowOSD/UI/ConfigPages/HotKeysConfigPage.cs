@@ -49,7 +49,7 @@ internal class HotKeysConfigPage : ConfigPageBase
 
         CxButton? button;
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "`Fn` + `F2`",
             () => CreateContextMenu(AtkKey.BacklightDown),
             UIImages.Hardware_KeyboardLightDown).FindChild(out button) && button != null)
@@ -57,7 +57,7 @@ internal class HotKeysConfigPage : ConfigPageBase
             buttons[AtkKey.BacklightDown] = button;
         }
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "`Fn` + `F3`",
             () => CreateContextMenu(AtkKey.BacklightUp),
             UIImages.Hardware_KeyboardLightUp).FindChild(out button) && button != null)
@@ -83,7 +83,7 @@ internal class HotKeysConfigPage : ConfigPageBase
             buttons[AtkKey.Fan] = button;
         }
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "`Fn` + `F7`",
             () => CreateContextMenu(AtkKey.BrightnessDown),
             UIImages.Hardware_BrightnessDown
@@ -92,7 +92,7 @@ internal class HotKeysConfigPage : ConfigPageBase
             buttons[AtkKey.BrightnessDown] = button;
         }
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "`Fn` + `F8`",
             () => CreateContextMenu(AtkKey.BrightnessUp),
             UIImages.Hardware_BrightnessUp).FindChild(out button) && button != null)
@@ -100,7 +100,7 @@ internal class HotKeysConfigPage : ConfigPageBase
             buttons[AtkKey.BrightnessUp] = button;
         }
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "`Fn` + `F10`",
             () => CreateContextMenu(AtkKey.TouchPad),
             UIImages.Hardware_TouchPad).FindChild(out button) && button != null)
@@ -108,7 +108,7 @@ internal class HotKeysConfigPage : ConfigPageBase
             buttons[AtkKey.TouchPad] = button;
         }
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "`Fn` + `F11`",
             () => CreateContextMenu(AtkKey.Sleep),
             UIImages.Suspend).FindChild(out button) && button != null)
@@ -116,7 +116,7 @@ internal class HotKeysConfigPage : ConfigPageBase
             buttons[AtkKey.Sleep] = button;
         }
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "`Fn` + `F12`",
             () => CreateContextMenu(AtkKey.Wireless),
             UIImages.Airplane).FindChild(out button) && button != null)
@@ -124,7 +124,7 @@ internal class HotKeysConfigPage : ConfigPageBase
             buttons[AtkKey.Wireless] = button;
         }
 
-        if (AddConfig(
+        if (!config.UseOptimizationMode && AddConfig(
             "",
             () => CreateContextMenu(AtkKey.Mic),
             UIImages.Hardware_MicMuted).FindChild(out button) && button != null)
@@ -133,7 +133,7 @@ internal class HotKeysConfigPage : ConfigPageBase
         }
 
         if (AddConfig(
-            "", 
+            "",
             () => CreateContextMenu(AtkKey.Rog),
             "`ROG`").FindChild(out button) && button != null)
         {
@@ -141,7 +141,7 @@ internal class HotKeysConfigPage : ConfigPageBase
         }
 
         if (AddConfig(
-            "`Fn` + `C`", 
+            "`Fn` + `C`",
             () => CreateContextMenu(AtkKey.Copy),
             UIImages.Copy).FindChild(out button) && button != null)
         {
@@ -149,7 +149,7 @@ internal class HotKeysConfigPage : ConfigPageBase
         }
 
         if (AddConfig(
-            "`Fn` + `V`", 
+            "`Fn` + `V`",
             () => CreateContextMenu(AtkKey.Paste),
             UIImages.Paste).FindChild(out button) && button != null)
         {
@@ -286,10 +286,13 @@ internal class HotKeysConfigPage : ConfigPageBase
             {
                 foreach (var p in c.Parameters)
                 {
+                    //var binding = new Binding("Checked", Config, "HotKeys", true, DataSourceUpdateMode.Never);
+                    //binding.Format += Binding_Format;
+
                     menu.AddMenuItem(
                         $"{c.Description} - {p.Description}",
                         relayCommand,
-                        new CommandInfo(c.Description, c.Name, p.Value));
+                        new CommandInfo(c.Description, c.Name, p.Value));//.DataBindings.Add(binding);
                 }
             }
             else
@@ -297,11 +300,40 @@ internal class HotKeysConfigPage : ConfigPageBase
                 menu.AddMenuItem(
                     c.Description,
                     relayCommand,
-                    new CommandInfo(c.Description, c.Name, null));
+                    new CommandInfo(c.Description, c.Name, null))
+                    .VisibleChanged += (sender, _) =>
+                    {
+                        if (sender is ToolStripMenuItem menuItem)
+                        {
+                            menuItem.Checked = (menuItem.Command as CommandBase)?.Name == Config.HotKeys[key]?.Name
+                                && menuItem.CommandParameter as string == Config.HotKeys[key]?.Parameter;
+                        }
+                    };
             }
         }
 
+        menu.VisibleChanged += (sender, _) =>
+        {
+            foreach (var i in menu.Items)
+            {
+                if (i is ToolStripMenuItem menuItem && menuItem.CommandParameter is CommandInfo info)
+                {
+                    menuItem.Checked = info.Name == Config.HotKeys[key]?.Name
+                        && info.Parameter == Config.HotKeys[key]?.Parameter;
+                }
+            }
+        };
+
         return menu;
+    }
+
+    private void Binding_Format(object? sender, ConvertEventArgs e)
+    {
+        if (sender is ToolStripMenuItem menuItem && e.Value is HotKeysConfig.Command command)
+        {
+            e.Value = (menuItem.Command as CommandBase)?.Name == command.Name
+                && menuItem.CommandParameter as string == command.Parameter;
+        }
     }
 
     private readonly record struct CommandInfo(string Description, string Name, string? Parameter);

@@ -64,6 +64,17 @@ internal class KeyboardConfigPage : ConfigPageBase
         menu.AddMenuItem(GetTimeoutText(300), relayCommand, 300);
         menu.AddMenuItem(GetTimeoutText(0), relayCommand, 0);
 
+        menu.VisibleChanged += (sender, _) =>
+        {
+            foreach (var i in menu.Items)
+            {
+                if (i is ToolStripMenuItem menuItem && menuItem.CommandParameter is int menuItemValue)
+                {
+                    menuItem.Checked = menuItemValue == Config.Common.KeyboardBacklightTimeout;
+                }
+            }
+        };
+
         return menu;
     }
 
