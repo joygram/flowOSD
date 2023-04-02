@@ -36,6 +36,7 @@ sealed class KeyboardBacklightService : IDisposable
     private IKeyboardBacklight keyboardBacklight;
     private IKeyboard keyboard;
     private IPowerManagement powerManagement;
+    private IDisplay display;
     private TimeSpan timeout;
 
     private volatile uint lastActivityTime;
@@ -44,12 +45,14 @@ sealed class KeyboardBacklightService : IDisposable
         IConfig config,
         IKeyboardBacklight keyboardBacklight,
         IKeyboard keyboard,
-        IPowerManagement powerManagement)
+        IPowerManagement powerManagement,
+        IDisplay display)
     {
         this.config = config ?? throw new ArgumentNullException(nameof(config));
         this.keyboardBacklight = keyboardBacklight ?? throw new ArgumentNullException(nameof(keyboardBacklight));
         this.keyboard = keyboard ?? throw new ArgumentNullException(nameof(keyboard));
         this.powerManagement = powerManagement ?? throw new ArgumentNullException(nameof(powerManagement));
+        this.display = display ?? throw new ArgumentNullException(nameof(display));
         this.timeout = TimeSpan.FromSeconds(config.Common.KeyboardBacklightTimeout);
 
         this.keyboard.Activity
@@ -75,9 +78,15 @@ sealed class KeyboardBacklightService : IDisposable
             .Subscribe(_ => lastActivityTime = GetTickCount())
             .DisposeWith(disposable);
 
+        this.display.State
+            .Where(x => x == DeviceState.Enabled)
+            .Subscribe(_ => lastActivityTime = GetTickCount())
+            .DisposeWith(disposable);
+
         Observable.Interval(TimeSpan.FromMilliseconds(1000))
+            .CombineLatest(this.display.State, (_, displayState) => displayState)
             .ObserveOn(SynchronizationContext.Current!)
-            .Subscribe(x => UpdateBacklightState())
+            .Subscribe(UpdateBacklightState)
             .DisposeWith(disposable);
     }
 
@@ -98,8 +107,14 @@ sealed class KeyboardBacklightService : IDisposable
         lastActivityTime = GetTickCount();
     }
 
-    private void UpdateBacklightState()
+    private void UpdateBacklightState(DeviceState displayState)
     {
+        if (config.Common.KeyboardBacklightWithDisplay && displayState == DeviceState.Disabled)
+        {
+            keyboardBacklight.SetState(DeviceState.Disabled);
+            return;
+        }
+
         var lii = new LASTINPUTINFO();
         lii.cbSize = Marshal.SizeOf<LASTINPUTINFO>();
 

@@ -42,6 +42,8 @@ internal class KeyboardConfigPage : ConfigPageBase
 
         grid.ColumnStyles[0].Width = 2;
         grid.ColumnStyles[1].Width = 1;
+
+        AddConfig("", "Turn off backlight if laptop display is off", nameof(CommonConfig.KeyboardBacklightWithDisplay));
     }
 
     private CxContextMenu CreateContextMenu(Action<int> setValue)

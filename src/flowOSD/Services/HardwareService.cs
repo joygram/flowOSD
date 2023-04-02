@@ -134,7 +134,8 @@ sealed class HardwareService : IDisposable, IHardwareService
             config, 
             keyboardBacklight,
             keyboard,
-            powerManagement).DisposeWith(disposable);
+            powerManagement,
+            display).DisposeWith(disposable);
 
         refreshRateService = new RefreshRateService(
             this.config,

@@ -36,6 +36,7 @@ public sealed class CommonConfig : ConfigBase
 
     private KeyboardBacklightLevel keyboardBacklightLevel;
     private int keyboardBacklightTimeout;
+    private bool keyboardBacklightWithDisplay;
 
     private bool showBatteryChargeRate;
     private bool showCpuTemperature;
@@ -54,6 +55,7 @@ public sealed class CommonConfig : ConfigBase
 
         keyboardBacklightLevel = KeyboardBacklightLevel.Low;
         keyboardBacklightTimeout = 60;
+        keyboardBacklightWithDisplay = true;
 
         showBatteryChargeRate = true;
         showCpuTemperature = true;
@@ -103,6 +105,12 @@ public sealed class CommonConfig : ConfigBase
     {
         get => keyboardBacklightTimeout;
         set => SetProperty(ref keyboardBacklightTimeout, value);
+    }
+
+    public bool KeyboardBacklightWithDisplay
+    {
+        get => keyboardBacklightWithDisplay;
+        set => SetProperty(ref keyboardBacklightWithDisplay, value);
     }
 
     public bool ShowBatteryChargeRate

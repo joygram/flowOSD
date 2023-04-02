@@ -149,6 +149,11 @@ sealed class MainUI : IDisposable
             .ObserveOn(SynchronizationContext.Current!)
             .Subscribe(t =>
             {
+                if (form == null)
+                {
+                    return;
+                }
+
                 form.Opacity -= (0.5 / (100f / 15));
                 form.Location = new Point(form.Location.X, form.Location.Y + 15);
 
